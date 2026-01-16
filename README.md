@@ -103,10 +103,10 @@
 
 |    구분     | 기술 스택 (예시) |                    비고                    |
 | :---------: | :--------------: | :----------------------------------------: |
-|  Frontend   |       미정       |    사용자 인터페이스 및 녹음 기능 구현     |
-|   Backend   |       미정       |        API 서버, 오디오 데이터 처리        |
+|  Frontend   |       Vue       |    사용자 인터페이스 및 녹음 기능 구현     |
+|   Backend   |       Spring Boot       |        API 서버, 오디오 데이터 처리        |
 |   AI / ML   |       미정       |      STT 변환, 문장 분석, 피드백 생성      |
-|  Database   |       미정       | 사용자 정보, 학습 데이터, 오디오 로그 저장 |
+|  Database   |       MySQL, Redis       | 사용자 정보, 학습 데이터, 오디오 로그 저장 |
 |    Infra    |       미정       |           배포 및 스토리지 관리            |
 | Cooperation |       미정       |                  협업 툴                   |
 
@@ -116,9 +116,9 @@
 
 | R&R (Role and Responsibilities) | 이름   | 포지션                | 담당 역할 (Main/Sub) |
 | ------------------------------- | ------ | --------------------- | -------------------- |
-| TBD                             | 공영재 | (Main) 역할 기입 필요 | (Sub) 역할 기입 필요 |
-| TBD                             | 김남주 | (Main) 역할 기입 필요 | (Sub) 역할 기입 필요 |
-| TBD                             | 김지을 | (Main) 역할 기입 필요 | (Sub) 역할 기입 필요 |
-| TBD                             | 이승민 | (Main) 역할 기입 필요 | (Sub) 역할 기입 필요 |
-| TBD                             | 변희연 | (Main) 역할 기입 필요 | (Sub) 역할 기입 필요 |
-| TBD                             | 최성연 | (Main) 역할 기입 필요 | (Sub) 역할 기입 필요 |
+| TBD                             | 공영재 | (Main) AI |  |
+| TBD                             | 김남주 | (Main) Infra | (Sub) Back |
+| TBD                             | 김지을 | (Main) Back | (Sub) Front |
+| TBD                             | 이승민 | (Main) Data | (Sub) AI |
+| TBD                             | 변희연 | (Main) Front | (Sub) PM / Data |
+| TBD                             | 최성연 | (Main) Back | (Sub) Infra |

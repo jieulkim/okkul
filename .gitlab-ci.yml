@@ -1,8 +1,10 @@
 stages:
+  - build
   - deploy
 
+# [BE 빌드] - Java 환경 필요
 deploy-be:
-  stage: deploy
+  stage: build
   image: eclipse-temurin:21-jdk-alpine
 
   tags:
@@ -24,7 +26,42 @@ deploy-be:
     - ./gradlew test
     - ./gradlew bootBuildImage -x test
 
-    - echo "배포 시작"
-    - cd ..
-    - docker compose up -d --force-recreate backend
+# [FE 빌드] - Docker 환경이면 충분
+build-fe:
+  stage: build
+  image: docker:stable
+  tags:
+    - aws-ec2
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "cicd"'
+      changes:
+        - fe/**/* # FE 폴더가 변했을 때만 실행
+  script:
+    - echo "⚛️ Frontend 빌드 시작..."
+    - cd fe
+    - docker build -t frontend:latest .
+
+# --------------------------------------------------------------------------
+# 2. 통합 배포 스테이지 (항상 실행)
+# --------------------------------------------------------------------------
+deploy-all:
+  stage: deploy
+  image: docker:stable
+  tags:
+    - aws-ec2
+  # 배포는 어느 하나라도 빌드가 돌았거나, 수동 실행일 때 돌아야 함
+  # 사실상 메인 브랜치면 무조건 체크하는 게 안전함 (Compose가 알아서 판단하니까)
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "cicd"'
+  before_script:
+    - apk update && apk add --no-cache docker-cli-compose
+  script:
+    - echo "🚀 전체 서비스 배포(업데이트) 시작..."
+    
+    # docker compose는 바뀐 이미지만 감지해서 해당 컨테이너만 재시작합니다.
+    # (주의: --force-recreate를 쓰면 변경 없어도 강제로 다 껐다 켭니다. 상황 봐서 빼도 됩니다.)
+    - docker compose up -d --remove-orphans
+    
+    # 찌꺼기 이미지 정리
     - docker image prune -f

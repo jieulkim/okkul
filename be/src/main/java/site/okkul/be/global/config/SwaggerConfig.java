@@ -1,4 +1,4 @@
-package site.okkul.be.config;
+package site.okkul.be.global.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

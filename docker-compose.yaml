@@ -1,5 +1,5 @@
 services:
-  okkul-backend:
+  backend:
     image: be:0.0.1-SNAPSHOT
-    container_name: okkul-backend
+    container_name: backend
     restart: always

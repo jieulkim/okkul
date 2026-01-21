@@ -47,21 +47,28 @@ build-fe:
 # --------------------------------------------------------------------------
 deploy-all:
   stage: deploy
-  image: docker:stable
+  # 👇 [수정 1] 여기도 'stable' 대신 최신 버전(26-cli)을 써야 에러가 안 납니다!
+  image: docker:26-cli 
   tags:
     - aws-ec2
-  # 배포는 어느 하나라도 빌드가 돌았거나, 수동 실행일 때 돌아야 함
-  # 사실상 메인 브랜치면 무조건 체크하는 게 안전함 (Compose가 알아서 판단하니까)
   rules:
+    # 👇 [수정 2] 웹에서 강제 실행할 때도 돌도록 추가
+    - if: '$CI_PIPELINE_SOURCE == "web"'
     - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "cicd"'
+  
   before_script:
-    - apk update && apk add --no-cache docker-cli-compose
+    # docker-cli-compose 설치 (26-cli 이미지에는 기본 docker는 있으므로 플러그인만 설치)
+    # 혹시 모르니 edge 저장소에서 가져오도록 명시 (가장 안전)
+    - apk update && apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community docker-cli-compose
+
   script:
     - echo "🚀 전체 서비스 배포(업데이트) 시작..."
     
-    # docker compose는 바뀐 이미지만 감지해서 해당 컨테이너만 재시작합니다.
-    # (주의: --force-recreate를 쓰면 변경 없어도 강제로 다 껐다 켭니다. 상황 봐서 빼도 됩니다.)
+    # Compose 파일이 있는 루트 위치인지 확인
+    - ls -al 
+    
+    # 1. 바뀐 이미지만 감지해서 재시작 (가장 권장)
     - docker compose up -d --remove-orphans
     
-    # 찌꺼기 이미지 정리
+    # 2. 찌꺼기 정리
     - docker image prune -f

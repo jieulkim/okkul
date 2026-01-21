@@ -4,7 +4,7 @@ stages:
 # [백엔드 배포]
 deploy-be:
   stage: deploy
-  image: docker:stable
+  image: eclipse-temurin:21-jdk-alpine
 
   tags:
     - aws-ec2
@@ -16,7 +16,7 @@ deploy-be:
 
   before_script:
     - apk update
-    - apk add --no-cache openjdk21 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
+    - apk add --no-cache docker
     - chmod +x be/gradlew
   
   script:

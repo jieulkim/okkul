@@ -15,7 +15,8 @@ deploy-be:
         - be/**/*
 
   before_script:
-    - apk add --no-cache openjdk21
+    - apk update
+    - apk add --no-cache openjdk21 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
     - chmod +x be/gradlew
   
   script:

@@ -14,7 +14,18 @@ const router = createRouter({
       path: '/practice',
       name: 'practice',
       component: PracticeView
+    },
+    {
+      path: '/mypage',
+      name: 'mypage',
+      component: () => import('../views/mypage/MyPageView.vue')
     }
+    // reports 라우트는 나중에 추가
+    // {
+    //   path: '/reports',
+    //   name: 'reports',
+    //   component: () => import('../views/reports/ReportsView.vue')
+    // }
   ]
 })
 

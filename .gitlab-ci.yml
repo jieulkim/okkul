@@ -15,7 +15,7 @@ deploy-be:
 
   before_script:
     - apk update
-    - apk add --no-cache docker
+    - apk add --no-cache docker docker-cli-compose
     - chmod +x be/gradlew
   
   script:

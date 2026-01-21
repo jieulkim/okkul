@@ -1,7 +1,6 @@
 stages:
   - deploy
 
-# [백엔드 배포]
 deploy-be:
   stage: deploy
   image: eclipse-temurin:21-jdk-alpine
@@ -20,7 +19,12 @@ deploy-be:
     - chmod +x be/gradlew
   
   script:
-    - echo "Backend 배포 시작..."
+    - echo "Backend 이미지 빌드..."
     - cd be
     - ./gradlew test
     - ./gradlew bootBuildImage -x test
+
+    - echo "배포 시작"
+    - cd ..
+    - docker compose up -d --force-recreate backend
+    - docker image prune -f

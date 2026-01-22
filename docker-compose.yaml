@@ -1,0 +1,18 @@
+services:
+  backend:
+    image: backend:${TAG}
+    container_name: backend-${TAG}
+    restart: always
+    networks:
+      - server-tools_default
+  
+  frontend:
+    image: frontend:${TAG}
+    container_name: frontend-${TAG}
+    restart: always
+    networks:
+      - server-tools_default
+
+networks:
+  server-tools_default:
+    external: true

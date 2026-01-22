@@ -53,7 +53,7 @@ const handleDarkModeToggle = () => {
 
 // 네비게이션 메뉴
 const navItems = [
-  { path: '/', label: '실전 모의고사', icon: 'assignment' },
+  { path: '/exam', label: '실전 모의고사', icon: 'assignment' },
   { path: '/practice', label: '유형별 연습', icon: 'category' },
   { path: '/reports', label: '피드백 리포트', icon: 'assessment' }
 ]
@@ -65,7 +65,7 @@ const navItems = [
       <!-- 로고 - 홈으로 이동 -->
       <router-link to="/" class="logo">
         <span class="logo-icon">🍯</span>
-        <span class="logo-text">오픽꿀잼</span>
+        <span class="logo-text">오꿀</span>
       </router-link>
 
       <!-- 네비게이션 메뉴 -->

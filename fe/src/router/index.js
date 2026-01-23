@@ -5,6 +5,7 @@ import PracticeQuestionView from '../views/practice/PracticeQuestionView.vue'
 import ExamView from '../views/exam/ExamView.vue'
 import SurveyView from '../views/survey/SurveyView.vue'
 import SurveyLevelView from '../views/survey/SurveyLevelView.vue'
+import SetupView from '../views/exam/SetupView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -24,6 +25,8 @@ const router = createRouter({
       name: 'practice-question',
       component: PracticeQuestionView
     },
+    
+    // 나중에 만들 예정
     {
       path: '/mypage',
       name: 'mypage',
@@ -33,6 +36,11 @@ const router = createRouter({
       path: '/exam',
       name: 'exam',
       component: ExamView
+    },
+    {
+      path: '/exam/setup',
+      name: 'exam-setup',
+      component: SetupView
     },
     {
       path: '/survey',

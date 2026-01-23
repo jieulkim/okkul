@@ -1,69 +1,84 @@
 <script setup>
 import { ref, inject } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 const router = useRouter()
+const route = useRoute()
 const isDarkMode = inject('isDarkMode', ref(false))
 
 // 선택된 레벨
 const selectedLevel = ref(null)
 
-// 레벨 옵션 (test_level.html 기준)
+// 현재 재생 중인 오디오를 추적하기 위한 변수
+const currentAudio = ref(null)
+
+// 레벨 옵션
 const levels = [
   {
     id: 243,
     level: 1,
-    audioUrl: '/Audio/EN/0.mp3',
+    audioUrl: 'https://opickoreademo.multicampus.com/Audio/EN/0.mp3',
     description: '나는 10단어 이하의 단어로 말할 수 있습니다.'
   },
   {
     id: 244,
     level: 2,
-    audioUrl: '/Audio/EN/1.mp3',
+    audioUrl: 'https://opickoreademo.multicampus.com/Audio/EN/1.mp3',
     description: '나는 기본적인 물건, 색깔, 요일, 음식, 의류, 숫자 등을 말할 수 있습니다. 나는 항상 완벽한 문장을 구사하지는 못하고 간단한 질문도 하기 어렵습니다.'
   },
   {
     id: 245,
     level: 3,
-    audioUrl: '/Audio/EN/2.mp3',
+    audioUrl: 'https://opickoreademo.multicampus.com/Audio/EN/2.mp3',
     description: '나는 나 자신, 직장, 친숙한 사람과 장소, 일상에 대한 기본적인 정보를 간단한 문장으로 전달할 수 있습니다. 간단한 질문을 할 수 있습니다.'
   },
   {
     id: 246,
     level: 4,
-    audioUrl: '/Audio/EN/3.mp3',
+    audioUrl: 'https://opickoreademo.multicampus.com/Audio/EN/3.mp3',
     description: '나는 나 자신, 일상, 일/학교, 취미에 대해 간단한 대화를 할 수 있습니다. 나는 이런 친숙한 주제와 일상에 대해 일련의 간단한 문장들을 쉽게 만들어 낼 수 있습니다. 내가 필요한 것을 얻기 위한 질문도 할 수 있습니다.'
   },
   {
     id: 247,
     level: 5,
-    audioUrl: '/Audio/EN/4.mp3',
+    audioUrl: 'https://opickoreademo.multicampus.com/Audio/EN/4.mp3',
     description: '나는 친숙한 주제와 가정, 일/학교, 개인 및 사회적 관심사에 대해 대화할 수 있습니다. 나는 일어난 일과 일어나고 있는 일, 일어날 일에 대해 문장을 연결하여 말할 수 있습니다. 필요한 경우 설명도 할 수 있습니다. 일상 생활에서 예기치 못한 상황이 발생하더라도 임기응변으로 대처할 수 있습니다.'
   },
   {
     id: 248,
     level: 6,
-    audioUrl: '/Audio/EN/5.mp3',
+    audioUrl: 'https://opickoreademo.multicampus.com/Audio/EN/5.mp3',
     description: '나는 일/학교, 개인적인 관심사, 시사 문제에 대한 어떤 대화나 토론에도 자신 있게 참여할 수 있습니다. 나는 대부분의 주제에 관해 높은 수준의 정확성과 폭넓은 어휘로 상세히 설명할 수 있습니다.'
   }
 ]
 
 // 오디오 재생
 const playAudio = (audioUrl) => {
+  if (currentAudio.value) {
+    currentAudio.value.pause()
+    currentAudio.value.currentTime = 0
+  }
   const audio = new Audio(audioUrl)
+  currentAudio.value = audio
   audio.play().catch(e => console.error('오디오 재생 실패:', e))
 }
 
-// 이전/다음
+// 이전/다음 이동 로직
 const goBack = () => {
-  router.push('/survey')
+  if (currentAudio.value) currentAudio.value.pause()
+  router.back()
 }
 
 const goNext = () => {
   if (selectedLevel.value) {
-    // TODO: API에 레벨 저장
-    console.log('Selected level:', selectedLevel.value)
-    router.push('/exam/setup')
+    if (currentAudio.value) currentAudio.value.pause()
+    
+    // 쿼리 파라미터가 mode=exam이면 Setup으로, 아니면 Practice로 이동
+    if (route.query.mode === 'exam') {
+      router.push('/exam/setup')
+    } else {
+      router.push('/practice')
+    }
   }
 }
 
@@ -72,7 +87,7 @@ const showGuide = ref(false)
 </script>
 
 <template>
-  <div class="assessment-page">
+  <div class="assessment-page" :class="{ 'dark-mode': isDarkMode }">
     <header class="assessment-header">
       <div class="info-section">
         <button @click="showGuide = true" class="info-btn">
@@ -80,7 +95,6 @@ const showGuide = ref(false)
         </button>
       </div>
 
-      <!-- Step Progress -->
       <nav class="step-progress">
         <div class="step completed">
           <div class="step-content">
@@ -170,7 +184,6 @@ const showGuide = ref(false)
       </button>
     </footer>
 
-    <!-- 안내 모달 -->
     <transition name="fade">
       <div v-if="showGuide" class="modal-overlay" @click="showGuide = false">
         <div class="modal-card" @click.stop>
@@ -303,7 +316,7 @@ const showGuide = ref(false)
 
 .check-icon {
   font-size: 14px !important;
-  color: #4CAF50;
+  color: #1e293b;
 }
 
 .step-label {

@@ -10,8 +10,7 @@ deploy-be:
   tags:
     - aws-ec2
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "web"'
-    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "cicd"'
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "cicd"'
       changes:
         - be/**/*
 
@@ -24,7 +23,7 @@ deploy-be:
     - echo "Backend 이미지 빌드..."
     - cd be
     - ./gradlew test
-    - ./gradlew bootBuildImage -x test
+    - ./gradlew bootBuildImage --imageName=backend:$CI_COMMIT_REF_SLUG -x test
 
 # [FE 빌드] - Docker 환경이면 충분
 build-fe:
@@ -33,14 +32,13 @@ build-fe:
   tags:
     - aws-ec2
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "web"'
-    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "cicd"'
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "cicd"'
       changes:
         - fe/**/* # FE 폴더가 변했을 때만 실행
   script:
     - echo "⚛️ Frontend 빌드 시작..."
     - cd fe
-    - docker build -t frontend:latest .
+    - docker build -t frontend:$CI_COMMIT_REF_SLUG .
 
 # --------------------------------------------------------------------------
 # 2. 통합 배포 스테이지 (항상 실행)
@@ -52,9 +50,7 @@ deploy-all:
   tags:
     - aws-ec2
   rules:
-    # 👇 [수정 2] 웹에서 강제 실행할 때도 돌도록 추가
-    - if: '$CI_PIPELINE_SOURCE == "web"'
-    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "cicd"'
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "cicd"'
   
   before_script:
     # docker-cli-compose 설치 (26-cli 이미지에는 기본 docker는 있으므로 플러그인만 설치)
@@ -68,7 +64,7 @@ deploy-all:
     - ls -al 
     
     # 1. 바뀐 이미지만 감지해서 재시작 (가장 권장)
-    - docker compose up -d --remove-orphans
+    - TAG=$CI_COMMIT_REF_SLUG docker compose -p s14p11a108-$CI_COMMIT_REF_SLUG up -d --remove-orphans
     
     # 2. 찌꺼기 정리
     - docker image prune -f

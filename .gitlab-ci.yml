@@ -7,6 +7,22 @@ deploy-be:
   stage: build
   image: eclipse-temurin:21-jdk-alpine
 
+  services:
+    - name: postgres:16.11
+      alias: postgres-test
+    - name: redis:7.2-alpine
+      alias: redis-test
+
+  variables:
+    POSTGRES_DB: test_db
+    POSTGRES_USER: test_user
+    POSTGRES_PASSWORD: test_password
+    DATABASE_URL: jdbc:postgresql://postgres-test:5432/test_db
+    DATABASE_USERNAME: test_user
+    DATABASE_PASSWORD: test_password
+    REDIS_HOST: redis-test
+    REDIS_PORT: 6379
+
   tags:
     - aws-ec2
   rules:
@@ -62,6 +78,13 @@ deploy-all:
     
     # Compose 파일이 있는 루트 위치인지 확인
     - ls -al 
+    
+    # 1. 현재 브랜치 이름에 "_env"를 붙여서 타겟 변수명을 만듭니다. (예: master_env)
+    - TARGET_VAR_NAME="${CI_COMMIT_BRANCH}_env"
+
+    # 3. [핵심] eval을 사용하여 동적으로 변수 값을 파일로 저장
+    # 설명: \$$TARGET_VAR_NAME 부분이 $master_env 로 치환되고, 그 안의 값을 echo 함
+    - eval "echo \"\$$TARGET_VAR_NAME\"" > .env
     
     # 1. 바뀐 이미지만 감지해서 재시작 (가장 권장)
     - TAG=$CI_COMMIT_REF_SLUG docker compose -p s14p11a108-$CI_COMMIT_REF_SLUG up -d --remove-orphans

@@ -48,7 +48,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
 		// 3. 첫 로그인 판단 로직 (User 엔티티 상태로 판단)
-		boolean isFirst = (user.getCurrentLevel() == null);
+		boolean isFirst = (user.getTargetLevel() == null);
 
 		// 4. JWT 생성
 		String accessToken = jwtProvider.createAccessToken(user.getId(), user.getRoles());

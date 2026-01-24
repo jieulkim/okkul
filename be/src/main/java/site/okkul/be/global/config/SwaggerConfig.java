@@ -11,7 +11,12 @@ import org.springframework.http.HttpHeaders;
 @Configuration
 public class SwaggerConfig {
 
+	// 스웨거에서 사용할 인증 방식 이름
 	public static final String BEARER_AUTH = "BearerAuth";
+
+	// 태그 이름들
+	public static final String AUTH = "Auth";
+	public static final String USER = "User";
 
 	private final SecurityScheme securityScheme = new SecurityScheme()
 			.type(SecurityScheme.Type.HTTP)

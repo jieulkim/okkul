@@ -108,4 +108,27 @@ public class User {
 	 */
 	@Column(nullable = false, updatable = false)
 	private Instant createdAt;
+
+	/**
+	 * 닉네임 변경
+	 */
+	public void updateNickname(String newNickname) {
+		if (newNickname != null && !newNickname.isBlank()) {
+			this.name = newNickname;
+		}
+	}
+
+	/**
+	 * 목표 등급 변경
+	 */
+	public void updateTargetLevel(OpicLevel targetLevel) {
+		this.targetLevel = targetLevel;
+	}
+
+	/**
+	 * 프로필 이미지 URL 변경
+	 */
+	public void updateProfileImage(String profileImageUrl) {
+		this.profileImageUrl = profileImageUrl;
+	}
 }

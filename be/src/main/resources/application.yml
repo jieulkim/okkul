@@ -32,6 +32,9 @@ spring:
               - email
               - profile
 
+server:
+  forward-headers-strategy: framework
+
 # 어플리케이션 설정
 app:
   frontend:

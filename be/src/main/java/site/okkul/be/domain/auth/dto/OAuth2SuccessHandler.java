@@ -12,6 +12,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
+import site.okkul.be.domain.auth.service.JwtProvider;
 import site.okkul.be.domain.user.entity.OAuthProvider;
 import site.okkul.be.domain.user.entity.User;
 import site.okkul.be.domain.user.repository.UserJpaRepository;
@@ -22,8 +23,12 @@ import site.okkul.be.domain.user.repository.UserJpaRepository;
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
 	private final UserJpaRepository userRepository; // ★ DB 조회를 위해 주입
+
+	private final JwtProvider jwtProvider;
+
 	@Value("${app.frontend.url}")
 	private String frontendUrl;
+
 
 	@Override
 	public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException {
@@ -44,12 +49,10 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
 		// 3. 첫 로그인 판단 로직 (User 엔티티 상태로 판단)
 		boolean isFirst = (user.getCurrentLevel() == null);
-		Long userId = user.getId();
 
 		// 4. JWT 생성
-		// TODO: 실제 JWT 생성 로직으로 교체 필요
-		String accessToken = "MOCK_ACCESS_" + userId;
-		String refreshToken = "MOCK_REFRESH_" + userId;
+		String accessToken = jwtProvider.createAccessToken(user.getId(), user.getRoles());
+		String refreshToken = jwtProvider.createRefreshToken(user.getId());
 
 		// 5. 프론트 리다이렉트
 		// TODO: 프론트팀과 협의하여 URL 및 파라미터 결정

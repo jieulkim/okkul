@@ -1,4 +1,4 @@
-package site.okkul.be.domain.auth.service;
+package site.okkul.be.global.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
@@ -8,13 +8,17 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import site.okkul.be.domain.auth.dto.OAuth2SuccessHandler;
+import site.okkul.be.domain.auth.filter.JwtAuthenticationFilter;
+import site.okkul.be.domain.auth.service.CustomOAuth2UserService;
 
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
 	private final CustomOAuth2UserService customOAuth2UserService;
 	private final OAuth2SuccessHandler oAuth2SuccessHandler;
+	private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -46,7 +50,11 @@ public class SecurityConfig {
 						.userInfoEndpoint(userInfo -> userInfo
 								.userService(customOAuth2UserService)
 						)
-				);
+				)
+
+				// 6. JWT 인증 필터 추가
+				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+		;
 
 		return http.build();
 	}

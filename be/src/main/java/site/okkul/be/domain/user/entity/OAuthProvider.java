@@ -7,4 +7,8 @@ package site.okkul.be.domain.user.entity;
 public enum OAuthProvider {
 	GOOGLE,
 	;
+
+	public static OAuthProvider getProvider(String provider) {
+		return OAuthProvider.valueOf(provider.toUpperCase());
+	}
 }

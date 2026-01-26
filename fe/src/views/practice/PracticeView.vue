@@ -1,9 +1,11 @@
 <script setup>
 import { ref, computed, inject, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import SurveySelectModal from '@/components/common/SurveySelectModal.vue'
+import { Surveys } from '@/api/Surveys'
 
 const router = useRouter()
+const route = useRoute()
 const isDarkMode = inject('isDarkMode', ref(false))
 
 // 상태 관리
@@ -97,41 +99,65 @@ const fetchExistingSurveys = async () => {
   }
 };
 
-// 특정 설문 상세 조회 (MOCK)
+// 특정 설문 상세 조회
 const fetchSurveyDetails = async (surveyId) => {
   try {
-    // 실제 구현 시: const { data } = await axios.get(`/api/surveys/${surveyId}`)
-    // 여기서는 MOCK 데이터를 생성합니다.
+    const surveysApi = new Surveys();
+    const response = await surveysApi.getSurveyById(surveyId);
+    const data = response.data;
     
-    // Topic MOCK data (selected_topic join topic)
-    const mockTopics = [
-      { topicId: 1, name: '영화보기' },
-      { topicId: 2, name: '공원가기' },
-      { topicId: 3, name: '카페가기' },
-      { topicId: 4, name: '음악감상' },
-      { topicId: 5, name: '조깅' },
-      { topicId: 6, name: '걷기' },
-      { topicId: 7, name: '국내여행' },
-      { topicId: 8, name: '술집가기' },
-      { topicId: 9, name: 'TV시청' },
-      { topicId: 10, name: '독서' },
-      { topicId: 11, name: '요리하기' },
-      { topicId: 12, name: '쇼핑하기' }
-    ];
+    // 1. 기본 토픽 (selectedTopics)
+    let combinedTopics = (data.selectedTopics || []).map(t => ({
+      topicId: t.topicId,
+      name: t.topicName
+    }));
+
+    // 2. Background Survey 항목을 토픽으로 추가
+    // Occupation (직업)
+    if (data.occupation) {
+      // API에서 occupation이 어떤 형태로 오는지 확인 필요 (여기서는 string 가정)
+      // 실제 API 응답값이 "COMPANY" 등 코드라면 한글 변환 필요할 수도 있음.
+      // 현재는 받은 값 그대로 Topic으로 추가
+      combinedTopics.unshift({
+        topicId: -1, // 임시 ID (백엔드가 어떻게 처리하냐에 따라 다름, 여기서는 UI 표시용)
+        name: data.occupation,
+        type: 'background' // 구분용
+      });
+    }
+
+    // Residence (거주지)
+    if (data.residence) {
+      combinedTopics.unshift({
+        topicId: -2,
+        name: data.residence,
+        type: 'background'
+      });
+    }
+
+    // Student (학생)
+    if (data.student) {
+       combinedTopics.unshift({
+        topicId: -3,
+        name: "학생",
+        type: 'background'
+      });
+    }
 
     surveyData.value = {
-      topics: mockTopics,
-      occupation: 'COMPANY', // 예시 데이터
-      hasJob: true,
-      isStudent: false,
-      residence: '가족과 함께 거주'
+      topics: combinedTopics,
+      occupation: data.occupation,
+      hasJob: data.hasJob,
+      isStudent: data.student,
+      residence: data.residence
     };
     
     selectedTopic.value = null; // 초기화
   } catch (error) {
     console.error("설문 상세 조회 실패", error);
+    alert("설문 정보를 불러오는데 실패했습니다.");
   }
 }
+
 
 const selectType = (type) => {
   selectedType.value = type
@@ -166,8 +192,22 @@ const goToQuestionPage = () => {
   });
 };
 
-onMounted(() => {
-  fetchExistingSurveys();
+onMounted(async () => {
+  await fetchExistingSurveys();
+
+  // URL 쿼리 파라미터 확인 (설문 완료 후 돌아온 경우)
+  const { type, surveyId } = route.query;
+  
+  if (type && surveyId) {
+    // 1. 해당 Type 선택 상태 복구
+    const targetType = practiceTypes.find(t => t.id === type);
+    if (targetType) {
+      selectedType.value = targetType;
+    }
+
+    // 2. 설문 상세 데이터 로드 및 주제 선택 화면으로 전환
+    await useSelectedSurvey(Number(surveyId));
+  }
 });
 </script>
 

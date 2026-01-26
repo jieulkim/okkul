@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onUnmounted, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { Practices } from '@/api/Practices'
 
 // ============================================
 // Props 정의 (부모 컴포넌트에서 받을 데이터)
@@ -225,34 +226,60 @@ const overallFeedback = ref('')
 const analyze = async () => {
   if (!currentQuestion.value) return
 
-  // Practice_answers 테이블에 저장할 데이터 준비
-  const answerData = {
-    practice_id: props.practiceSession.practice_id,
-    set_id: props.currentQuestionSet.set_id,
-    question_id: currentQuestion.value.question_id,
-    korean_script: koreanScript.value,
-    english_script: sttResult.value,
-    // english_record_url은 audioBlob 업로드 후 받은 URL
-  }
-
   try {
-    // API 호출 (예시)
-    // const response = await fetch('/api/practice/analyze', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(answerData)
-    // })
-    // const result = await response.json()
+    const practicesApi = new Practices();
     
-    // 더미데이터 제거됨 - 실제 API 연동 필요
-    feedbackData.value = []
-    overallFeedback.value = ""
-    
-    // isAnalyzed.value = true
-    // currentPage.value = 0
+    // 1. Audio Blob 생성
+    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+    const audioFile = new File([audioBlob], "recording.wav", { type: 'audio/wav' });
 
-    // 부모 컴포넌트로 답변 제출 알림
-    emit('answer-submitted', answerData)
+    // 2. JSON 데이터 준비
+    const requestData = {
+      koreanScript: koreanScript.value,
+      englishScript: sttResult.value
+    };
+
+    // 3. Payload 생성
+    const payload = {
+      request: requestData,
+      audio: audioFile
+    };
+
+    // 4. API 호출
+    const response = await practicesApi.savePracticeSession(
+      props.practiceSession.practice_id,
+      currentQuestion.value.question_id,
+      payload
+    );
+
+    console.log("분석 결과:", response.data);
+
+    // 5. 결과 처리
+    if (response.data && response.data.feedbackResult) {
+      // API 응답 구조에 맞춰 데이터 매핑
+      // feedbackResult: { scriptCorrections: [], overallComment: "" }
+      
+      const result = response.data.feedbackResult;
+      
+      // 문장 피드백 매핑
+      feedbackData.value = (result.scriptCorrections || []).map(item => ({
+        original: item.originalSegment,
+        improved: item.correctedSegment,
+        reason: item.comment || "피드백이 없습니다."
+      }));
+
+      // 종합 피드백 매핑
+      overallFeedback.value = result.overallComment || "종합 피드백이 없습니다.";
+      
+      isAnalyzed.value = true;
+      currentPage.value = 0;
+      
+      // 부모 컴포넌트로 알림
+      emit('answer-submitted', response.data);
+    } else {
+      throw new Error("분석 결과 형식이 올바르지 않습니다.");
+    }
+
   } catch (error) {
     console.error("분석 요청 실패:", error)
     alert("분석에 실패했습니다. 다시 시도해주세요.")

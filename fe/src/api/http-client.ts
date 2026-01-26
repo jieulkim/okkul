@@ -75,6 +75,7 @@ export class HttpClient<SecurityDataType = unknown> {
     this.instance = axios.create({
       ...axiosConfig,
       baseURL: axiosConfig.baseURL || "https://api.dev.okkul.site",
+      withCredentials: true,
     });
     this.secure = secure;
     this.format = format;
@@ -98,7 +99,7 @@ export class HttpClient<SecurityDataType = unknown> {
       headers: {
         ...((method &&
           this.instance.defaults.headers[
-            method.toLowerCase() as keyof HeadersDefaults
+          method.toLowerCase() as keyof HeadersDefaults
           ]) ||
           {}),
         ...(params1.headers || {}),

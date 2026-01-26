@@ -58,21 +58,21 @@ const teachOptions = [
   { id: 1743, text: "평생교육" },
 ];
 
-// Part 1: 근무 기간 - 사업/회사
+// Part 1: 근무 기간 - 사업/회사 (1~3)
 const workPeriodOptionsCompany = [
   { id: 1731, text: "첫직장- 2개월 미만" },
   { id: 1732, text: "첫직장- 2개월 이상" },
   { id: 1733, text: "첫직장 아님 - 경험 많음" },
 ];
 
-// Part 1: 근무 기간 - 재택
+// Part 1: 근무 기간 - 재택 (1~3)
 const workPeriodOptionsHome = [
   { id: 1836, text: "첫직장- 2개월 미만" },
   { id: 1837, text: "첫직장- 2개월 이상" },
   { id: 1838, text: "첫직장 아님 - 경험 많음" },
 ];
 
-// Part 1: 근무 기간 - 교사
+// Part 1: 근무 기간 - 교사 (1~3)
 const workPeriodOptionsTeacher = [
   { id: 1747, text: "2개월 미만 - 첫직장" },
   {
@@ -109,8 +109,8 @@ const residenceOptions = [
   { id: 1709, text: "군대 막사" },
 ];
 
-// Part 4: 여가 활동
-const leisureOptions = [
+// Part 4: 여가 활동 (기본값: 하드코딩)
+const leisureOptions = ref([
   { id: 1753, text: "영화보기" },
   { id: 1754, text: "클럽/나이트클럽 가기" },
   { id: 1755, text: "공연보기" },
@@ -121,10 +121,10 @@ const leisureOptions = [
   { id: 1760, text: "해변가기" },
   { id: 1761, text: "스포츠 관람" },
   { id: 1768, text: "주거 개선" },
-];
+]);
 
-// Part 4: 취미
-const hobbyOptions = [
+// Part 4: 취미 (기본값)
+const hobbyOptions = ref([
   { id: 1770, text: "아이에게 책 읽어주기" },
   { id: 1771, text: "음악 감상하기" },
   { id: 1772, text: "악기 연주하기" },
@@ -134,10 +134,10 @@ const hobbyOptions = [
   { id: 1778, text: "그림 그리기" },
   { id: 1781, text: "요리하기" },
   { id: 1783, text: "애완동물 기르기" },
-];
+]);
 
-// Part 4: 운동
-const exerciseOptions = [
+// Part 4: 운동 (기본값)
+const exerciseOptions = ref([
   { id: 1784, text: "농구" },
   { id: 1785, text: "야구/소프트볼" },
   { id: 1786, text: "축구" },
@@ -160,16 +160,16 @@ const exerciseOptions = [
   { id: 1811, text: "낚시" },
   { id: 1813, text: "헬스" },
   { id: 1815, text: "운동을 전혀 하지 않음" },
-];
+]);
 
-// Part 4: 휴가/출장
-const holidayOptions = [
+// Part 4: 휴가/출장 (기본값)
+const holidayOptions = ref([
   { id: 1816, text: "국내출장" },
   { id: 1817, text: "해외출장" },
   { id: 1818, text: "집에서 보내는 휴가" },
   { id: 1819, text: "국내 여행" },
   { id: 1820, text: "해외 여행" },
-];
+]);
 
 // Part 4: 총 선택 개수
 const totalSelected = computed(() => {
@@ -259,38 +259,32 @@ const canGoNext = computed(() => {
     // Part 1 검증
     if (!surveyData.value.occupationAnswerId) return false;
 
+    // 사업/회사(1727)
     if (surveyData.value.occupationAnswerId === 1727) {
       if (surveyData.value.hasJob === null) return false;
-      if (surveyData.value.hasJob && !surveyData.value.workPeriodAnswerId)
-        return false;
-      if (
-        showSubQuestions.value.manager_company &&
-        surveyData.value.manager === null
-      )
-        return false;
+      if (surveyData.value.hasJob) {
+        if (!surveyData.value.workPeriodAnswerId) return false;
+        if (showSubQuestions.value.manager_company && surveyData.value.manager === null) return false;
+      }
     }
 
+    // 재택(1728)
     if (surveyData.value.occupationAnswerId === 1728) {
       if (surveyData.value.hasJob === null) return false;
-      if (surveyData.value.hasJob && !surveyData.value.workPeriodAnswerId)
-        return false;
-      if (
-        showSubQuestions.value.manager_home &&
-        surveyData.value.manager === null
-      )
-        return false;
+      if (surveyData.value.hasJob) {
+        if (!surveyData.value.workPeriodAnswerId) return false;
+        if (showSubQuestions.value.manager_home && surveyData.value.manager === null) return false;
+      }
     }
 
+    // 교사(1729)
     if (surveyData.value.occupationAnswerId === 1729) {
       if (!surveyData.value.teachAnswerId) return false;
       if (surveyData.value.hasJob === null) return false;
-      if (surveyData.value.hasJob && !surveyData.value.workPeriodAnswerId)
-        return false;
-      if (
-        showSubQuestions.value.manager_teacher &&
-        surveyData.value.manager === null
-      )
-        return false;
+      if (surveyData.value.hasJob) {
+        if (!surveyData.value.workPeriodAnswerId) return false;
+        if (showSubQuestions.value.manager_teacher && surveyData.value.manager === null) return false;
+      }
     }
 
     return true;
@@ -372,6 +366,8 @@ const submitSurvey = () => {
 };
 
 const showGuide = ref(false);
+
+
 </script>
 
 <template>

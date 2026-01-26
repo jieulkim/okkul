@@ -19,6 +19,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import site.okkul.be.domain.topic.entity.Topic;
 
 @Entity
@@ -48,14 +50,17 @@ public class QuestionSet {
 	@JoinColumn(name = "type_id", nullable = false)
 	private QuestionType questionType;
 
+	@Builder.Default
 	@OneToMany(mappedBy = "questionSet", cascade = CascadeType.ALL)
 	@OrderBy("order ASC")
 	private List<Question> questions = new ArrayList<>();
 
 	// 생성 및 수정 시점
+	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
 
+	@UpdateTimestamp
 	@Column(name = "updated_at", nullable = false)
 	private Instant updatedAt;
 

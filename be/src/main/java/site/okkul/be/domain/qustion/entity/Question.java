@@ -14,6 +14,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "question_bank")
@@ -41,9 +43,11 @@ public class Question {
 	@JoinColumn(name = "set_id", nullable = false)
 	private QuestionSet questionSet;
 
+	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
 
+	@UpdateTimestamp
 	@Column(name = "updated_at", nullable = false)
 	private Instant updatedAt;
 
@@ -51,5 +55,6 @@ public class Question {
 		this.questionText = questionText;
 		this.audioUrl = audioUrl;
 		this.order = order;
+		this.updatedAt = Instant.now();
 	}
 }

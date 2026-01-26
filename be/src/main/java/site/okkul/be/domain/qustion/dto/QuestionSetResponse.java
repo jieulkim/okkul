@@ -8,7 +8,7 @@ import site.okkul.be.domain.qustion.entity.QuestionSet;
 @Schema(description = "문항 세트 응답 정보")
 public record QuestionSetResponse(
 		@Schema(description = "세트 ID", example = "10")
-		Long id,
+		Long setId,
 
 		@Schema(description = "난이도 (1~6)", example = "4")
 		Integer level,

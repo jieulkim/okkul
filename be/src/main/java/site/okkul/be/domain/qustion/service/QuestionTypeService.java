@@ -29,8 +29,13 @@ public class QuestionTypeService {
 	}
 
 	@Transactional
-	public QuestionType create(QuestionType questionType) {
-		return questionTypeRepository.save(questionType);
+	public QuestionType create(QuestionTypeRequest questionTypeRequest) {
+		return questionTypeRepository.save(
+				QuestionType.builder()
+						.typeCode(questionTypeRequest.typeCode())
+						.description(questionTypeRequest.description())
+						.build()
+		);
 	}
 
 	@Transactional

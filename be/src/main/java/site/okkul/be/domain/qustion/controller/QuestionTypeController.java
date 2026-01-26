@@ -55,7 +55,9 @@ public class QuestionTypeController implements QuestionTypeControllerDocs {
 			@RequestBody QuestionTypeRequest questionTypeRequest
 	) {
 		// 임시 생성 로직
-		return ResponseEntity.ok(questionTypeService.create(new QuestionType()));
+		return ResponseEntity.ok(
+				questionTypeService.create(questionTypeRequest)
+		);
 	}
 
 	@Override

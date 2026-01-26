@@ -4,14 +4,14 @@
 
 -- (1) 문제 유형 (기본값)
 -- 7가지 OPIc 문제 유형 적재
-INSERT INTO question_type(type_id, type_code, description)
-VALUES (1, 'INTRODUCTION', '자기소개'),
-       (2, 'COMBO2', '두문제 콤보 - order 1 묘사 > order 2 묘사, 루틴, 비교 중 하나'),
-       (3, 'COMBO3', '세문제 콤보 - order 1 묘사 > order 2 묘사, 루틴, 비교 중 하나, order 3 과거 경험'),
-       (4, 'RP1', '롤플레이 한문제 - 정보 요청'),
-       (5, 'RP2', '롤플레이 두문제 - order 1 묘사 > order 2 이전 질문 관련 eva에게 질문하기'),
-       (6, 'RP3', '롤플레이 세문제 - order 1 정보 요청 > order 2 대안 제시 > order 3 관련 과거 경험'),
-       (7, 'AD2', '어드밴스 두문제 - order 1 비교, 묘사, 루틴 > order 2 이전 관련 이슈, 뉴스, 의견 등');
+INSERT INTO question_type(type_code, description)
+VALUES ('INTRODUCTION', '자기소개'),
+       ('COMBO2', '두문제 콤보 - order 1 묘사 > order 2 묘사, 루틴, 비교 중 하나'),
+       ('COMBO3', '세문제 콤보 - order 1 묘사 > order 2 묘사, 루틴, 비교 중 하나, order 3 과거 경험'),
+       ('RP1', '롤플레이 한문제 - 정보 요청'),
+       ('RP2', '롤플레이 두문제 - order 1 묘사 > order 2 이전 질문 관련 eva에게 질문하기'),
+       ('RP3', '롤플레이 세문제 - order 1 정보 요청 > order 2 대안 제시 > order 3 관련 과거 경험'),
+       ('AD2', '어드밴스 두문제 - order 1 비교, 묘사, 루틴 > order 2 이전 관련 이슈, 뉴스, 의견 등');
 
 
 -- ============================================================
@@ -118,3 +118,23 @@ VALUES
 (703, 'LIVE_WITH_FAMILY', '가족과 함께 거주', 7),
 (704, 'DORMITORY', '학교 기숙사', 7),
 (705, 'MILITARY_BASE', '군대 막사', 7);
+
+-- ============================================================
+-- 3. 질문 세트 (QuestionSet) 예제 데이터 적재
+-- ============================================================
+INSERT INTO question_set (level, question_cnt, topic_id, type_id, created_at, updated_at)
+VALUES (1, 1, 101, 1, NOW(), NOW()), -- 영화보기, 자기소개
+       (2, 2, 106, 2, NOW(), NOW()), -- 공원가기, 콤보2
+       (3, 3, 202, 3, NOW(), NOW());
+-- 음악감상, 콤보3
+
+-- ============================================================
+-- 4. 질문 (Question) 예제 데이터 적재
+-- ============================================================
+INSERT INTO question_bank (question_text, audio_url, order_index, set_id, created_at, updated_at)
+VALUES ('Please tell me about yourself.', 'http://example.com/audio1.mp3', 1, 1, NOW(), NOW()),
+       ('Describe your favorite park.', 'http://example.com/audio2.mp3', 1, 2, NOW(), NOW()),
+       ('What do you usually do at the park?', 'http://example.com/audio3.mp3', 2, 2, NOW(), NOW()),
+       ('What kind of music do you like?', 'http://example.com/audio4.mp3', 1, 3, NOW(), NOW()),
+       ('When do you listen to music?', 'http://example.com/audio5.mp3', 2, 3, NOW(), NOW()),
+       ('Tell me about a memorable experience related to music.', 'http://example.com/audio6.mp3', 3, 3, NOW(), NOW());

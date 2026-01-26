@@ -10,13 +10,19 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 @Entity
 @Table(name = "question_bank")
 @Getter
-@NoArgsConstructor
+@Builder
+@NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class Question {
 
 	@Id
@@ -37,9 +43,18 @@ public class Question {
 	@JoinColumn(name = "set_id", nullable = false)
 	private QuestionSet questionSet;
 
+	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
 
+	@UpdateTimestamp
 	@Column(name = "updated_at", nullable = false)
 	private Instant updatedAt;
+
+	public void update(String questionText, String audioUrl, Integer order) {
+		this.questionText = questionText;
+		this.audioUrl = audioUrl;
+		this.order = order;
+		this.updatedAt = Instant.now();
+	}
 }

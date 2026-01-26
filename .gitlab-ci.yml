@@ -40,6 +40,22 @@ build-fe:
     - cd fe
     - docker build -t frontend:$CI_COMMIT_REF_SLUG .
 
+# [AI 빌드] - Python Docker 환경
+build-ai:
+  stage: build
+  image: docker:26-cli
+  tags:
+    - aws-ec2
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "cicd"'
+      changes:
+        - ai/**/* # ai 폴더가 변했을 때만 실행
+  script:
+    - echo "🤖 AI Server 빌드 시작..."
+    # ai 폴더 안에 있는 Dockerfile을 보고 이미지를 만듭니다.
+    # 이미지 이름: 브랜치명 (예: ai:master, ai:develop)
+    - docker build -t ai:$CI_COMMIT_REF_SLUG ./ai
+
 # --------------------------------------------------------------------------
 # 2. 통합 배포 스테이지 (항상 실행)
 # --------------------------------------------------------------------------

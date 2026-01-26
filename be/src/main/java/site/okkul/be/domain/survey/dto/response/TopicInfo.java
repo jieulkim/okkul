@@ -8,7 +8,8 @@ import lombok.Getter;
 @AllArgsConstructor
 @Schema(description = "토픽 정보")
 public class TopicInfo {
-    @Schema(description = "토픽 ID", example = "101")
-    private Long topicId;
-    private String topicName;
+	@Schema(description = "토픽 ID", example = "101")
+	private Long topicId;
+	@Schema(description = "토픽 이름", example = "여행가기")
+	private String topicName;
 }

@@ -17,6 +17,7 @@ public class SwaggerConfig {
 	// 태그 이름들
 	public static final String AUTH = "Auth";
 	public static final String USER = "User";
+	public static final String QUESTION = "Question";
 	public static final String PRACTICE = "Practice";
 
 

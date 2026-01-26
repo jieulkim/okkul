@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -14,6 +16,7 @@ import site.okkul.be.domain.auth.filter.JwtAuthenticationFilter;
 import site.okkul.be.domain.auth.service.CustomOAuth2UserService;
 
 @Configuration
+@EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
 	private final CustomOAuth2UserService customOAuth2UserService;
@@ -39,7 +42,10 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
 						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-						.anyRequest().authenticated() // 그 외는 인증 필요
+						// 2. 모든 GET 요청 허용 (상단에 위치할수록 우선순위가 높음)
+						.requestMatchers(HttpMethod.GET, "/**").permitAll()
+						// 3. 그 외 (POST, PATCH, DELETE 등)는 인증 필요
+						.anyRequest().authenticated()
 				)
 
 				// 5. OAuth2 로그인 설정 (★ 여기가 핵심)

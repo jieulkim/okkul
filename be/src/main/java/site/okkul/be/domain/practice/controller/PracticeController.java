@@ -1,12 +1,16 @@
 package site.okkul.be.domain.practice.controller;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import site.okkul.be.domain.exam.dto.QuestionResponse;
 import site.okkul.be.domain.practice.docs.PracticeControllerDocs;
+import site.okkul.be.domain.practice.dto.request.PracticeFeedbackRequest;
+import site.okkul.be.domain.practice.dto.response.PracticeFeedbackResponse;
 import site.okkul.be.domain.practice.dto.response.PracticeStartResponse;
 
 import java.time.Instant;
@@ -32,5 +36,18 @@ public class PracticeController implements PracticeControllerDocs {
                 Arrays.asList(q1, q2, q3)
         );
         return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @Override
+    @PostMapping(
+            value = "/{practiceId}/questions/{questionId}/feedback",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<PracticeFeedbackResponse> savePracticeSession(
+            @PathVariable long practiceId,
+            @PathVariable long questionId,
+            @RequestPart("request")PracticeFeedbackRequest request,
+            @RequestPart("audio")MultipartFile audioFile,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return null;
     }
 }

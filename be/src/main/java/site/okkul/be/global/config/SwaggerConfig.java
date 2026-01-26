@@ -17,6 +17,8 @@ public class SwaggerConfig {
 	// 태그 이름들
 	public static final String AUTH = "Auth";
 	public static final String USER = "User";
+	public static final String PRACTICE = "Practice";
+
 
 	private final SecurityScheme securityScheme = new SecurityScheme()
 			.type(SecurityScheme.Type.HTTP)

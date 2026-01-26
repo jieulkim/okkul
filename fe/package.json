@@ -10,10 +10,12 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test:unit": "vitest"
+    "test:unit": "vitest",
+    "generate-api": "swagger-typescript-api generate -p https://api.dev.okkul.site/v3/api-docs -o ./src/api -n myApi.ts --modular -d --extract-request-body --extract-response-body --extract-response-error --axios"
   },
   "dependencies": {
     "pinia": "^3.0.4",
+    "swagger-typescript-api": "^13.2.16",
     "vue": "^3.5.26",
     "vue-router": "^4.6.4"
   },

@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed, inject } from 'vue'
+import { ref, computed, inject, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import SurveySelectModal from '@/components/common/SurveySelectModal.vue'
 
 const router = useRouter()
 const isDarkMode = inject('isDarkMode', ref(false))
@@ -9,7 +10,9 @@ const isDarkMode = inject('isDarkMode', ref(false))
 const currentStep = ref('type') 
 const selectedType = ref(null)
 const hoveredType = ref(null)
-const showTopicConfirmPopup = ref(false)
+const showSurveySelectModal = ref(false)
+const existingSurveys = ref([])
+const selectedTopic = ref(null)
 
 // [사용자 요청] 유형별 상세 정보 데이터
 const practiceTypes = [
@@ -71,29 +74,101 @@ const practiceTypes = [
   }
 ]
 
-// 가상 설문 데이터 (실제 데이터는 API/Store 연동)
+// 설문 데이터 (API 응답 구조 반영)
 const surveyData = ref({
-  job: '직업 있음',
-  student: '학생 아님',
-  dwelling: '가족과 함께 거주',
-  hobbies: ['영화보기', '공원가기', '카페가기', '음악감상', '조깅', '걷기', '국내여행', '술집가기', 'TV시청', '독서', '요리하기', '쇼핑하기']
+  topics: [],     // selected_topic -> topic (12개 이상)
+  occupation: '', // 직업 (Part 1)
+  hasJob: false,  // 직업 유무
+  isStudent: false, // 학생 여부 (Part 2)
+  residence: ''   // 거주지 (Part 3)
 })
+
+// ERD/API 참고용 데이터 로드 로직 (ExamView와 동일하게 유지)
+const fetchExistingSurveys = async () => {
+  try {
+    // 실제 구현 시: const { data } = await axios.get('/api/surveys/me')
+    // 현재는 더미 데이터를 ERD 구조에 맞춰 유지
+    existingSurveys.value = [
+      { surveyId: 101, createdAt: '2026-01-21T14:00:00', level: 5, occupation: '직장인', topics: [1, 5, 12] },
+      { surveyId: 102, createdAt: '2026-01-25T09:30:00', level: 4, occupation: '학생', topics: [2, 8, 15] }
+    ];
+  } catch (error) {
+    console.error("설문 목록 로드 실패", error);
+  }
+};
+
+// 특정 설문 상세 조회 (MOCK)
+const fetchSurveyDetails = async (surveyId) => {
+  try {
+    // 실제 구현 시: const { data } = await axios.get(`/api/surveys/${surveyId}`)
+    // 여기서는 MOCK 데이터를 생성합니다.
+    
+    // Topic MOCK data (selected_topic join topic)
+    const mockTopics = [
+      { topicId: 1, name: '영화보기' },
+      { topicId: 2, name: '공원가기' },
+      { topicId: 3, name: '카페가기' },
+      { topicId: 4, name: '음악감상' },
+      { topicId: 5, name: '조깅' },
+      { topicId: 6, name: '걷기' },
+      { topicId: 7, name: '국내여행' },
+      { topicId: 8, name: '술집가기' },
+      { topicId: 9, name: 'TV시청' },
+      { topicId: 10, name: '독서' },
+      { topicId: 11, name: '요리하기' },
+      { topicId: 12, name: '쇼핑하기' }
+    ];
+
+    surveyData.value = {
+      topics: mockTopics,
+      occupation: 'COMPANY', // 예시 데이터
+      hasJob: true,
+      isStudent: false,
+      residence: '가족과 함께 거주'
+    };
+    
+    selectedTopic.value = null; // 초기화
+  } catch (error) {
+    console.error("설문 상세 조회 실패", error);
+  }
+}
 
 const selectType = (type) => {
   selectedType.value = type
-  showTopicConfirmPopup.value = true
+  showSurveySelectModal.value = true
+}
+
+const startNewSurvey = () => {
+  router.push({ path: '/survey', query: { from: 'practice', type: selectedType.value?.id } });
+};
+
+const useSelectedSurvey = async (surveyId) => {
+  console.log('Use existing survey:', surveyId);
+  await fetchSurveyDetails(surveyId);
+  showSurveySelectModal.value = false;
+  currentStep.value = 'topic-check';
+};
+
+const selectTopic = (topic) => {
+  selectedTopic.value = topic;
 }
 
 const goToQuestionPage = () => {
+  if (!selectedTopic.value) return;
+  
   router.push({
     name: 'practice-question',
-    state: {
-      typeId: selectedType.value.id,
-      typeName: selectedType.value.name,
-      surveyHobbies: surveyData.value.hobbies
+    query: { 
+      type: selectedType.value?.id,
+      topic: selectedTopic.value.topicId,
+      topicName: selectedTopic.value.name
     }
-  })
-}
+  });
+};
+
+onMounted(() => {
+  fetchExistingSurveys();
+});
 </script>
 
 <template>
@@ -125,31 +200,61 @@ const goToQuestionPage = () => {
     </div>
 
     <div v-else-if="currentStep === 'topic-check'" class="container">
-      <h1 class="page-title">나의 연습 조건 확인</h1>
+      <h1 class="page-title">연습 주제 선택</h1>
+      
       <div class="condition-card">
-        <div class="section-label">선택한 주제 (취미/여가)</div>
-        <div class="tag-group">
-          <span v-for="h in surveyData.hobbies" :key="h" class="hobby-tag"># {{ h }}</span>
+        <div class="section-top">
+          <div class="section-label">주제 선택 (취미/여가)</div>
+          <p class="section-desc">연습하고 싶은 주제를 하나 선택해주세요.</p>
+          <div class="tag-group">
+            <button 
+              v-for="t in surveyData.topics" 
+              :key="t.topicId" 
+              class="topic-btn"
+              :class="{ active: selectedTopic?.topicId === t.topicId }"
+              @click="selectTopic(t)"
+            >
+              # {{ t.name }}
+            </button>
+          </div>
         </div>
-        <div class="status-row">
-          <div class="status-box"><span>직업</span><br><b>{{ surveyData.job }}</b></div>
-          <div class="status-box"><span>학생</span><br><b>{{ surveyData.student }}</b></div>
-          <div class="status-box"><span>거주</span><br><b>{{ surveyData.dwelling }}</b></div>
+
+        <div class="section-divider"></div>
+
+        <div class="section-bottom">
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">직업</span>
+              <span class="info-value">{{ surveyData.hasJob ? '있음' : '없음' }} ({{ surveyData.occupation }})</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">학생</span>
+              <span class="info-value">{{ surveyData.isStudent ? '학생임' : '아님' }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">거주</span>
+              <span class="info-value">{{ surveyData.residence }}</span>
+            </div>
+          </div>
         </div>
       </div>
-      <button class="start-btn" @click="goToQuestionPage">이 조건으로 연습 시작 🚀</button>
+      
+      <button 
+        class="start-btn" 
+        @click="goToQuestionPage"
+        :disabled="!selectedTopic"
+      >
+        선택한 주제로 연습 시작 🚀
+      </button>
     </div>
 
-    <div v-if="showTopicConfirmPopup" class="popup-overlay">
-      <div class="popup-content">
-        <div class="okkul">🐷</div>
-        <h3>기존 설문 데이터를 사용하시겠습니까?</h3>
-        <div class="btns">
-          <button @click="router.push('/survey')">새로 작성</button>
-          <button class="primary" @click="showTopicConfirmPopup = false; currentStep = 'topic-check'">네, 그대로 사용</button>
-        </div>
-      </div>
-    </div>
+    <SurveySelectModal
+      :isVisible="showSurveySelectModal"
+      :existingSurveys="existingSurveys"
+      @start-new="startNewSurvey"
+      @use-selected="useSelectedSurvey"
+      @close="showSurveySelectModal = false"
+    />
 
   </div>
 </template>
@@ -176,21 +281,118 @@ const goToQuestionPage = () => {
 .diff-box { font-size: 12px; text-align: left; color: #1e293b; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
 .info-text { font-size: 12px; color: #64748b; line-height: 1.5; text-align: left; }
 
-.hobby-tag { display: inline-block; padding: 6px 12px; background: #f1f5f9; border-radius: 50px; margin: 4px; font-size: 13px; font-weight: 600; }
-.status-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 20px; }
-.status-box { background: #fffef0; border: 2px solid #FFD700; padding: 15px; border-radius: 15px; font-size: 14px; }
+/* Topic Selection Styles */
+.condition-card {
+  background: white;
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.section-label {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+.section-desc {
+  color: #64748b;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.tag-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 30px;
+}
+
+.topic-btn {
+  padding: 10px 20px;
+  border-radius: 50px;
+  border: 2px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.topic-btn:hover {
+  border-color: #FFD700;
+  color: #d97706;
+}
+
+.topic-btn.active {
+  background: #fffef0;
+  border-color: #FFD700;
+  color: #d97706;
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+}
+
+.section-divider {
+  height: 1px;
+  background: #e2e8f0;
+  margin: 30px 0;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 16px;
+}
+
+.info-label {
+  font-size: 14px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+}
 
 .start-btn { 
-  display: block; width: 300px; margin: 40px auto; padding: 20px; background: #FFD700; 
-  border: 2px solid #000; border-radius: 50px; font-size: 18px; font-weight: 900; cursor: pointer; box-shadow: 0 4px 0 #000;
+  display: block; width: 100%; max-width: 400px; margin: 40px auto 0; padding: 20px; 
+  background: #FFD700; border: none; border-radius: 16px; 
+  font-size: 18px; font-weight: 800; color: #1e293b;
+  cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
 }
-.popup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; z-index: 100; }
-.popup-content { background: white; padding: 40px; border-radius: 30px; text-align: center; width: 400px; }
-.btns { display: flex; gap: 10px; margin-top: 25px; }
-.btns button { flex: 1; padding: 15px; border-radius: 12px; border: none; cursor: pointer; font-weight: bold; }
-.btns button.primary { background: #FFD700; }
+
+.start-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background: #ffc800;
+}
+
+.start-btn:disabled {
+  background: #cbd5e1;
+  color: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
 
 /* 다크모드 간단 대응 */
 .dark-mode .type-card { background: #1e293b; border-color: #334155; color: white; }
 .dark-mode .hover-details { background: rgba(30, 41, 59, 0.98); }
+.dark-mode .condition-card { background: #1e293b; }
+.dark-mode .section-label, .dark-mode .info-value { color: #f1f5f9; }
+.dark-mode .topic-btn { background: #0f172a; border-color: #334155; color: #94a3b8; }
+.dark-mode .topic-btn.active { background: #422006; border-color: #FFD700; color: #fbbf24; }
+.dark-mode .info-item { background: #0f172a; }
 </style>

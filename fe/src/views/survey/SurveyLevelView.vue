@@ -1,89 +1,103 @@
 <script setup>
-import { ref, inject } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, inject, onBeforeUnmount } from "vue";
+import { useRouter, useRoute } from "vue-router";
 
-const router = useRouter()
-const route = useRoute()
-const isDarkMode = inject('isDarkMode', ref(false))
+const router = useRouter();
+const route = useRoute();
+const isDarkMode = inject("isDarkMode", ref(false));
 
-// 선택된 레벨
-const selectedLevel = ref(null)
+const currentStep = ref(2);
+const selectedLevel = ref(null);
 
-// 현재 재생 중인 오디오를 추적하기 위한 변수
-const currentAudio = ref(null)
+// 현재 재생 중인 오디오를 추적
+const currentAudio = ref(null);
 
 // 레벨 옵션
 const levels = [
   {
-    id: 243,
+    id: 1,
     level: 1,
-    audioUrl: 'https://opickoreademo.multicampus.com/Audio/EN/0.mp3',
-    description: '나는 10단어 이하의 단어로 말할 수 있습니다.'
+    audioUrl: "https://opickoreademo.multicampus.com/Audio/EN/0.mp3",
+    description: "나는 10단어 이하의 단어로 말할 수 있습니다.",
   },
   {
-    id: 244,
+    id: 2,
     level: 2,
-    audioUrl: 'https://opickoreademo.multicampus.com/Audio/EN/1.mp3',
-    description: '나는 기본적인 물건, 색깔, 요일, 음식, 의류, 숫자 등을 말할 수 있습니다. 나는 항상 완벽한 문장을 구사하지는 못하고 간단한 질문도 하기 어렵습니다.'
+    audioUrl: "https://opickoreademo.multicampus.com/Audio/EN/1.mp3",
+    description:
+      "나는 기본적인 물건, 색깔, 요일, 음식, 의류, 숫자 등을 말할 수 있습니다. 나는 항상 완벽한 문장을 구사하지는 못하고 간단한 질문도 하기 어렵습니다.",
   },
   {
-    id: 245,
+    id: 3,
     level: 3,
-    audioUrl: 'https://opickoreademo.multicampus.com/Audio/EN/2.mp3',
-    description: '나는 나 자신, 직장, 친숙한 사람과 장소, 일상에 대한 기본적인 정보를 간단한 문장으로 전달할 수 있습니다. 간단한 질문을 할 수 있습니다.'
+    audioUrl: "https://opickoreademo.multicampus.com/Audio/EN/2.mp3",
+    description:
+      "나는 나 자신, 직장, 친숙한 사람과 장소, 일상에 대한 기본적인 정보를 간단한 문장으로 전달할 수 있습니다. 간단한 질문을 할 수 있습니다.",
   },
   {
-    id: 246,
+    id: 4,
     level: 4,
-    audioUrl: 'https://opickoreademo.multicampus.com/Audio/EN/3.mp3',
-    description: '나는 나 자신, 일상, 일/학교, 취미에 대해 간단한 대화를 할 수 있습니다. 나는 이런 친숙한 주제와 일상에 대해 일련의 간단한 문장들을 쉽게 만들어 낼 수 있습니다. 내가 필요한 것을 얻기 위한 질문도 할 수 있습니다.'
+    audioUrl: "https://opickoreademo.multicampus.com/Audio/EN/3.mp3",
+    description:
+      "나는 나 자신, 일상, 일/학교, 취미에 대해 간단한 대화를 할 수 있습니다. 나는 이런 친숙한 주제와 일상에 대해 일련의 간단한 문장들을 쉽게 만들어 낼 수 있습니다. 내가 필요한 것을 얻기 위한 질문도 할 수 있습니다.",
   },
   {
-    id: 247,
+    id: 5,
     level: 5,
-    audioUrl: 'https://opickoreademo.multicampus.com/Audio/EN/4.mp3',
-    description: '나는 친숙한 주제와 가정, 일/학교, 개인 및 사회적 관심사에 대해 대화할 수 있습니다. 나는 일어난 일과 일어나고 있는 일, 일어날 일에 대해 문장을 연결하여 말할 수 있습니다. 필요한 경우 설명도 할 수 있습니다. 일상 생활에서 예기치 못한 상황이 발생하더라도 임기응변으로 대처할 수 있습니다.'
+    audioUrl: "https://opickoreademo.multicampus.com/Audio/EN/4.mp3",
+    description:
+      "나는 친숙한 주제와 가정, 일/학교, 개인 및 사회적 관심사에 대해 대화할 수 있습니다. 나는 일어난 일과 일어나고 있는 일, 일어날 일에 대해 문장을 연결하여 말할 수 있습니다. 필요한 경우 설명도 할 수 있습니다. 일상 생활에서 예기치 못한 상황이 발생하더라도 임기응변으로 대처할 수 있습니다.",
   },
   {
-    id: 248,
+    id: 6,
     level: 6,
-    audioUrl: 'https://opickoreademo.multicampus.com/Audio/EN/5.mp3',
-    description: '나는 일/학교, 개인적인 관심사, 시사 문제에 대한 어떤 대화나 토론에도 자신 있게 참여할 수 있습니다. 나는 대부분의 주제에 관해 높은 수준의 정확성과 폭넓은 어휘로 상세히 설명할 수 있습니다.'
-  }
-]
+    audioUrl: "https://opickoreademo.multicampus.com/Audio/EN/5.mp3",
+    description:
+      "나는 일/학교, 개인적인 관심사, 시사 문제에 대한 어떤 대화나 토론에도 자신 있게 참여할 수 있습니다. 나는 대부분의 주제에 관해 높은 수준의 정확성과 폭넓은 어휘로 상세히 설명할 수 있습니다.",
+  },
+];
 
 // 오디오 재생
-const playAudio = (audioUrl) => {
+const playAudio = (url) => {
   if (currentAudio.value) {
-    currentAudio.value.pause()
-    currentAudio.value.currentTime = 0
+    currentAudio.value.pause();
+    currentAudio.value = null;
   }
-  const audio = new Audio(audioUrl)
-  currentAudio.value = audio
-  audio.play().catch(e => console.error('오디오 재생 실패:', e))
-}
+  currentAudio.value = new Audio(url);
+  currentAudio.value.play();
+};
 
-// 이전/다음 이동 로직
-const goBack = () => {
-  if (currentAudio.value) currentAudio.value.pause()
-  router.back()
-}
-
-const goNext = () => {
-  if (selectedLevel.value) {
-    if (currentAudio.value) currentAudio.value.pause()
-    
-    // 쿼리 파라미터가 mode=exam이면 Setup으로, 아니면 Practice로 이동
-    if (route.query.mode === 'exam') {
-      router.push('/exam/setup')
-    } else {
-      router.push('/practice')
-    }
+// 컴포넌트 언마운트 시 오디오 정지
+onBeforeUnmount(() => {
+  if (currentAudio.value) {
+    currentAudio.value.pause();
+    currentAudio.value = null;
   }
-}
+});
 
-// 안내 팝업
-const showGuide = ref(false)
+// Next 버튼 클릭 - from 파라미터에 따라 분기
+const goNext = async () => {
+  if (!selectedLevel.value) {
+    alert("레벨을 선택해주세요.");
+    return;
+  }
+
+  // 오디오 정지
+  if (currentAudio.value) {
+    currentAudio.value.pause();
+    currentAudio.value = null;
+  }
+
+  // 시험 모드에서 진입한 경우 기기 설정(Setup) 페이지로 이동
+  if (route.query.from === 'exam') {
+    router.push('/exam/setup');
+  } else {
+    // 일반 연습 모드인 경우의 처리
+    router.push('/practice');
+  }
+};
+
+const showGuide = ref(false);
 </script>
 
 <template>
@@ -98,28 +112,37 @@ const showGuide = ref(false)
       <nav class="step-progress">
         <div class="step completed">
           <div class="step-content">
-            <span class="step-number">Step 1 <span class="material-icons check-icon">check_circle</span></span>
+            <span class="step-number">
+              Step 1
+              <span class="material-symbols-outlined check-icon"
+                >check_circle</span
+              >
+            </span>
             <span class="step-label">Background Survey</span>
           </div>
         </div>
+
         <div class="step active">
           <div class="step-content">
             <span class="step-number">Step 2</span>
             <span class="step-label">Self Assessment</span>
           </div>
         </div>
+
         <div class="step">
           <div class="step-content">
             <span class="step-number">Step 3</span>
             <span class="step-label">Setup</span>
           </div>
         </div>
+
         <div class="step">
           <div class="step-content">
             <span class="step-number">Step 4</span>
             <span class="step-label">Sample Question</span>
           </div>
         </div>
+
         <div class="step last">
           <div class="step-content">
             <span class="step-number">Step 5</span>
@@ -131,31 +154,34 @@ const showGuide = ref(false)
       <h1 class="page-title">Self Assessment</h1>
       <div class="instructions">
         <p>본 Self Assessment에 대한 응답을 기초로 개인별 문항이 출제됩니다.</p>
-        <p>설명을 잘 읽고 본인의 English 말하기 능력과 비슷한 수준을 선택하시기 바랍니다.</p>
+        <p>
+          설명을 잘 읽고 본인의 English 말하기 능력과 비슷한 수준을 선택하시기
+          바랍니다.
+        </p>
       </div>
     </header>
 
     <main class="assessment-main">
       <div class="levels-container">
-        <label 
-          v-for="level in levels" 
+        <label
+          v-for="level in levels"
           :key="level.id"
           class="level-option"
           :class="{ selected: selectedLevel === level.id }"
         >
           <div class="radio-section">
-            <input 
-              type="radio" 
+            <input
+              type="radio"
               :value="level.id"
               v-model="selectedLevel"
               class="level-radio"
             />
           </div>
-          
+
           <div class="level-number">{{ level.level }}</div>
-          
+
           <div class="level-content">
-            <button 
+            <button
               type="button"
               @click.prevent="playAudio(level.audioUrl)"
               class="audio-btn"
@@ -170,17 +196,13 @@ const showGuide = ref(false)
     </main>
 
     <footer class="assessment-footer">
-      <button @click="goBack" class="nav-btn back-btn">
-        <span class="material-icons">chevron_left</span>
-        Back
-      </button>
-      <button 
-        @click="goNext" 
+      <button @click="router.back()" class="nav-btn back-btn">Back</button>
+      <button
+        @click="goNext"
         class="nav-btn next-btn"
         :disabled="!selectedLevel"
       >
         Next
-        <span class="material-icons">chevron_right</span>
       </button>
     </footer>
 
@@ -193,8 +215,14 @@ const showGuide = ref(false)
           <div class="modal-body">
             <ul class="guide-list">
               <li>· Self Assessment 화면입니다.</li>
-              <li>· 선택한 내용에 따라 시험 문항의 난이도가 결정됩니다. 반드시 본인의 실력과 가장 근접하다고 생각되는 수준을 선택하십시오.</li>
-              <li>· 선택을 완료한 후 Next를 누르면 이전 단계로 되돌릴 수 없으니 신중하게 선택하시기 바랍니다.</li>
+              <li>
+                · 선택한 내용에 따라 시험 문항의 난이도가 결정됩니다. 반드시
+                본인의 실력과 가장 근접하다고 생각되는 수준을 선택하십시오.
+              </li>
+              <li>
+                · 선택을 완료한 후 Next를 누르면 이전 단계로 되돌릴 수 없으니
+                신중하게 선택하시기 바랍니다.
+              </li>
             </ul>
           </div>
           <div class="modal-footer">
@@ -207,20 +235,19 @@ const showGuide = ref(false)
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
-@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap");
+@import url("https://fonts.googleapis.com/icon?family=Material+Icons");
 
 .assessment-page {
   min-height: 100vh;
-  background: #FFFFFF;
-  font-family: 'Noto Sans KR', sans-serif;
-  display: flex;
-  flex-direction: column;
-  padding-bottom: 100px;
+  padding: 40px;
+  background: #ffffff;
+  color: #1e293b;
+  transition: all 0.3s ease;
 }
 
 .dark-mode .assessment-page {
-  background: #121212;
+  background: #0f172a;
   color: #f1f5f9;
 }
 
@@ -246,85 +273,81 @@ const showGuide = ref(false)
 }
 
 .info-btn:hover {
-  color: #FFD700;
+  color: #ffd700;
 }
 
 .material-icons {
-  font-family: 'Material Icons';
+  font-family: "Material Icons";
   font-size: 24px;
 }
 
-/* Step Progress - Hexagon style from code.html */
+/* Step Progress */
 .step-progress {
   display: flex;
-  height: 56px;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 32px;
+  height: 48px;
+  margin-bottom: 30px;
+  width: 100%;
 }
 
 .step {
-  position: relative;
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8f9fa;
+  background: #eee;
   color: #94a3b8;
+  font-size: 12px;
   clip-path: polygon(0% 0%, 90% 0%, 100% 50%, 90% 100%, 0% 100%, 10% 50%);
-  border-right: 1px solid white;
-}
-
-.dark-mode .step {
-  background: #1E1E1E;
-  border-right-color: #374155;
+  margin-right: -2px;
 }
 
 .step:first-child {
   clip-path: polygon(0% 0%, 90% 0%, 100% 50%, 90% 100%, 0% 100%);
 }
-
 .step.last {
   clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 10% 50%);
 }
 
-.step.completed {
-  background: #f8f9fa;
-  opacity: 0.6;
+.step.active {
+  background: #ffd700 !important;
+  color: #1e293b !important;
+  font-weight: bold;
 }
 
-.step.active {
-  background: #FFD700;
-  color: #1e293b;
-  z-index: 10;
+.step.completed {
+  background: #e2e8f0;
+  color: #64748b;
+}
+
+.dark-mode .step {
+  background: #1e293b;
+}
+.dark-mode .step.active {
+  background: #ffd700 !important;
+  color: #0f172a !important;
+}
+.dark-mode .step.completed {
+  background: #334155;
 }
 
 .step-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
 }
-
 .step-number {
   font-weight: 700;
-  font-size: 12px;
   display: flex;
   align-items: center;
   gap: 4px;
 }
-
-.check-icon {
-  font-size: 14px !important;
-  color: #1e293b;
-}
-
 .step-label {
   font-size: 10px;
-  opacity: 0.9;
+}
+.check-icon {
+  font-size: 14px !important;
 }
 
-/* Header */
 .page-title {
   font-size: 24px;
   font-weight: 700;
@@ -361,6 +384,7 @@ const showGuide = ref(false)
   margin: 0 auto;
   width: 100%;
   padding: 0 16px;
+  margin-bottom: 100px;
 }
 
 .levels-container {
@@ -382,7 +406,8 @@ const showGuide = ref(false)
 }
 
 .dark-mode .level-option {
-  background: #1E1E1E;
+  background: #1e293b;
+  border-color: #334155;
 }
 
 .level-option:hover {
@@ -390,12 +415,13 @@ const showGuide = ref(false)
 }
 
 .level-option.selected {
-  border-color: #FFD700;
+  border-color: #ffd700;
   background: #fffef0;
 }
 
 .dark-mode .level-option.selected {
   background: #422006;
+  border-color: #ffd700;
 }
 
 .radio-section {
@@ -407,7 +433,7 @@ const showGuide = ref(false)
 .level-radio {
   width: 20px;
   height: 20px;
-  accent-color: #FFD700;
+  accent-color: #ffd700;
   cursor: pointer;
 }
 
@@ -446,7 +472,7 @@ const showGuide = ref(false)
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #FFD94D;
+  background: #ffd94d;
   color: #374151;
   padding: 6px 12px;
   border-radius: 8px;
@@ -460,7 +486,7 @@ const showGuide = ref(false)
 }
 
 .audio-btn:hover {
-  background: #FFCA1A;
+  background: #ffca1a;
 }
 
 .audio-btn .material-icons {
@@ -485,32 +511,24 @@ const showGuide = ref(false)
   bottom: 0;
   left: 0;
   right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 40px;
   background: white;
   border-top: 1px solid #e2e8f0;
-  padding: 16px 24px;
-  z-index: 20;
+  z-index: 100;
 }
 
 .dark-mode .assessment-footer {
-  background: #121212;
+  background: #0f172a;
   border-top-color: #374155;
 }
 
-.assessment-footer {
-  display: flex;
-  justify-content: space-between;
-  max-width: 1280px;
-  margin: 0 auto;
-}
-
 .nav-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 24px;
+  padding: 12px 30px;
   border-radius: 12px;
   border: none;
-  font-weight: 700;
+  font-weight: bold;
   cursor: pointer;
   transition: all 0.2s;
   font-size: 15px;
@@ -522,26 +540,25 @@ const showGuide = ref(false)
 }
 
 .dark-mode .back-btn {
-  background: #1E1E1E;
+  background: #1e293b;
   color: #94a3b8;
 }
 
 .back-btn:hover {
   background: #e2e8f0;
 }
-
 .dark-mode .back-btn:hover {
-  background: #374155;
+  background: #334155;
 }
 
 .next-btn {
-  background: #FFD700;
+  background: #ffd700;
   color: #1e293b;
   box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
 }
 
 .next-btn:hover:not(:disabled) {
-  background: #E6C200;
+  background: #e6c200;
 }
 
 .next-btn:disabled {
@@ -636,20 +653,14 @@ const showGuide = ref(false)
   color: #f1f5f9;
 }
 
-.close-btn:hover {
-  background: #e2e8f0;
-}
-
-.dark-mode .close-btn:hover {
-  background: #475569;
-}
-
 /* Animations */
-.fade-enter-active, .fade-leave-active {
+.fade-enter-active,
+.fade-leave-active {
   transition: opacity 0.3s ease;
 }
 
-.fade-enter-from, .fade-leave-to {
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
 }
 </style>

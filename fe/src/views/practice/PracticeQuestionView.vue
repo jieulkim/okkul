@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onUnmounted, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 // ============================================
 // Props 정의 (부모 컴포넌트에서 받을 데이터)
@@ -57,12 +58,14 @@ const emit = defineEmits([
 // ============================================
 const currentTopic = ref(null) // 선택된 topic_id
 const isTopicExpanded = ref(false)
+const localTopics = ref([]) // Props or Mock topics
 
 // 표시할 주제 목록 (12개씩 페이징)
 const displayedTopics = computed(() => {
+  const source = localTopics.value.length > 0 ? localTopics.value : props.availableTopics
   return isTopicExpanded.value 
-    ? props.availableTopics 
-    : props.availableTopics.slice(0, 12)
+    ? source 
+    : source.slice(0, 12)
 })
 
 // 주제 선택 핸들러
@@ -285,9 +288,41 @@ const highlightFromCard = (index) => {
 // ============================================
 // 5. 초기화 및 정리
 // ============================================
+// ============================================
+// 5. 초기화 및 정리
+// ============================================
+const route = useRoute() // import useRoute from 'vue-router' needed
+
 onMounted(() => {
-  // 이전에 선택한 주제가 있으면 설정
-  if (props.practiceSession.topic_id) {
+  // 1. 라우터 쿼리 파라미터 확인 (PracticeView에서 넘어온 경우)
+  const queryTopicId = Number(route.query.topic)
+  const queryTypeId = route.query.type
+
+  // 2. 주제 데이터가 없으면 MOCK 데이터 로드 (실제로는 API 호출 필요)
+  if (props.availableTopics.length === 0) {
+    // MOCK Topics (PracticeView와 동일하게 맞춤)
+    const mockTopics = [
+      { topic_id: 1, topic_name: '영화보기' },
+      { topic_id: 2, topic_name: '공원가기' },
+      { topic_id: 3, topic_name: '카페가기' },
+      { topic_id: 4, topic_name: '음악감상' },
+      { topic_id: 5, topic_name: '조깅' },
+      { topic_id: 6, topic_name: '걷기' },
+      { topic_id: 7, topic_name: '국내여행' },
+      { topic_id: 8, topic_name: '술집가기' },
+      { topic_id: 9, topic_name: 'TV시청' },
+      { topic_id: 10, topic_name: '독서' },
+      { topic_id: 11, topic_name: '요리하기' },
+      { topic_id: 12, topic_name: '쇼핑하기' }
+    ]
+    // props는 수정 불가능하므로 localTopics에 할당
+    localTopics.value = mockTopics
+  }
+
+  // 3. 초기 주제 선택
+  if (queryTopicId) {
+    currentTopic.value = queryTopicId
+  } else if (props.practiceSession.topic_id) {
     currentTopic.value = props.practiceSession.topic_id
   } else if (props.availableTopics.length > 0) {
     currentTopic.value = props.availableTopics[0].topic_id

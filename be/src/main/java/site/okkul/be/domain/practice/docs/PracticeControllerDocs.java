@@ -41,7 +41,7 @@ public interface PracticeControllerDocs {
     )
     @SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
     ResponseEntity<PracticeFeedbackResponse> savePracticeSession(
-            @Parameter(description = "연습 ID") @PathVariable long practiceId,
+            @Parameter(description = "유형연습 ID") @PathVariable long practiceId,
             @Parameter(description = "문제 ID") @PathVariable long questionId,
             @Parameter(description = "스크립트 정보 (JSON)") @RequestPart("request") PracticeFeedbackRequest request,
             @Parameter(description = "사용자 영어 녹음 파일") @RequestPart("audio") MultipartFile audioFile,

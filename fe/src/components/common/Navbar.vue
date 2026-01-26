@@ -1,53 +1,39 @@
 <script setup>
 import { inject, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth' // Import auth store
 
-// Props
-const props = defineProps({
-  userProfile: {
-    type: Object,
-    default: () => ({
-      name: '사용자',
-      nickname: '오꿀이',
-      profileImage: null
-    })
-  }
-})
-
+const authStore = useAuthStore()
 const route = useRoute()
 
-// 전역 다크모드 상태 및 토글 함수 주입 (안전하게 처리)
+// 전역 다크모드 상태 및 토글 함수 주입
 const isDarkMode = inject('isDarkMode', null)
 const toggleDarkMode = inject('toggleDarkMode', null)
 
-// 디버깅용 로그
-console.log('Navbar - isDarkMode:', isDarkMode)
-console.log('Navbar - toggleDarkMode:', toggleDarkMode)
+// 로그인 여부 (Auth Store)
+const isAuthenticated = computed(() => authStore.isAuthenticated)
+const userProfile = computed(() => authStore.user || {})
 
-// 프로필 이미지 또는 첫 글자 표시
+// 프로필 이미지 표시 계산
 const profileDisplay = computed(() => {
-  if (props.userProfile.profileImage) {
-    return { type: 'image', value: props.userProfile.profileImage }
+  if (userProfile.value.profileImage) {
+    return { type: 'image', value: userProfile.value.profileImage }
   }
   return { 
     type: 'initial', 
-    value: props.userProfile.nickname?.[0]?.toUpperCase() || 'U'
+    value: userProfile.value.nickname?.[0]?.toUpperCase() || 'U'
   }
 })
 
-// 현재 활성 경로 확인
+// 현재 활성 경로 확
 const isActive = (path) => {
   return route.path === path
 }
 
 // 다크모드 토글 핸들러
 const handleDarkModeToggle = () => {
-  console.log('Dark mode toggle clicked')
   if (toggleDarkMode) {
     toggleDarkMode()
-    console.log('Dark mode toggled, new value:', isDarkMode?.value)
-  } else {
-    console.error('toggleDarkMode function not found')
   }
 }
 
@@ -90,18 +76,28 @@ const navItems = [
           </span>
         </button>
 
-        <!-- 프로필 - 마이페이지로 이동 -->
-        <router-link to="/mypage" class="user-profile">
-          <div class="profile-avatar">
-            <img 
-              v-if="profileDisplay.type === 'image'" 
-              :src="profileDisplay.value" 
-              :alt="userProfile.nickname"
-            />
-            <span v-else class="profile-initial">{{ profileDisplay.value }}</span>
-          </div>
-          <span class="profile-name">{{ userProfile.nickname || userProfile.name }}</span>
-        </router-link>
+        <!-- 로그인 상태에 따른 UI -->
+        <template v-if="isAuthenticated">
+          <!-- 프로필 - 마이페이지로 이동 -->
+          <router-link to="/mypage" class="user-profile">
+            <div class="profile-avatar">
+              <img 
+                v-if="profileDisplay.type === 'image'" 
+                :src="profileDisplay.value" 
+                :alt="userProfile.nickname"
+              />
+              <span v-else class="profile-initial">{{ profileDisplay.value }}</span>
+            </div>
+            <span class="profile-name">{{ userProfile.nickname || userProfile.name }}</span>
+          </router-link>
+        </template>
+        
+        <template v-else>
+           <router-link to="/login" class="login-btn">
+             로그인
+           </router-link>
+        </template>
+
       </div>
     </div>
   </header>
@@ -353,5 +349,23 @@ const navItems = [
   .logo-text {
     display: none;
   }
+}
+
+.login-btn {
+  padding: 8px 20px;
+  background: #FFD700;
+  color: #000;
+  border-radius: 20px;
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 14px;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(255, 215, 0, 0.2);
+}
+
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+  background: #ffdb1a;
 }
 </style>

@@ -2,16 +2,19 @@ package site.okkul.be.domain.survey.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import java.time.Instant;
+import java.util.Set;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import site.okkul.be.domain.topic.entity.Topic;
 import site.okkul.be.domain.user.entity.User;
 
 /**
@@ -31,32 +34,15 @@ public class Survey {
 	@ManyToOne(fetch = FetchType.LAZY)
 	private User user;
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false)
-	private OccupationType occupation;
-
-	private Boolean hasJob;
-
-	@Enumerated(EnumType.STRING)
-	private WorkPeriod workPeriod;
-
-	@Enumerated(EnumType.STRING)
-	private TeachingLevel teachAt;
-
-	private Boolean isManager;
-	private Boolean isStudent;
-
-	@Enumerated(EnumType.STRING)
-	private ClassType classType;
-
 	private Integer level; // 1~6
 
-	@Enumerated(EnumType.STRING)
-	@Column(nullable = false)
-	private ResidenceType residence;
-
-	// TODO ... 나머지 필드 및 연관관계
-
+	@OneToMany(fetch = FetchType.EAGER)
+	@JoinTable(
+			name = "survey_topics",
+			joinColumns = @JoinColumn(name = "survey_id"),
+			inverseJoinColumns = @JoinColumn(name = "topic_id")
+	)
+	private Set<Topic> topics;
 
 	/**
 	 * 생성 일시

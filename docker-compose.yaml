@@ -15,7 +15,7 @@ services:
 
   ai-service:
     image: ai:${TAG}
-    container_name: okkul-ai
+    container_name: okkul-ai-${TAG}
     restart: always
     ports:
       - "8000:8000"

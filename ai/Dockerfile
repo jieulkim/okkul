@@ -7,7 +7,8 @@ WORKDIR /app
 # 3. 의존성 설치 (중요: requirements.txt가 opic-agent 안에 있음!)
 # 로컬의 ai/opic-agent/requirements.txt를 -> 컨테이너의 /app/requirements.txt로 복사
 COPY opic-agent/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir uvicorn
 
 # 4. 소스코드 전체 복사 (STT 폴더 등 형제 폴더도 다 같이 복사됨)
 COPY . .

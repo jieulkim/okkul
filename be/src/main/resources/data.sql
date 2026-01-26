@@ -4,15 +4,14 @@
 
 -- (1) 문제 유형 (기본값)
 -- 7가지 OPIc 문제 유형 적재
-INSERT INTO question_type(type_id, type_code)
-VALUES (1, 'INTRODUCTION'), -- 1. 자기소개 (New)
-       (2, 'COMBO2'),       -- 2. 두문제 콤보 - order 1 묘사 > order 2 묘사, 루틴, 비교 중 하나
-       (3, 'COMBO3'),       -- 3. 세문제 콤보 - order 1 묘사 > order 2 묘사, 루틴, 비교 중 하나, order 3 과거 경험
-       (4, 'RP1'),          -- 4. 롤플레이 한문제 - 정보 요청
-       (5, 'RP2'),          -- 5. 롤플레이 두문제 - order 1 묘사 > order 2 이전 질문 관련 eva에게 질문하기
-       (6, 'RP3'),          -- 6. 롤플레이 세문제 - order 1 정보 요청 > order 2 대안 제시 > order 3 관련 과거 경험
-       (7, 'AD2');
--- 7. 어드밴스 두문제 - order 1 비교, 묘사, 루틴 > order 2 이전 관련 이슈, 뉴스, 의견 등
+INSERT INTO question_type(type_id, type_code, description)
+VALUES (1, 'INTRODUCTION', '자기소개'),
+       (2, 'COMBO2', '두문제 콤보 - order 1 묘사 > order 2 묘사, 루틴, 비교 중 하나'),
+       (3, 'COMBO3', '세문제 콤보 - order 1 묘사 > order 2 묘사, 루틴, 비교 중 하나, order 3 과거 경험'),
+       (4, 'RP1', '롤플레이 한문제 - 정보 요청'),
+       (5, 'RP2', '롤플레이 두문제 - order 1 묘사 > order 2 이전 질문 관련 eva에게 질문하기'),
+       (6, 'RP3', '롤플레이 세문제 - order 1 정보 요청 > order 2 대안 제시 > order 3 관련 과거 경험'),
+       (7, 'AD2', '어드밴스 두문제 - order 1 비교, 묘사, 루틴 > order 2 이전 관련 이슈, 뉴스, 의견 등');
 
 
 -- ============================================================

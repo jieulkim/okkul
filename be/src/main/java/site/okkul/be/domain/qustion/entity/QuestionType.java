@@ -20,4 +20,12 @@ public class QuestionType {
 
 	@Column(name = "type_code", length = 50, nullable = false)
 	private String typeCode; // Intro, Combo2, Combo3, RP1, RP2, RP3, Ad2
+
+	@Column(name = "description", columnDefinition = "TEXT")
+	private String description;
+
+	public void update(String typeCode, String description) {
+		this.typeCode = typeCode;
+		this.description = description;
+	}
 }

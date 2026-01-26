@@ -2,6 +2,7 @@ package site.okkul.be.domain.practice.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -23,28 +24,22 @@ public interface PracticeControllerDocs {
                     "사용자가 선택한 소재ID, 설문조사ID를 PathVriable로 입력하면," +
                     "선택 내용을 바탕으로 랜덤으로 문제 세트를 가져와 해당 문제 세트와 하위 문제의 상세 정보를 반환합니다."
     )
+    @SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
     ResponseEntity<PracticeStartResponse> startPractice(
             @Parameter(description = "설문조사 ID", required = true, example = "1") @PathVariable long surveyId,
             @Parameter(description = "소재 ID", required = true, example = "1") @PathVariable long topicId,
             @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails
     );
 
-    /**
-     * 사용자 피드백 요청
-     * input - 유형모드ID, 문제ID, 한국어스크립트, 영어스크립트, 영어녹음파일
-     * process
-     * 1. 한국어스크립트, 영어스크립트, 영어녹음파일주소를 AI서버에게 전달해서 피드백을 가져옴
-     * 2. 가져온 피드백과 인풋값을 모두 DB에 저장
-     * 3. 응답 피드백을 프론트에게 전달
-     * output - 유형모드ID, 문제ID, 피드백 결과
-     */
     @Operation(summary = "유형별 연습 피드백 세션 저장 API",
             description =
                     "유형 연습 모드에서 특정 문제에 대해서" +
                     "사용자의 답변(한/영 스크립트, 녹음 파일)을 받아" +
                     "AI서버를 통해 AI 피드백을 받아옵니다." +
-                    "그리고 피드백 결과를 프론트엔드에게 전달합니다."
+                    "해당 데이터를 DB에 저장하고" +
+                    "피드백 결과를 프론트엔드에게 전달합니다."
     )
+    @SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
     ResponseEntity<PracticeFeedbackResponse> savePracticeSession(
             @Parameter(description = "연습 ID") @PathVariable long practiceId,
             @Parameter(description = "문제 ID") @PathVariable long questionId,

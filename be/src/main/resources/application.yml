@@ -1,3 +1,51 @@
 spring:
   application:
     name: be
+
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/okkul_db}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate.ddl-auto: create
+    show-sql: true
+    properties.hibernate.format_sql: true
+    defer-datasource-initialization: true
+
+  sql:
+    init:
+      mode: always
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DATABASE:0}
+      password: ${REDIS_PASSWORD:}
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:google-client-id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:google-client-secret}
+            scope:
+              - email
+              - profile
+
+server:
+  forward-headers-strategy: framework
+
+# 어플리케이션 설정
+app:
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:3000}
+  backend:
+    url: ${BACKEND_URL:http://localhost:8080}
+  jwt:
+    secret: ${JWT_SECRET:your-jwt-secret-key-change-this-sure-to-change-this}
+    access-token-expiration: 15m
+    refresh-token-expiration: 7d

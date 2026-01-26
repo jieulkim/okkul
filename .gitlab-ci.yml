@@ -1,0 +1,109 @@
+stages:
+  - build
+  - deploy
+
+# [BE 빌드] - Java 환경 필요
+deploy-be:
+  stage: build
+  image: eclipse-temurin:21-jdk-alpine
+
+  services:
+    - name: postgres:16.11
+      alias: postgres-test
+    - name: redis:7.2-alpine
+      alias: redis-test
+
+  variables:
+    POSTGRES_DB: test_db
+    POSTGRES_USER: test_user
+    POSTGRES_PASSWORD: test_password
+    DATABASE_URL: jdbc:postgresql://postgres-test:5432/test_db
+    DATABASE_USERNAME: test_user
+    DATABASE_PASSWORD: test_password
+    REDIS_HOST: redis-test
+    REDIS_PORT: 6379
+
+  tags:
+    - aws-ec2
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "cicd"'
+      changes:
+        - be/**/*
+
+  before_script:
+    - apk update
+    - apk add --no-cache docker docker-cli-compose
+    - chmod +x be/gradlew
+  
+  script:
+    - echo "Backend 이미지 빌드..."
+    - cd be
+    - ./gradlew test
+    - ./gradlew bootBuildImage --imageName=backend:$CI_COMMIT_REF_SLUG -x test
+
+# [FE 빌드] - Docker 환경이면 충분
+build-fe:
+  stage: build
+  image: docker:26-cli
+  tags:
+    - aws-ec2
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "cicd"'
+      changes:
+        - fe/**/* # FE 폴더가 변했을 때만 실행
+  script:
+    - echo "⚛️ Frontend 빌드 시작..."
+    - cd fe
+    - docker build -t frontend:$CI_COMMIT_REF_SLUG .
+
+# [AI 빌드] - Python Docker 환경
+build-ai:
+  stage: build
+  image: docker:26-cli
+  tags:
+    - aws-ec2
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "cicd"'
+      changes:
+        - ai/**/* # ai 폴더가 변했을 때만 실행
+  script:
+    - echo "🤖 AI Server 빌드 시작..."
+    # ai 폴더 안에 있는 Dockerfile을 보고 이미지를 만듭니다.
+    # 이미지 이름: 브랜치명 (예: ai:master, ai:develop)
+    - docker build -t ai:$CI_COMMIT_REF_SLUG ./ai
+
+# --------------------------------------------------------------------------
+# 2. 통합 배포 스테이지 (항상 실행)
+# --------------------------------------------------------------------------
+deploy-all:
+  stage: deploy
+  # 👇 [수정 1] 여기도 'stable' 대신 최신 버전(26-cli)을 써야 에러가 안 납니다!
+  image: docker:26-cli 
+  tags:
+    - aws-ec2
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" || $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "cicd"'
+  
+  before_script:
+    # docker-cli-compose 설치 (26-cli 이미지에는 기본 docker는 있으므로 플러그인만 설치)
+    # 혹시 모르니 edge 저장소에서 가져오도록 명시 (가장 안전)
+    - apk update && apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community docker-cli-compose
+
+  script:
+    - echo "🚀 전체 서비스 배포(업데이트) 시작..."
+    
+    # Compose 파일이 있는 루트 위치인지 확인
+    - ls -al 
+    
+    # 1. 현재 브랜치 이름에 "_env"를 붙여서 타겟 변수명을 만듭니다. (예: master_env)
+    - TARGET_VAR_NAME="${CI_COMMIT_BRANCH}_env"
+
+    # 3. [핵심] eval을 사용하여 동적으로 변수 값을 파일로 저장
+    # 설명: \$$TARGET_VAR_NAME 부분이 $master_env 로 치환되고, 그 안의 값을 echo 함
+    - eval "echo \"\$$TARGET_VAR_NAME\"" > .env
+    
+    # 1. 바뀐 이미지만 감지해서 재시작 (가장 권장)
+    - TAG=$CI_COMMIT_REF_SLUG docker compose -p s14p11a108-$CI_COMMIT_REF_SLUG up -d --remove-orphans
+    
+    # 2. 찌꺼기 정리
+    - docker image prune -f

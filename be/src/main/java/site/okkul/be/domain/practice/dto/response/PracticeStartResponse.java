@@ -21,5 +21,5 @@ public class PracticeStartResponse {
     private Long setId;
 
     @Schema(description = "연습에 포함된 질문 목록")
-    private List<QuestionResponse> questions;
+    private List<PracticeQuestion> questions;
 }

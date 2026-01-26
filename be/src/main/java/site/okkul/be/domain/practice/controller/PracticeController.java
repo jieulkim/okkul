@@ -7,10 +7,10 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import site.okkul.be.domain.exam.dto.QuestionResponse;
 import site.okkul.be.domain.practice.docs.PracticeControllerDocs;
 import site.okkul.be.domain.practice.dto.request.PracticeFeedbackRequest;
 import site.okkul.be.domain.practice.dto.response.PracticeFeedbackResponse;
+import site.okkul.be.domain.practice.dto.response.PracticeQuestion;
 import site.okkul.be.domain.practice.dto.response.PracticeStartResponse;
 
 import java.time.Instant;
@@ -23,12 +23,12 @@ public class PracticeController implements PracticeControllerDocs {
     @Override
     @PostMapping
     public ResponseEntity<PracticeStartResponse> startPractice(
-            @PathVariable long surveyId,
-            @PathVariable long topicId,
+            @RequestParam long surveyId,
+            @RequestParam long topicId,
             @AuthenticationPrincipal UserDetails userDetails) {
-        QuestionResponse q1 = new QuestionResponse(1L, 1, "Q1. What?", "https://cdn.cloud...");
-        QuestionResponse q2 = new QuestionResponse(2L, 2, "Q2. What?", "https://cdn.cloud...");
-        QuestionResponse q3 = new QuestionResponse(3L, 3, "Q3. What?", "https://cdn.cloud...");
+        PracticeQuestion q1 = new PracticeQuestion(1L, 1, "Q1. What?", "https://cdn.cloud...");
+        PracticeQuestion q2 = new PracticeQuestion(2L, 2, "Q2. What?", "https://cdn.cloud...");
+        PracticeQuestion q3 = new PracticeQuestion(3L, 3, "Q3. What?", "https://cdn.cloud...");
         PracticeStartResponse response = new PracticeStartResponse(
                 1L,
                 Instant.now(),

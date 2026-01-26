@@ -17,7 +17,7 @@ import site.okkul.be.domain.user.dto.response.UserResponse;
 import site.okkul.be.domain.user.service.UserService;
 
 @RestController
-@RequestMapping("/api/v1/users")
+@RequestMapping("/users")
 @RequiredArgsConstructor
 public class UserController implements UserControllerDocs {
 

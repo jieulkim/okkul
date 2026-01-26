@@ -22,6 +22,15 @@ services:
     networks:
       - server-tools_default
 
+  ai-service:
+    image: ai:${TAG}
+    container_name: okkul-ai-${TAG}
+    restart: always
+    ports:
+      - "8000:8000"
+    networks:
+      - server-tools_default
+
 networks:
   server-tools_default:
     external: true

@@ -18,6 +18,8 @@ public class SwaggerConfig {
 	public static final String AUTH = "Auth";
 	public static final String USER = "User";
 	public static final String QUESTION = "Question";
+	public static final String PRACTICE = "Practice";
+
 
 	private final SecurityScheme securityScheme = new SecurityScheme()
 			.type(SecurityScheme.Type.HTTP)

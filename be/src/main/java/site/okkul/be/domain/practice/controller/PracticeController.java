@@ -1,0 +1,64 @@
+package site.okkul.be.domain.practice.controller;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import site.okkul.be.domain.practice.docs.PracticeControllerDocs;
+import site.okkul.be.domain.practice.dto.request.PracticeFeedbackRequest;
+import site.okkul.be.domain.practice.dto.response.PracticeFeedbackResponse;
+import site.okkul.be.domain.practice.dto.response.PracticeProblemResponse;
+import site.okkul.be.domain.practice.dto.response.PracticeQuestion;
+import site.okkul.be.domain.practice.dto.response.PracticeStartResponse;
+
+import java.time.Instant;
+import java.util.Arrays;
+
+@RestController
+@RequestMapping("/practices")
+public class PracticeController implements PracticeControllerDocs {
+
+    @Override
+    @PostMapping
+    public ResponseEntity<PracticeStartResponse> startPractice(
+            @RequestParam long surveyId,
+            @RequestParam long topicId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        PracticeStartResponse response = new PracticeStartResponse(
+                1L,
+                Instant.now()
+        );
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @Override
+    @GetMapping("/{practiceId}")
+    public ResponseEntity<PracticeProblemResponse> getPracticeProblem(
+            @PathVariable long practiceId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        PracticeQuestion q1 = new PracticeQuestion(1L, 1, "Q1. What?", "https://cdn.cloud...");
+        PracticeQuestion q2 = new PracticeQuestion(2L, 2, "Q2. What?", "https://cdn.cloud...");
+        PracticeQuestion q3 = new PracticeQuestion(3L, 3, "Q3. What?", "https://cdn.cloud...");
+        PracticeProblemResponse response = new PracticeProblemResponse(
+                30L,
+                Arrays.asList(q1, q2, q3)
+        );
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @Override
+    @PostMapping(
+            value = "/{practiceId}/questions/{questionId}/feedback",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<PracticeFeedbackResponse> savePracticeSession(
+            @PathVariable long practiceId,
+            @PathVariable long questionId,
+            @RequestPart("request") PracticeFeedbackRequest request,
+            @RequestPart("audio") MultipartFile audioFile,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        return null;
+    }
+}

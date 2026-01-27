@@ -17,6 +17,7 @@ import site.okkul.be.domain.qustion.entity.Question;
 import site.okkul.be.domain.qustion.entity.QuestionSet;
 import site.okkul.be.domain.qustion.repository.QuestionSetRepository;
 import site.okkul.be.domain.survey.entity.Survey;
+import site.okkul.be.domain.survey.repository.SurveyJpaRepository;
 import site.okkul.be.domain.topic.entity.Topic;
 
 import java.time.Instant;
@@ -201,14 +202,12 @@ public class ExamService {
      * 설문에서 선택된 topicId 목록을 가져와 셔플한 뒤 반환
      */
     private List<Long> createShuffledTopicOrder(Survey survey) {
-        List<Long> topicIds = new ArrayList<>(
-                survey.getTopics().stream()
-                        .map(Topic::getId)
-                        .toList()
-        );
+        List<Long> topicIds = new ArrayList<>(survey.getTopicIds());
+
         if (topicIds.isEmpty()) {
             throw new IllegalStateException("설문에서 선택된 주제가 없습니다. 최소 한 개 이상의 주제가 필요합니다.");
         }
+
         Collections.shuffle(topicIds);
         return topicIds;
     }

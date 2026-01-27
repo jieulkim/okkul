@@ -6,6 +6,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 /**
@@ -28,23 +29,26 @@ public class ExamReport {
      * 15개 문항의 각 항목 점수를 합산하여 평균을 낸 값입니다.
      */
     @Column(name = "avg_grammar", precision = 5, scale = 2)
-    private Double avgGrammar;
+    private BigDecimal avgGrammar;
 
     @Column(name = "avg_vocab", precision = 5, scale = 2)
-    private Double avgVocab;
+    private BigDecimal avgVocab;
 
     @Column(name = "avg_logic", precision = 5, scale = 2)
-    private Double avgLogic;
+    private BigDecimal avgLogic;
 
     @Column(name = "avg_fluency", precision = 5, scale = 2)
-    private Double avgFluency;
+    private BigDecimal avgFluency;
+
+    @Column(name = "avg_relevance", precision = 5, scale = 2)
+    private BigDecimal avgRelevance;
 
     /**
      * [최종 판단용] 전체 평균 점수 및 등급
      * 위 4개 영역의 점수를 종합 가중치로 계산한 최종 점수입니다.
      */
     @Column(name = "total_score", precision = 5, scale = 2)
-    private Double totalScore;
+    private BigDecimal totalScore;
 
     /**
      * 오픽 예측 등급 (AL, IH, IM1, IM2, IM3, IL 등)
@@ -73,14 +77,14 @@ public class ExamReport {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
-    public static ExamReport createReport(Long examId, Double avgG, Double avgV, Double avgL, Double avgF,
-                                          Double total, String grade, String sType, String wType, String comment) {
+    public static ExamReport createReport(Long examId, BigDecimal avgG, BigDecimal avgV, BigDecimal avgL, BigDecimal avgF, BigDecimal avgR, BigDecimal total, String grade, String sType, String wType, String comment) {
         return ExamReport.builder()
                 .examId(examId)
                 .avgGrammar(avgG)
                 .avgVocab(avgV)
                 .avgLogic(avgL)
                 .avgFluency(avgF)
+                .avgRelevance(avgR)
                 .totalScore(total)
                 .grade(grade)
                 .strengthType(sType)

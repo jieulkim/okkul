@@ -6,11 +6,12 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-@Schema(description = "선택된 개별 소재(토픽) 정보")
+@Schema(description = "설문조사 생성 응답 DTO")
 public class SelectedTopic {
-    @Schema(description = "카테고리 ID", example = "1")
-    private Long categoryId;
+
     @Schema(description = "토픽 ID", example = "101")
-    private Long topicId;
-    private String topicName;
+    private final Long topicId;
+    @Schema(description = "토픽 이름", example = "여행가기")
+    private final String topicName;
+
 }

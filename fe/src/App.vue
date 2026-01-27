@@ -2,6 +2,9 @@
 import { ref, provide, watch, onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 import Navbar from '@/components/common/Navbar.vue'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
 
 // 1. 다크모드 상태 관리
 const isDarkMode = ref(localStorage.getItem('theme') === 'dark')
@@ -26,20 +29,14 @@ watch(isDarkMode, (val) => {
 provide('isDarkMode', isDarkMode)
 provide('toggleDarkMode', toggleDarkMode)
 
-// 전역 사용자 상태
-const userProfile = ref({
-  name: '홍길동',
-  nickname: '오꿀이',
-  profileImage: null,
-  currentLevel: 'IH',
-  targetLevel: 'AL',
-  examRemaining: 20
+// 앱 시작 시 사용자 정보 조회
+onMounted(() => {
+  authStore.fetchUser()
 })
-provide('userProfile', userProfile)
 </script>
 
 <template>
-  <Navbar :userProfile="userProfile" />
+  <Navbar />
   <RouterView />
 </template>
 

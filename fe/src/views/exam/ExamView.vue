@@ -5,12 +5,13 @@ import SurveySelectModal from '@/components/common/SurveySelectModal.vue';
 import api from '@/utils/api';
 
 const router = useRouter();
+const surveyStore = useSurveyStore();
 const isDarkMode = inject('isDarkMode', ref(false));
 
 const showSurveySelectModal = ref(true);
 const existingSurveys = ref([]);
 
-// ERD/API 참고용 데이터 로드 로직
+// 실제 API를 사용하여 설문 목록 로드
 const fetchExistingSurveys = async () => {
   try {
     const response = await api.get('/surveys');
@@ -26,6 +27,8 @@ const fetchExistingSurveys = async () => {
     }
   } catch (error) {
     console.error("설문 목록 로드 실패", error);
+    // 에러 발생 시 빈 목록으로 유지
+    existingSurveys.value = [];
   }
 };
 
@@ -34,9 +37,18 @@ const startNewSurvey = () => {
 };
 
 const useSelectedSurvey = (surveyId) => {
-  // TODO: 선택된 설문 ID를 저장하거나 처리하는 로직 필요
   console.log('Selected Survey ID:', surveyId);
-  router.push('/exam/setup');
+  // 선택된 설문 ID를 가지고 다음 단계로 이동
+  router.push({
+    path: '/exam/setup',
+    query: { surveyId: surveyId }
+  });
+};
+
+const handleDeleteSurvey = (surveyId) => {
+  surveyStore.deleteSurvey(surveyId);
+  existingSurveys.value = surveyStore.filterSurveys(existingSurveys.value);
+  console.log(`[ExamView] Survey ${surveyId} deleted (Global Sync)`);
 };
 
 onMounted(() => {
@@ -51,6 +63,8 @@ onMounted(() => {
       :existingSurveys="existingSurveys"
       @start-new="startNewSurvey"
       @use-selected="useSelectedSurvey"
+      @delete-survey="handleDeleteSurvey"
+      @close="showSurveySelectModal = false"
     />
   </div>
 </template>

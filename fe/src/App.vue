@@ -1,6 +1,6 @@
 <script setup>
-import { ref, provide, watch, onMounted } from 'vue'
-import { RouterView } from 'vue-router'
+import { ref, watch, provide, computed, onMounted } from 'vue'
+import { RouterView, useRouter } from 'vue-router'
 import Navbar from '@/components/common/Navbar.vue'
 import { useAuthStore } from '@/stores/auth'
 

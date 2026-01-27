@@ -7,6 +7,9 @@ import SurveyView from '../views/survey/SurveyView.vue'
 import SurveyLevelView from '../views/survey/SurveyLevelView.vue'
 import SetupView from '../views/exam/SetupView.vue'
 import ExamQuestionView from '../views/exam/ExamQuestionView.vue'
+import MyPageView from '../views/mypage/MyPageView.vue'
+import LoginView from '../views/auth/LoginView.vue'
+import OAuth2Redirect from '../views/auth/OAuth2Redirect.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -31,7 +34,7 @@ const router = createRouter({
     {
       path: '/mypage',
       name: 'mypage',
-      component: () => import('../views/mypage/MyPageView.vue')
+      component: MyPageView
     },
     {
       path: '/exam',

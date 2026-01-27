@@ -45,130 +45,130 @@ const showSubQuestions = ref({
 
 // Part 1: 직군 옵션
 const occupationOptions = [
-  { id: 1727, text: "사업/회사", code: "COMPANY" },
-  { id: 1728, text: "재택근무/재택사업", code: "HOME" },
-  { id: 1729, text: "교사/교육자", code: "EDUCATION" },
-  { id: 1730, text: "일 경험 없음", code: "NONE" },
+  { id: 1, text: "사업/회사", code: "COMPANY" },
+  { id: 2, text: "재택근무/재택사업", code: "HOME" },
+  { id: 3, text: "교사/교육자", code: "EDUCATION" },
+  { id: 4, text: "일 경험 없음", code: "NONE" },
 ];
 
 // Part 1: 교육 분야
 const teachOptions = [
-  { id: 1741, text: "대학 이상" },
-  { id: 1742, text: "초등/중/고등학교" },
-  { id: 1743, text: "평생교육" },
+  { id: 1, text: "대학 이상" },
+  { id: 2, text: "초등/중/고등학교" },
+  { id: 3, text: "평생교육" },
 ];
 
 // Part 1: 근무 기간 - 사업/회사 (1~3)
 const workPeriodOptionsCompany = [
-  { id: 1731, text: "첫직장- 2개월 미만" },
-  { id: 1732, text: "첫직장- 2개월 이상" },
-  { id: 1733, text: "첫직장 아님 - 경험 많음" },
+  { id: 1, text: "첫직장- 2개월 미만" },
+  { id: 2, text: "첫직장- 2개월 이상" },
+  { id: 3, text: "첫직장 아님 - 경험 많음" },
 ];
 
 // Part 1: 근무 기간 - 재택 (1~3)
 const workPeriodOptionsHome = [
-  { id: 1836, text: "첫직장- 2개월 미만" },
-  { id: 1837, text: "첫직장- 2개월 이상" },
-  { id: 1838, text: "첫직장 아님 - 경험 많음" },
+  { id: 1, text: "첫직장- 2개월 미만" },
+  { id: 2, text: "첫직장- 2개월 이상" },
+  { id: 3, text: "첫직장 아님 - 경험 많음" },
 ];
 
 // Part 1: 근무 기간 - 교사 (1~3)
 const workPeriodOptionsTeacher = [
-  { id: 1747, text: "2개월 미만 - 첫직장" },
+  { id: 1, text: "2개월 미만 - 첫직장" },
   {
-    id: 1748,
+    id: 2,
     text: "2개월 미만 - 교직은 처음이지만 이전에 다른 직업을 가진 적이 있음",
   },
-  { id: 1749, text: "2개월 이상" },
+  { id: 3, text: "2개월 이상" },
 ];
 
 // Part 2: 수강 종류 - 현재 학생
 const currentCourseOptions = [
-  { id: 1964, text: "학위 과정 수업" },
-  { id: 1965, text: "전문 기술 향상을 위한 평생 학습" },
-  { id: 1966, text: "어학수업" },
+  { id: 1, text: "학위 과정 수업" },
+  { id: 2, text: "전문 기술 향상을 위한 평생 학습" },
+  { id: 3, text: "어학수업" },
 ];
 
 // Part 2: 수강 종류 - 과거 학생
 const pastCourseOptions = [
-  { id: 1967, text: "학위 과정 수업" },
-  { id: 1968, text: "전문 기술 향상을 위한 평생 학습" },
-  { id: 1969, text: "어학수업" },
-  { id: 1970, text: "수강 후 5년 이상 지남" },
+  { id: 1, text: "학위 과정 수업" },
+  { id: 2, text: "전문 기술 향상을 위한 평생 학습" },
+  { id: 3, text: "어학수업" },
+  { id: 4, text: "수강 후 5년 이상 지남" },
 ];
 
 // Part 3: 거주지
 const residenceOptions = [
-  { id: 1705, text: "개인주택이나 아파트에 홀로 거주" },
-  { id: 1706, text: "친구나 룸메이트와 함께 주택이나 아파트에 거주" },
+  { id: 1, text: "개인주택이나 아파트에 홀로 거주" },
+  { id: 2, text: "친구나 룸메이트와 함께 주택이나 아파트에 거주" },
   {
-    id: 1707,
+    id: 3,
     text: "가족(배우자/자녀/기타 가족 일원)과 함께 주택이나 아파트에 거주",
   },
-  { id: 1708, text: "학교 기숙사" },
-  { id: 1709, text: "군대 막사" },
+  { id: 4, text: "학교 기숙사" },
+  { id: 5, text: "군대 막사" },
 ];
 
 // Part 4: 여가 활동 (기본값: 하드코딩)
 const leisureOptions = ref([
-  { id: 1753, text: "영화보기" },
-  { id: 1754, text: "클럽/나이트클럽 가기" },
-  { id: 1755, text: "공연보기" },
-  { id: 1756, text: "콘서트보기" },
-  { id: 1757, text: "박물관가기" },
-  { id: 1758, text: "공원가기" },
-  { id: 1759, text: "캠핑하기" },
-  { id: 1760, text: "해변가기" },
-  { id: 1761, text: "스포츠 관람" },
-  { id: 1768, text: "주거 개선" },
+  { id: 101, text: "영화보기" },
+  { id: 102, text: "클럽/나이트클럽 가기" },
+  { id: 103, text: "공연보기" },
+  { id: 104, text: "콘서트보기" },
+  { id: 105, text: "박물관가기" },
+  { id: 106, text: "공원가기" },
+  { id: 107, text: "캠핑하기" },
+  { id: 108, text: "해변가기" },
+  { id: 109, text: "스포츠 관람" },
+  { id: 110, text: "주거 개선" },
 ]);
 
 // Part 4: 취미 (기본값)
 const hobbyOptions = ref([
-  { id: 1770, text: "아이에게 책 읽어주기" },
-  { id: 1771, text: "음악 감상하기" },
-  { id: 1772, text: "악기 연주하기" },
-  { id: 1773, text: "혼자 노래부르거나 합창하기" },
-  { id: 1776, text: "춤추기" },
-  { id: 1777, text: "글쓰기(편지, 단문, 시 등)" },
-  { id: 1778, text: "그림 그리기" },
-  { id: 1781, text: "요리하기" },
-  { id: 1783, text: "애완동물 기르기" },
+  { id: 201, text: "아이에게 책 읽어주기" },
+  { id: 202, text: "음악 감상하기" },
+  { id: 203, text: "악기 연주하기" },
+  { id: 204, text: "혼자 노래부르거나 합창하기" },
+  { id: 205, text: "춤추기" },
+  { id: 206, text: "글쓰기(편지, 단문, 시 등)" },
+  { id: 207, text: "그림 그리기" },
+  { id: 208, text: "요리하기" },
+  { id: 209, text: "애완동물 기르기" },
 ]);
 
 // Part 4: 운동 (기본값)
 const exerciseOptions = ref([
-  { id: 1784, text: "농구" },
-  { id: 1785, text: "야구/소프트볼" },
-  { id: 1786, text: "축구" },
-  { id: 1787, text: "미식축구" },
-  { id: 1790, text: "하키" },
-  { id: 1791, text: "크리켓" },
-  { id: 1792, text: "골프" },
-  { id: 1793, text: "배구" },
-  { id: 1794, text: "테니스" },
-  { id: 1795, text: "배드민턴" },
-  { id: 1796, text: "탁구" },
-  { id: 1797, text: "수영" },
-  { id: 1798, text: "자전거" },
-  { id: 1801, text: "스키/스노우보드" },
-  { id: 1803, text: "아이스 스케이트" },
-  { id: 1806, text: "조깅" },
-  { id: 1807, text: "걷기" },
-  { id: 1809, text: "요가" },
-  { id: 1810, text: "하이킹/트레킹" },
-  { id: 1811, text: "낚시" },
-  { id: 1813, text: "헬스" },
-  { id: 1815, text: "운동을 전혀 하지 않음" },
+  { id: 301, text: "농구" },
+  { id: 302, text: "야구/소프트볼" },
+  { id: 303, text: "축구" },
+  { id: 304, text: "미식축구" },
+  { id: 305, text: "하키" },
+  { id: 306, text: "크리켓" },
+  { id: 307, text: "골프" },
+  { id: 308, text: "배구" },
+  { id: 309, text: "테니스" },
+  { id: 310, text: "배드민턴" },
+  { id: 311, text: "탁구" },
+  { id: 312, text: "수영" },
+  { id: 313, text: "자전거" },
+  { id: 314, text: "스키/스노우보드" },
+  { id: 315, text: "아이스 스케이트" },
+  { id: 316, text: "조깅" },
+  { id: 317, text: "걷기" },
+  { id: 318, text: "요가" },
+  { id: 319, text: "하이킹/트레킹" },
+  { id: 320, text: "낚시" },
+  { id: 321, text: "헬스" },
+  { id: 322, text: "운동을 전혀 하지 않음" },
 ]);
 
 // Part 4: 휴가/출장 (기본값)
 const holidayOptions = ref([
-  { id: 1816, text: "국내출장" },
-  { id: 1817, text: "해외출장" },
-  { id: 1818, text: "집에서 보내는 휴가" },
-  { id: 1819, text: "국내 여행" },
-  { id: 1820, text: "해외 여행" },
+  { id: 401, text: "국내출장" },
+  { id: 402, text: "해외출장" },
+  { id: 403, text: "집에서 보내는 휴가" },
+  { id: 404, text: "국내 여행" },
+  { id: 405, text: "해외 여행" },
 ]);
 
 // Part 4: 총 선택 개수
@@ -201,11 +201,11 @@ const handleOccupationChange = (optionId) => {
   surveyData.value.teachAnswerId = null;
 
   // 선택에 따라 하위 질문 표시
-  if (optionId === 1727) {
+  if (optionId === 1) {
     showSubQuestions.value.hasJob_company = true;
-  } else if (optionId === 1728) {
+  } else if (optionId === 2) {
     showSubQuestions.value.hasJob_home = true;
-  } else if (optionId === 1729) {
+  } else if (optionId === 3) {
     showSubQuestions.value.teachLocation = true;
   }
 };
@@ -234,7 +234,7 @@ const handleWorkPeriodChange = (optionId, type) => {
   surveyData.value.manager = null;
 
   // 2개월 이상 선택 시 관리직 질문 표시
-  const showManagerIds = [1732, 1733, 1837, 1838, 1749];
+  const showManagerIds = [2, 3];
   if (showManagerIds.includes(optionId)) {
     showSubQuestions.value[`manager_${type}`] = true;
   }
@@ -259,8 +259,8 @@ const canGoNext = computed(() => {
     // Part 1 검증
     if (!surveyData.value.occupationAnswerId) return false;
 
-    // 사업/회사(1727)
-    if (surveyData.value.occupationAnswerId === 1727) {
+    // 사업/회사(1)
+    if (surveyData.value.occupationAnswerId === 1) {
       if (surveyData.value.hasJob === null) return false;
       if (surveyData.value.hasJob) {
         if (!surveyData.value.workPeriodAnswerId) return false;
@@ -268,8 +268,8 @@ const canGoNext = computed(() => {
       }
     }
 
-    // 재택(1728)
-    if (surveyData.value.occupationAnswerId === 1728) {
+    // 재택(2)
+    if (surveyData.value.occupationAnswerId === 2) {
       if (surveyData.value.hasJob === null) return false;
       if (surveyData.value.hasJob) {
         if (!surveyData.value.workPeriodAnswerId) return false;
@@ -277,8 +277,8 @@ const canGoNext = computed(() => {
       }
     }
 
-    // 교사(1729)
-    if (surveyData.value.occupationAnswerId === 1729) {
+    // 교사(3)
+    if (surveyData.value.occupationAnswerId === 3) {
       if (!surveyData.value.teachAnswerId) return false;
       if (surveyData.value.hasJob === null) return false;
       if (surveyData.value.hasJob) {
@@ -333,7 +333,10 @@ const goBack = () => {
   if (currentStep.value > 1) {
     currentStep.value--;
   } else {
-    router.back();
+    // 1단계에서 뒤로가기 시 홈 또는 이전 페이지로 이동
+    if (confirm('설문 조사를 중단하고 홈으로 이동하시겠습니까?')) {
+      router.push('/');
+    }
   }
 };
 
@@ -348,11 +351,28 @@ const goNext = () => {
 // 설문 임시 저장 및 레벨 선택 페이지로 이동
 const submitSurvey = () => {
   try {
-    console.log("설문 데이터 임시 저장:", surveyData.value);
+    // 선택지 순서(1, 2, 3, 4...)
+    // 프론트엔드 내부 ID를 그대로 전송
+    const payload = {
+      occupationAnswerId: surveyData.value.occupationAnswerId, // 1, 2, 3, 4
+      hasJob: surveyData.value.hasJob,
+      workPeriodAnswerId: surveyData.value.workPeriodAnswerId, // 1, 2, 3
+      teachAnswerId: surveyData.value.teachAnswerId, // 1, 2, 3
+      manager: surveyData.value.manager,
+      student: surveyData.value.student,
+      classTypeAnswerId: surveyData.value.classTypeAnswerId, // 1, 2, 3, 4
+      residenceAnswerId: surveyData.value.residenceAnswerId, // 1, 2, 3, 4, 5
+      leisure: surveyData.value.leisure,
+      hobby: surveyData.value.hobby,
+      exercise: surveyData.value.exercise,
+      holiday: surveyData.value.holiday,
+    };
+
+    console.log("설문 데이터 저장 (전달용):", payload);
     
     // Store에 데이터 저장
     const surveyStore = useSurveyStore();
-    surveyStore.setSurveyData(surveyData.value);
+    surveyStore.setSurveyData(payload);
 
     // 레벨 선택 페이지로 이동
     router.push({
@@ -976,10 +996,10 @@ const showGuide = ref(false);
           <button
             @click="goBack"
             class="nav-btn back-btn"
-            :disabled="currentStep === 1"
           >
             Back
           </button>
+          <button @click="router.push('/')" class="nav-btn quit-btn">Quit</button>
           <button
             @click="goNext"
             class="nav-btn next-btn"
@@ -1347,6 +1367,22 @@ const showGuide = ref(false);
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.quit-btn {
+  background: #fee2e2;
+  color: #ef4444;
+  margin-left: 10px;
+}
+
+.dark-mode .quit-btn {
+  background: #450a0a;
+  color: #f87171;
+}
+
+.quit-btn:hover {
+  background: #fecaca;
+}
+
 
 /* Modal */
 .modal-overlay {

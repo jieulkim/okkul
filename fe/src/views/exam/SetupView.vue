@@ -38,7 +38,7 @@ const startRec = () => {
 
 const handleNext = () => {
   if (fromMode.value === 'practice') {
-    // 연습 모드에서 왔다면 연습 문제 페이지로 (기존에 짜두신 경로로 수정 가능)
+    // 연습 모드에서 왔다면 연습 문제 페이지로
     router.push('/practice/question')
   } else {
     // 그 외(모의고사 등)는 모의고사 문제 페이지로
@@ -122,7 +122,7 @@ onUnmounted(() => audio.pause())
 
     <footer class="assessment-footer">
       <button @click="router.back()" class="nav-btn back-btn">Back</button>
-      <button @click="handleNext" class="nav-btn next-btn" :disabled="!hasRecording">Next</button>
+      <button @click="handleNext" class="nav-btn next-btn">Next</button>
     </footer>
   </div>
 </template>
@@ -130,14 +130,12 @@ onUnmounted(() => audio.pause())
 <style scoped>
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
-/* 컨테이너 및 기본 텍스트 설정 */
 .assessment-page {
   min-height: 100vh;
   background: #ffffff;
   color: #1e293b;
 }
 
-/* 통일된 Step Progress CSS (높이 48px 권장) */
 .step-progress {
   display: flex;
   height: 48px;
@@ -167,14 +165,12 @@ onUnmounted(() => audio.pause())
 .step-number { font-weight: 700; display: flex; align-items: center; gap: 4px; }
 .check-icon { font-size: 14px !important; }
 
-/* 다크모드 대응 */
 .dark-mode { background: #0f172a; color: #f1f5f9; }
 .dark-mode .step { background: #1e293b; color: #64748b; }
 .dark-mode .step.active { background: #FFD700; color: #0f172a; }
 .dark-mode .character-card { background: #1e293b; border-color: #334155; }
 .dark-mode .assessment-footer { background: #0f172a; border-top-color: #334155; }
 
-/* 나머지 스타일 유지 */
 .assessment-header { max-width: 1280px; margin: 0 auto; padding: 32px 16px; }
 .page-title { font-size: 24px; font-weight: 800; margin-top: 20px; }
 .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; max-width: 1000px; margin: 0 auto; }
@@ -185,7 +181,9 @@ onUnmounted(() => audio.pause())
 .rec-btn { background: #ef4444; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; }
 .check-btn { background: #3b82f6; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; }
 
-.assessment-footer { position: fixed; bottom: 0; left: 0; right: 0; padding: 20px 40px; display: flex; justify-content: space-between; border-top: 1px solid #e2e8f0; }
+.assessment-footer { position: fixed; bottom: 0; left: 0; right: 0; padding: 20px 40px; display: flex; justify-content: space-between; border-top: 1px solid #e2e8f0; background: white; z-index: 100; }
+.dark-mode .assessment-footer { background: #0f172a; }
 .nav-btn { padding: 12px 30px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
-.next-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.back-btn { background: #f1f5f9; color: #64748b; }
+.next-btn { background: #FFD700; color: #0f172a; }
 </style>

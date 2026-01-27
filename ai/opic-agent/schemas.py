@@ -1,35 +1,71 @@
-from typing import List, Optional, TypedDict
-from pydantic import BaseModel, Field
+from typing import List, Optional, TypedDict, Any, Dict
+from pydantic import BaseModel, Field, validator
+import re
+# 개별 질문 아이템
+class QuestionItem(BaseModel):
+    order: int = Field(description="The order of the question (1, 2, 3...)")
+    text: str = Field(description="The question text in English")
+    # type_tag는 필수 아님 (생성자가 굳이 안 만들어도 됨)
+
+# 전체 콘텐츠 구조
+class OpicContent(BaseModel):
+    topic: str
+    difficulty: int
+    gen_mode: str
+    questions: List[QuestionItem]
+
+    # 🛠️ [핵심] 개수 강제 검증 로직 (여기서 1차 방어)
+    @validator('questions')
+    def validate_count_by_mode(cls, v, values):
+        # 1. gen_mode 가져오기
+        gen_mode = values.get('gen_mode', '')
+        
+        # 2. 모드 이름 끝의 숫자 추출 (AD2 -> 2, COMBO3 -> 3)
+        match = re.search(r'(\d+)$', gen_mode)
+        
+        if match:
+            target_count = int(match.group(1))
+            
+            # 3. 실제 생성된 개수와 비교
+            if len(v) != target_count:
+                # 에러 발생 -> LangChain이 자동으로 Retry 수행
+                raise ValueError(
+                    f"❌ COUNT ERROR: Mode '{gen_mode}' requires EXACTLY {target_count} questions, "
+                    f"but you generated {len(v)}. "
+                    f"Please generate exactly {target_count} items in the list."
+                )
+        
+        return v
+# ==========================================
+# 2. SQL 변환용 스키마
+# ==========================================
+class OpicSQLSet(BaseModel):
+    sql_query: str = Field(description="Complete SQL INSERT statements to save the question set and questions into the database.")
 
 # ==========================================
-# 1. Pydantic 모델 (LLM 출력 구조 정의)
+# 3. 검증 결과 스키마
 # ==========================================
-
-class OpicQuestion(BaseModel):
-    order: int = Field(description="문제 순서 (1, 2, 3)")
-    type_id: int = Field(description="문제 유형 ID (1:자기소개, 2:묘사, 3:루틴, 4:비교, 5:경험, 6:롤플레이, 7:어드밴스)")
-    question_en: str = Field(description="영어 질문 텍스트")
-    question_kr: str = Field(description="한국어 질문 해석")
-
-class OpicQuestionSet(BaseModel):
-    topic: str = Field(description="주제 이름")
-    difficulty: str = Field(description="난이도 (IM, IH, AL 등)")
-    
-    # [중요] 이 부분이 빠져있어서 에러가 났던 것입니다.
-    dominant_type_id: int = Field(description="세트의 대표 유형 ID (콤보는 1번문제 유형, RP는 6, ADV는 7)")
-    
-    questions: List[OpicQuestion] = Field(description="생성된 문제 리스트")
-
 class ValidationResult(BaseModel):
-    is_valid: bool = Field(description="검증 통과 여부 (True: 통과, False: 반려)")
-    feedback: str = Field(description="통과 시 'Perfect', 반려 시 구체적인 수정 요청 사항")
+    is_valid: bool = Field(description="True if valid, False if rules are violated")
+    feedback: str = Field(description="Feedback explaining the violation or 'Perfect'")
 
 # ==========================================
-# 2. LangGraph State (상태 관리)
+# 4. LangGraph State (상태 관리)
 # ==========================================
 class GraphState(TypedDict):
+    # Input
     topic: str
     difficulty: str
+    gen_mode: str
+    
+    # Internal Logic
+    content_prompt: str
     retry_count: int
-    generated_output: Optional[OpicQuestionSet] # 생성된 문제 세트
-    validation_result: Optional[ValidationResult] # 검증 결과
+    
+    # Outputs per Node
+    generated_content: Optional[OpicContent]
+    generated_sql: Optional[OpicSQLSet]
+    validation_result: Optional[ValidationResult]
+    
+    # [NEW] 성능 지표 로그 (시간, 토큰 등)
+    logs: List[Dict[str, Any]]

@@ -1,21 +1,25 @@
 <script setup>
-import { ref, inject } from 'vue'
+import { ref, inject, computed } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 
-// 사용자 프로필 데이터 (전역 상태 주입)
-const userProfile = inject('userProfile')
+const authStore = useAuthStore()
+
+// 사용자 프로필 데이터
+const userProfile = computed(() => authStore.user || {
+  nickname: '게스트',
+  name: '게스트',
+  targetLevel: '-',
+  currentLevel: '-',
+  profileImage: null
+})
 
 // 프로필 이미지 업로드
 const profileImageInput = ref(null)
 
-const handleProfileImageUpload = (event) => {
+const handleProfileImageUpload = async (event) => {
   const file = event.target.files[0]
   if (file) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      userProfile.value.profileImage = e.target.result
-      // 실제로는 서버에 업로드하고 URL을 받아와야 함
-    }
-    reader.readAsDataURL(file)
+    await authStore.updateProfileImage(file)
   }
 }
 
@@ -27,7 +31,7 @@ const triggerImageUpload = () => {
 const isEditing = ref(false)
 const editForm = ref({
   nickname: '',
-  name: '',
+  name: '', // 이름은 수정 불가할 수도 있음 (보통 소셜 로그인은)
   targetLevel: ''
 })
 
@@ -44,12 +48,14 @@ const cancelEdit = () => {
   isEditing.value = false
 }
 
-const saveProfile = () => {
-  userProfile.value.nickname = editForm.value.nickname
-  userProfile.value.name = editForm.value.name
-  userProfile.value.targetLevel = editForm.value.targetLevel
+const saveProfile = async () => {
+  if (editForm.value.nickname !== userProfile.value.nickname) {
+      await authStore.updateNickname(editForm.value.nickname)
+  }
+  if (editForm.value.targetLevel !== userProfile.value.targetLevel) {
+      await authStore.updateTargetLevel(editForm.value.targetLevel)
+  }
   isEditing.value = false
-  // 실제로는 서버에 저장
 }
 
 // 학습 통계 (더미 데이터)

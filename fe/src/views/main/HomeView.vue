@@ -1,8 +1,19 @@
 <script setup>
 import { ref, computed, inject, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router' // Add router for redirection
+import { useAuthStore } from '@/stores/auth' // Import auth store
 
-// 사용자 프로필 데이터 (전역 상태 주입)
-const userProfile = inject('userProfile')
+const authStore = useAuthStore()
+const router = useRouter()
+
+// 사용자 프로필 데이터 (Auth Store 사용)
+// authStore.user가 null이면 로딩중이거나 비로그인 상태
+const userProfile = computed(() => authStore.user || {
+  nickname: '게스트',
+  targetLevel: '-',
+  currentLevel: '-',
+  name: '게스트'
+})
 
 // 다크모드 상태 주입
 const isDarkMode = inject('isDarkMode', ref(false))
@@ -19,24 +30,20 @@ watch(isDarkMode, (newVal) => {
   }
 }, { immediate: true })
 
-// 컴포넌트 마운트 시 다크모드 클래스 적용
+// 컴포넌트 마운트 시 다크모드 클래스 적용 및 로그인 체크
 onMounted(() => {
   if (isDarkMode.value) {
     document.documentElement.classList.add('dark-mode')
   }
 })
 
-// 프로필 이미지 업로드
+// 프로필 이미지 업로드 (Store Action 사용)
 const profileImageInput = ref(null)
 
-const handleProfileImageUpload = (event) => {
+const handleProfileImageUpload = async (event) => {
   const file = event.target.files[0]
   if (file) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      userProfile.value.profileImage = e.target.result
-    }
-    reader.readAsDataURL(file)
+    await authStore.updateProfileImage(file)
   }
 }
 

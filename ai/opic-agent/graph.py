@@ -1,94 +1,174 @@
+# graph.py
+
+import time
+import json # json 추가
+from langchain_community.callbacks import get_openai_callback
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import StateGraph, START, END
 from dotenv import load_dotenv
 
-# 위에서 만든 파일들 불러오기
-from schemas import GraphState, OpicQuestionSet, ValidationResult
-from prompts import GENERATOR_SYSTEM_PROMPT, VALIDATOR_SYSTEM_PROMPT
+from schemas import GraphState, OpicContent, OpicSQLSet, ValidationResult
+from prompts import get_content_prompt, VALIDATOR_SYSTEM_PROMPT
 
-load_dotenv() # .env 파일에서 환경변수(API KEY) 로드
+load_dotenv()
+
+# 모델 설정 (gpt-5-nano 유지 또는 gpt-4o-mini 등 가벼운 모델 권장)
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7) 
 
 # ============================================================
-# [변경됨] 모델 설정: gpt-5-nano 적용 (temperature 제거)
+# Helper Function: Python으로 SQL 생성 (0.01초 소요)
 # ============================================================
-llm = ChatOpenAI(
-    model="gpt-5-nano",
-    # gpt-5-nano는 temperature 파라미터를 지원하지 않으므로 제거함
+def convert_to_sql_fast(content: OpicContent) -> str:
+    # 1. Topic ID, Type ID를 가져오는 서브쿼리 준비
+    topic_subquery = f"(SELECT topic_id FROM Topic WHERE topic_name = '{content.topic}' LIMIT 1)"
+    type_subquery = f"(SELECT type_id FROM questiontype WHERE type_code = '{content.gen_mode}' LIMIT 1)"
+    
+    # 2. Values 문자열 생성
+    # 텍스트 내의 싱글 쿼트(')만 이스케이프 처리 (' -> '')
+    values_list = []
+    for q in content.questions:
+        safe_text = q.text.replace("'", "''")
+        values_list.append(f"('{safe_text}', {q.order})")
+    
+    values_str = ",\n  ".join(values_list)
+
+    # 3. 최종 SQL 조립
+    sql = f"""
+WITH new_set AS (
+  INSERT INTO question_set (level, question_cnt, topic_id, type_id)
+  VALUES ({content.difficulty}, {len(content.questions)}, {topic_subquery}, {type_subquery})
+  RETURNING set_id
 )
+INSERT INTO question_bank (question_text, audio_url, "order", set_id)
+SELECT q.question_text, '' AS audio_url, q."order", new_set.set_id
+FROM (VALUES 
+  {values_str}
+) AS q(question_text, "order")
+CROSS JOIN new_set;
+    """
+    return sql.strip()
 
-# --- Nodes ---
-def generate_node(state: GraphState):
-    print(f"\n--- [GENERATOR] Generating Questions (Attempt: {state['retry_count'] + 1}) ---")
+# ============================================================
+# Nodes
+# ============================================================
+
+def content_node(state: GraphState):
+    """Step 1: 문제 내용 생성"""
+    print(f"\n--- [1. CONTENT] Designing Questions ({state['gen_mode']}) ---")
+    start_time = time.time()
     
-    # gpt-5-nano의 강력한 JSON Mode/Structured Output 활용
-    structured_llm = llm.with_structured_output(OpicQuestionSet)
+    structured_llm = llm.with_structured_output(OpicContent)
     
-    feedback_context = ""
+    # 피드백 반영
+    feedback_msg = ""
     if state.get("validation_result") and not state["validation_result"].is_valid:
-        feedback_context = f"\n<Previous Feedback>\n{state['validation_result'].feedback}\n</Previous Feedback>\nReflect this feedback and regenerate."
+        feedback_msg = f"\n[FEEDBACK]: {state['validation_result'].feedback}\n(Please fix the content logic.)"
 
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", GENERATOR_SYSTEM_PROMPT),
-        ("user", "Topic: {topic}, Difficulty: {difficulty}" + feedback_context)
-    ])
+    final_prompt = state["content_prompt"] + feedback_msg
     
-    chain = prompt | structured_llm
-    result = chain.invoke({"topic": state["topic"], "difficulty": state["difficulty"]})
+    chain = ChatPromptTemplate.from_messages([
+        ("system", final_prompt),
+        ("user", "Generate the questions now.")
+    ]) | structured_llm
+
+    with get_openai_callback() as cb:
+        result = chain.invoke({})
     
-    return {"generated_output": result, "retry_count": state["retry_count"] + 1}
+    elapsed = round(time.time() - start_time, 2)
+    
+    # [NEW] 여기서 바로 SQL 변환 수행 (LLM 안씀)
+    print(f"⚡ Converting to SQL (Code)...")
+    sql_text = convert_to_sql_fast(result)
+    generated_sql_obj = OpicSQLSet(sql_query=sql_text)
+
+    # 로그 저장
+    new_log = {
+        "step": "1. Content + SQL",
+        "time_sec": elapsed,
+        "total_tokens": cb.total_tokens,
+        "cost_usd": f"${cb.total_cost:.5f}"
+    }
+    
+    current_logs = state.get("logs", []) or []
+    current_logs.append(new_log)
+
+    # generated_sql까지 한 번에 반환
+    return {
+        "generated_content": result, 
+        "generated_sql": generated_sql_obj,
+        "retry_count": state["retry_count"] + 1, 
+        "logs": current_logs
+    }
 
 def validate_node(state: GraphState):
-    print("\n--- [VALIDATOR] Reviewing Generated Questions ---")
+    """Step 2: 로직 검수 (SQL 문법 검사는 제외, 내용만 검수)"""
+    print("--- [2. VALIDATOR] Reviewing Content Logic ---")
+    start_time = time.time()
+
     structured_llm = llm.with_structured_output(ValidationResult)
     
-    questions_json = state["generated_output"].model_dump_json(indent=2)
-    
-    # [수정 전] f-string 사용으로 인해 JSON의 {}가 LangChain 변수로 오인됨
-    # prompt = ChatPromptTemplate.from_messages([
-    #     ("system", VALIDATOR_SYSTEM_PROMPT),
-    #     ("user", f"Analyze this data:\n{questions_json}") 
-    # ])
-    # chain = prompt | structured_llm
-    # result = chain.invoke({})
+    # 검수 대상: 만들어진 '질문 내용'만 확인하면 됨 (SQL은 코드로 짰으니 문법 오류 없음)
+    content = state["generated_content"]
+    questions_text = "\n".join([f"Order {q.order}: {q.text}" for q in content.questions])
 
-    # [수정 후] 데이터를 변수({input_data})로 처리하여 안전하게 주입
-    prompt = ChatPromptTemplate.from_messages([
+    check_input = f"""
+    Target Mode: {state['gen_mode']}
+    Questions Generated:
+    {questions_text}
+    
+    Check if the 'Order Rules' are followed correctly (e.g., Past Experience at the correct order).
+    """
+    
+    chain = ChatPromptTemplate.from_messages([
         ("system", VALIDATOR_SYSTEM_PROMPT),
-        ("user", "Analyze this data:\n{input_data}") 
-    ])
+        ("user", check_input)
+    ]) | structured_llm
     
-    chain = prompt | structured_llm
+    with get_openai_callback() as cb:
+        result = chain.invoke({})
     
-    # invoke 할 때 데이터를 딕셔너리로 전달
-    result = chain.invoke({"input_data": questions_json})
-    
-    print(f"Validation Result: {result.is_valid} | Feedback: {result.feedback}")
-    return {"validation_result": result}
+    elapsed = round(time.time() - start_time, 2)
+    print(f"Result: {result.is_valid} | Msg: {result.feedback}")
 
-# --- Edges ---
+    new_log = {
+        "step": "2. Validator",
+        "time_sec": elapsed,
+        "total_tokens": cb.total_tokens,
+        "cost_usd": f"${cb.total_cost:.5f}"
+    }
+    
+    current_logs = state.get("logs", [])
+    current_logs.append(new_log)
+
+    return {"validation_result": result, "logs": current_logs}
+
+# ============================================================
+# Graph Construction
+# ============================================================
 MAX_RETRIES = 3
 
 def route_after_validation(state: GraphState):
     if state["validation_result"].is_valid:
         return "end"
     if state["retry_count"] >= MAX_RETRIES:
-        print("--- Max retries reached. Stopping. ---")
+        print("--- Max retries reached. ---")
         return "end"
     return "retry"
 
-# --- Graph Construction ---
 workflow = StateGraph(GraphState)
-workflow.add_node("generator", generate_node)
+
+# 노드가 3개에서 2개로 줄었습니다!
+workflow.add_node("content_generator", content_node)
 workflow.add_node("validator", validate_node)
 
-workflow.add_edge(START, "generator")
-workflow.add_edge("generator", "validator")
+workflow.add_edge(START, "content_generator")
+workflow.add_edge("content_generator", "validator")
 
 workflow.add_conditional_edges(
     "validator",
     route_after_validation,
-    {"retry": "generator", "end": END}
+    {"retry": "content_generator", "end": END}
 )
 
 app = workflow.compile()

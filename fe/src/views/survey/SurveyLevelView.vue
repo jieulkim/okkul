@@ -2,7 +2,7 @@
 import { ref, inject, onBeforeUnmount } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useSurveyStore } from "@/stores/survey";
-import { Surveys } from "@/api/Surveys";
+import api from "@/utils/api";
 
 const router = useRouter();
 const route = useRoute();
@@ -107,13 +107,13 @@ const goNext = async () => {
       };
       console.log("[SurveyLevelView] Final Data to Submit:", finalSurveyData);
 
-      // 3. API 호출 (설문 생성)
-      const surveysApi = new Surveys();
-      const response = await surveysApi.createSurvey(finalSurveyData);
-      console.log("[SurveyLevelView] API Response:", response);
-      
-      // response.data가 실제 응답 객체 (HTTPClient/Axios 기준)
-      surveyId = response.data?.surveyId;
+        // 3. API 호출 (설문 생성)
+        const response = await api.post('/surveys', finalSurveyData);
+        if (!response.ok) throw new Error('설문 저장 실패');
+        
+        const data = await response.json();
+        console.log("[SurveyLevelView] API Response:", data);
+        surveyId = data.surveyId;
 
       // 성공적으로 저장되었다면 로컬 스토리지에 표시 (리다이렉트 루프 방지용)
       localStorage.setItem('survey_completed', 'true');

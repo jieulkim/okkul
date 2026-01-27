@@ -1,10 +1,15 @@
 /**
  * API 유틸리티
+ * - JWT 토큰 자동 포함
+ * - 401 에러 시 자동 로그인 페이지 이동
  */
 
-// 백엔드 도메인 주소
-const API_BASE_URL = 'https://api.cicd.okkul.site'
+// API Base URL
+const API_BASE_URL = 'https://api.dev.okkul.site'
 
+/**
+ * Authorization 헤더가 포함된 fetch 래퍼
+ */
 export const apiFetch = async (url, options = {}) => {
     const accessToken = localStorage.getItem('accessToken')
 
@@ -14,28 +19,37 @@ export const apiFetch = async (url, options = {}) => {
         ...options.headers,
     }
 
+    // JWT 토큰 자동 포함
     if (accessToken) {
         headers['Authorization'] = `Bearer ${accessToken}`
     }
 
+    // FormData는 Content-Type 자동 설정
     if (options.body instanceof FormData) {
         delete headers['Content-Type']
     }
 
-    const cleanUrl = url.startsWith('/') ? url.slice(1) : url
-    const finalUrl = `${API_BASE_URL}/${cleanUrl}`
-
     try {
-        const response = await fetch(finalUrl, {
+        const response = await fetch(`${API_BASE_URL}/${url.replace(/^\//, '')}`, {
             ...options,
             headers,
         })
 
+        // 401 Unauthorized
         if (response.status === 401) {
             localStorage.removeItem('accessToken')
             localStorage.removeItem('refreshToken')
             window.location.href = '/login'
             throw new Error('Unauthorized')
+        }
+
+        // Check if response is JSON before the caller tries to parse it
+        const contentType = response.headers.get('content-type')
+        if (response.ok && contentType && !contentType.includes('application/json')) {
+            const text = await response.text()
+            console.error('Expected JSON but received HTML/Text. This usually means the API endpoint is wrong or the server is returning an error page.')
+            console.error('Response snippet:', text.substring(0, 200))
+            throw new Error('Invalid JSON response from server')
         }
 
         return response
@@ -45,16 +59,36 @@ export const apiFetch = async (url, options = {}) => {
     }
 }
 
+/**
+ * 편의 메서드
+ */
 export const api = {
-    get: (url, options = {}) => apiFetch(url, { ...options, method: 'GET' }),
-    post: (url, data, options = {}) => apiFetch(url, {
-        ...options,
-        method: 'POST',
-        body: data instanceof FormData ? data : JSON.stringify(data)
-    }),
-    put: (url, data, options = {}) => apiFetch(url, { ...options, method: 'PUT', body: JSON.stringify(data) }),
-    patch: (url, data, options = {}) => apiFetch(url, { ...options, method: 'PATCH', body: JSON.stringify(data) }),
-    delete: (url, options = {}) => apiFetch(url, { ...options, method: 'DELETE' }),
+    get: (url, options = {}) =>
+        apiFetch(url, { ...options, method: 'GET' }),
+
+    post: (url, data, options = {}) =>
+        apiFetch(url, {
+            ...options,
+            method: 'POST',
+            body: data instanceof FormData ? data : JSON.stringify(data)
+        }),
+
+    put: (url, data, options = {}) =>
+        apiFetch(url, {
+            ...options,
+            method: 'PUT',
+            body: JSON.stringify(data)
+        }),
+
+    patch: (url, data, options = {}) =>
+        apiFetch(url, {
+            ...options,
+            method: 'PATCH',
+            body: JSON.stringify(data)
+        }),
+
+    delete: (url, options = {}) =>
+        apiFetch(url, { ...options, method: 'DELETE' }),
 }
 
 export default api

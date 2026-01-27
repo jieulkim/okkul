@@ -1,25 +1,49 @@
 <script setup>
-import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { inject, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth' // Import auth store
 
+const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
-// 1. 로그인 여부 판단 (authStore의 user 상태를 실시간 감시)
-const isLoggedIn = computed(() => !!authStore.user)
+// 전역 다크모드 상태 및 토글 함수 주입
+const isDarkMode = inject('isDarkMode', null)
+const toggleDarkMode = inject('toggleDarkMode', null)
 
-// 2. 프로필 표시 데이터 (유저 닉네임의 첫 글자)
-const profileInitial = computed(() => {
-  return authStore.user?.nickname?.[0]?.toUpperCase() || 'U'
+// 로그인 여부 (Auth Store)
+const isAuthenticated = computed(() => authStore.isAuthenticated)
+const userProfile = computed(() => authStore.user || {})
+
+// 프로필 이미지 표시 계산
+const profileDisplay = computed(() => {
+  if (userProfile.value.profileImage) {
+    return { type: 'image', value: userProfile.value.profileImage }
+  }
+  return { 
+    type: 'initial', 
+    value: userProfile.value.nickname?.[0]?.toUpperCase() || 'U'
+  }
 })
+
+// 현재 활성 경로 확
+const isActive = (path) => {
+  return route.path === path
+}
+
+// 다크모드 토글 핸들러
+const handleDarkModeToggle = () => {
+  if (toggleDarkMode) {
+    toggleDarkMode()
+  }
+}
 
 // 네비게이션 메뉴
 const navItems = [
   { path: '/exam', label: '실전 모의고사', icon: 'assignment' },
-  { path: '/practice', label: '유형별 연습', icon: 'category' }
-  // 피드백 리포트는 추후 경로 확정 시 추가
+  { path: '/practice', label: '유형별 연습', icon: 'category' },
+  // { path: '/reports', label: '피드백 리포트', icon: 'assessment' }
 ]
 
 // 3. 로그아웃 처리
@@ -74,16 +98,28 @@ const isActive = (path) => {
             <span class="profile-name">{{ authStore.user?.nickname }}님</span>
           </router-link>
 
-          <!-- 로그아웃 버튼 -->
-          <button class="logout-btn" @click="handleLogout" title="로그아웃">
-            <span class="material-icons-outlined">logout</span>
-          </button>
+        <!-- 로그인 상태에 따른 UI -->
+        <template v-if="isAuthenticated">
+          <!-- 프로필 - 마이페이지로 이동 -->
+          <router-link to="/mypage" class="user-profile">
+            <div class="profile-avatar">
+              <img 
+                v-if="profileDisplay.type === 'image'" 
+                :src="profileDisplay.value" 
+                :alt="userProfile.nickname"
+              />
+              <span v-else class="profile-initial">{{ profileDisplay.value }}</span>
+            </div>
+            <span class="profile-name">{{ userProfile.nickname || userProfile.name }}</span>
+          </router-link>
+        </template>
+        
+        <template v-else>
+           <router-link to="/login" class="login-btn">
+             로그인
+           </router-link>
         </template>
 
-        <!-- 로그인 안 했을 때 -->
-        <router-link v-else to="/login" class="login-btn">
-          로그인
-        </router-link>
       </div>
     </div>
   </header>
@@ -233,5 +269,23 @@ const isActive = (path) => {
   font-size: 14px;
   color: #64748b;
   font-weight: 500;
+}
+
+.login-btn {
+  padding: 8px 20px;
+  background: #FFD700;
+  color: #000;
+  border-radius: 20px;
+  font-weight: 700;
+  text-decoration: none;
+  font-size: 14px;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(255, 215, 0, 0.2);
+}
+
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+  background: #ffdb1a;
 }
 </style>

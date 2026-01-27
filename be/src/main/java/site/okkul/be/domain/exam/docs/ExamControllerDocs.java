@@ -2,14 +2,17 @@ package site.okkul.be.domain.exam.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 import site.okkul.be.domain.exam.dto.*;
+import site.okkul.be.global.config.SwaggerConfig;
 
 import java.util.List;
 
@@ -20,7 +23,8 @@ public interface ExamControllerDocs {
             summary = "모의고사 시작",
             description = "시험 세션을 생성하고 초기 문항(1~7번)을 반환합니다."
     )
-    ResponseEntity<ExamStartResponse> startExam(@RequestBody ExamStartRequest request);
+    @SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
+    ResponseEntity<ExamStartResponse> startExam(@Parameter(hidden = true) UserDetails user, @RequestBody ExamStartRequest request);
 
     @Operation(
             summary = "나머지 문항 조회",

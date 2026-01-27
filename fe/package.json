@@ -9,14 +9,23 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:unit": "vitest",
+    "generate-api": "swagger-typescript-api generate -p https://api.dev.okkul.site/v3/api-docs -o ./src/api -n myApi.ts --modular -d --extract-request-body --extract-response-body --extract-response-error --axios"
   },
   "dependencies": {
-    "vue": "^3.5.26"
+    "axios": "^1.13.3",
+    "pinia": "^3.0.4",
+    "swagger-typescript-api": "^13.2.16",
+    "vue": "^3.5.26",
+    "vue-router": "^4.6.4"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.3",
+    "@vue/test-utils": "^2.4.6",
+    "jsdom": "^27.4.0",
     "vite": "^7.3.0",
-    "vite-plugin-vue-devtools": "^8.0.5"
+    "vite-plugin-vue-devtools": "^8.0.5",
+    "vitest": "^4.0.16"
   }
 }

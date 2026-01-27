@@ -1,0 +1,191 @@
+<script setup>
+import { ref, onUnmounted, inject, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+
+const router = useRouter()
+const route = useRoute()
+const isDarkMode = inject('isDarkMode', ref(false))
+
+const fromMode = computed(() => route.query.from || 'exam')
+
+// 1. currentStep 정의 (Setup은 Step 3)
+const currentStep = ref(3) 
+
+const isPlaying = ref(false)
+const isRecording = ref(false)
+const hasRecording = ref(false)
+
+const audio = new Audio('https://opickoreademo.multicampus.com/Audio/EN/0.mp3')
+
+const togglePlay = () => {
+  if (isPlaying.value) {
+    audio.pause()
+    audio.currentTime = 0
+  } else {
+    audio.play()
+    audio.onended = () => isPlaying.value = false
+  }
+  isPlaying.value = !isPlaying.value
+}
+
+const startRec = () => {
+  isRecording.value = true
+  setTimeout(() => {
+    isRecording.value = false
+    hasRecording.value = true
+  }, 3000)
+}
+
+const handleNext = () => {
+  if (fromMode.value === 'practice') {
+    // 연습 모드에서 왔다면 연습 문제 페이지로 (기존에 짜두신 경로로 수정 가능)
+    router.push('/practice/question')
+  } else {
+    // 그 외(모의고사 등)는 모의고사 문제 페이지로
+    router.push('/exam/question')
+  }
+}
+
+onUnmounted(() => audio.pause())
+</script>
+
+<template>
+  <div class="assessment-page" :class="{ 'dark-mode': isDarkMode }">
+    <header class="assessment-header">
+      <nav class="step-progress">
+        <div class="step" :class="{ completed: currentStep > 1, active: currentStep === 1 }">
+          <div class="step-content">
+            <span class="step-number">Step 1 <span v-if="currentStep > 1" class="material-icons check-icon">check_circle</span></span>
+            <span class="step-label">Background Survey</span>
+          </div>
+        </div>
+        <div class="step" :class="{ completed: currentStep > 2, active: currentStep === 2 }">
+          <div class="step-content">
+            <span class="step-number">Step 2 <span v-if="currentStep > 2" class="material-icons check-icon">check_circle</span></span>
+            <span class="step-label">Self Assessment</span>
+          </div>
+        </div>
+        <div class="step" :class="{ completed: currentStep > 3, active: currentStep === 3 }">
+          <div class="step-content">
+            <span class="step-number">Step 3 <span v-if="currentStep > 3" class="material-icons check-icon">check_circle</span></span>
+            <span class="step-label">Setup</span>
+          </div>
+        </div>
+        <div class="step" :class="{ completed: currentStep > 4, active: currentStep === 4 }">
+          <div class="step-content">
+            <span class="step-number">Step 4 <span v-if="currentStep > 4" class="material-icons check-icon">check_circle</span></span>
+            <span class="step-label">Sample Question</span>
+          </div>
+        </div>
+        <div class="step last" :class="{ completed: currentStep > 5, active: currentStep === 5 }">
+          <div class="step-content">
+            <span class="step-number">Step 5</span>
+            <span class="step-label">Begin Test</span>
+          </div>
+        </div>
+      </nav>
+      <h1 class="page-title">Device Setup</h1>
+    </header>
+
+    <main class="assessment-main">
+      <div class="setup-grid">
+        <div class="character-card">
+          <div class="okkul-mini-container">
+            <div class="platypus-body">
+              <div class="platypus-hat"></div>
+              <div class="platypus-eye left"></div>
+              <div class="platypus-eye right"></div>
+              <div class="platypus-bill"></div>
+              <div class="platypus-arm-right" :class="{ 'wave': isPlaying }"></div>
+            </div>
+          </div>
+          <button @click="togglePlay" class="play-btn" :class="{ active: isPlaying }">
+            <span class="material-icons">{{ isPlaying ? 'stop' : 'play_arrow' }}</span>
+            {{ isPlaying ? 'Stop' : 'Test Audio' }}
+          </button>
+        </div>
+
+        <div class="control-card">
+          <ul class="steps">
+            <li>1. 소리가 잘 들리는지 버튼을 눌러 확인하세요.</li>
+            <li>2. 마이크 녹음 버튼을 눌러 목소리를 점검하세요.</li>
+          </ul>
+          <div class="btns">
+            <button @click="startRec" class="rec-btn" :disabled="isRecording">
+              {{ isRecording ? 'Recording...' : 'Start Recording' }}
+            </button>
+            <button v-if="hasRecording" class="check-btn">Play Recorded Voice</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <footer class="assessment-footer">
+      <button @click="router.back()" class="nav-btn back-btn">Back</button>
+      <button @click="handleNext" class="nav-btn next-btn" :disabled="!hasRecording">Next</button>
+    </footer>
+  </div>
+</template>
+
+<style scoped>
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+/* 컨테이너 및 기본 텍스트 설정 */
+.assessment-page {
+  min-height: 100vh;
+  background: #ffffff;
+  color: #1e293b;
+}
+
+/* 통일된 Step Progress CSS (높이 48px 권장) */
+.step-progress {
+  display: flex;
+  height: 48px;
+  margin-bottom: 30px;
+  width: 100%;
+}
+
+.step {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eee;
+  color: #94a3b8;
+  font-size: 12px;
+  clip-path: polygon(0% 0%, 90% 0%, 100% 50%, 90% 100%, 0% 100%, 10% 50%);
+  margin-right: -2px;
+}
+
+.step:first-child { clip-path: polygon(0% 0%, 90% 0%, 100% 50%, 90% 100%, 0% 100%); }
+.step.last { clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 10% 50%); }
+
+.step.active { background: #FFD700; color: #1e293b; font-weight: bold; }
+.step.completed { background: #e2e8f0; color: #64748b; opacity: 0.8; }
+
+.step-content { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.step-number { font-weight: 700; display: flex; align-items: center; gap: 4px; }
+.check-icon { font-size: 14px !important; }
+
+/* 다크모드 대응 */
+.dark-mode { background: #0f172a; color: #f1f5f9; }
+.dark-mode .step { background: #1e293b; color: #64748b; }
+.dark-mode .step.active { background: #FFD700; color: #0f172a; }
+.dark-mode .character-card { background: #1e293b; border-color: #334155; }
+.dark-mode .assessment-footer { background: #0f172a; border-top-color: #334155; }
+
+/* 나머지 스타일 유지 */
+.assessment-header { max-width: 1280px; margin: 0 auto; padding: 32px 16px; }
+.page-title { font-size: 24px; font-weight: 800; margin-top: 20px; }
+.setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; max-width: 1000px; margin: 0 auto; }
+.character-card { background: #f8f9fa; border-radius: 20px; padding: 60px; text-align: center; }
+.play-btn { background: #FFD700; border: none; padding: 12px 24px; border-radius: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px; margin: 30px auto 0; font-weight: bold; }
+
+.btns { display: flex; gap: 10px; margin-top: 20px; }
+.rec-btn { background: #ef4444; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; }
+.check-btn { background: #3b82f6; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; }
+
+.assessment-footer { position: fixed; bottom: 0; left: 0; right: 0; padding: 20px 40px; display: flex; justify-content: space-between; border-top: 1px solid #e2e8f0; }
+.nav-btn { padding: 12px 30px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
+.next-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+</style>

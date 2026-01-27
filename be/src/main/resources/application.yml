@@ -36,6 +36,11 @@ spring:
               - email
               - profile
 
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 25MB
+
 server:
   forward-headers-strategy: framework
 
@@ -51,7 +56,7 @@ app:
     refresh-token-expiration: 7d
 
 minio:
-  endpoint: https://minio-gui.okkul.site
-  access-key: minioadmin
-  secret-key: minioadmin
-  bucket-name: okkul
+  endpoint: ${MINIO_ENDPOINT:https://minio.okkul.site}
+  access-key: ${MINIO_ACCESS_KEY:minio_access_key}
+  secret-key: ${MINIO_SECRET_KEY:minio_secret_key}
+  bucket-name: ${MINIO_BUCKET:okkul}

@@ -1,107 +1,135 @@
 import sys
 from graph import app
-from database import save_question_set, get_db_connection
+from database import execute_generated_sql, get_topic_info, get_all_topic_codes
+from prompts import get_content_prompt
 
-# -------------------------------------------------------------------------
-# [Helper] DB에서 주제 정보(ID, 이름) 가져오기
-# -------------------------------------------------------------------------
-def get_topic_info(topic_code_input):
-    """
-    Topic Code(예: 'PARK')를 입력받아 DB의 ID(106)와 한글명('공원가기')을 반환
-    """
-    conn = get_db_connection()
-    if not conn:
-        print("❌ DB 연결 실패")
-        return None
-        
-    cur = conn.cursor()
-    try:
-        # Topic 테이블 조회
-        sql = "SELECT topic_id, topic_name FROM Topic WHERE topic_code = %s"
-        cur.execute(sql, (topic_code_input,))
-        result = cur.fetchone()
-        
-        if result:
-            return {"id": result[0], "name": result[1]}
-        else:
-            return None
-    finally:
-        cur.close()
-        conn.close()
-
-# -------------------------------------------------------------------------
-# [Main] 실행 로직
-# -------------------------------------------------------------------------
 if __name__ == "__main__":
+    # 1. 입력 받기 (TARGET_CODE 제거)
+    TARGET_DIFF = input("Enter TARGET_DIFF (1-6): ").strip()
+    GEN_MODE = input("Enter GEN_MODE (e.g., COMBO3, RP3, AD2): ").strip()
 
-    # =====================================================================
-    # 🎛️ [설정 패널] 여기서 원하는 문제 설정을 바꾸세요!
-    # =====================================================================
-    TARGET_CODE = "WATCH_MOVIE"      # DB에 있는 Topic Code (예: PARK, MUSIC, JOGGING)
-    TARGET_DIFF = "IH"        # 난이도 (IM, IH, AL)
-    
-    # 생성 모드 선택: "COMBO" | "ROLEPLAY" | "ADVANCE" | "INTRO"
-    GEN_MODE = "COMBO" 
-    # =====================================================================
-
-    # 1. DB에서 주제 정보 조회
-    print(f"🔍 DB에서 '{TARGET_CODE}' 주제 검색 중...")
-    topic_info = get_topic_info(TARGET_CODE)
-    
-    if not topic_info:
-        print(f"❌ Error: DB에서 주제 코드 '{TARGET_CODE}'를 찾을 수 없습니다.")
-        print("   (힌트: DB의 Topic 테이블에 해당 코드가 있는지 확인하세요.)")
+    # 2. 모든 토픽 코드 가져오기
+    print("🔍 Fetching all topic codes from DB...")
+    all_topic_codes = get_all_topic_codes()
+    if not all_topic_codes:
+        print("❌ No topic codes found in DB.")
         sys.exit()
 
-    topic_id = topic_info['id']
-    topic_name_kr = topic_info['name']
-    
-    print(f"👉 타겟 주제: {topic_name_kr} (ID: {topic_id})")
-    print(f"👉 생성 모드: {GEN_MODE} | 난이도: {TARGET_DIFF}")
+    print(f"📋 Found {len(all_topic_codes)} topics: {all_topic_codes[:5]}...")  # 처음 5개만 표시
 
-    # 2. 에이전트에게 전달할 '프롬프트용 주제 텍스트' 가공
-    # (에이전트가 모드를 인식할 수 있도록 힌트를 붙여줍니다)
-    prompt_topic_text = topic_name_kr
-    
-    if GEN_MODE == "ROLEPLAY":
-        prompt_topic_text += " (Create a Roleplay set)"
-    elif GEN_MODE == "ADVANCE":
-        prompt_topic_text += " (Create an Advance set)"
-    elif GEN_MODE == "INTRO":
-        prompt_topic_text = "Self Introduction" # 자기소개는 주제명이 고정됨
+    # 3. 각 토픽에 대해 루프 실행
+    success_count = 0
+    failure_count = 0
+    total_logs = []
 
-    # 3. LangGraph 초기 상태 설정
-    initial_state = {
-        "topic": prompt_topic_text,
-        "difficulty": TARGET_DIFF,
-        "retry_count": 0,
-        "generated_output": None,
-        "validation_result": None
-    }
-    
-    # 4. 그래프 실행 (생성 -> 검증 루프)
-    print("\n🤖 에이전트 작업 시작...")
-    final_state = app.invoke(initial_state)
-    
-    # 5. 결과 확인 및 DB 저장
-    if final_state["validation_result"] and final_state["validation_result"].is_valid:
-        print("\n✅ [성공] 유효한 문제 세트가 생성되었습니다!")
-        
-        output_data = final_state["generated_output"]
-        
-        # 결과 미리보기 출력
-        print("-" * 50)
-        print(f"📄 주제: {output_data.topic}")
-        print(f"📊 대표유형 ID: {output_data.dominant_type_id}")
-        for q in output_data.questions:
-            print(f"   Q{q.order} [{q.type_id}]: {q.question_en[:50]}...")
-        print("-" * 50)
+    for idx, TARGET_CODE in enumerate(all_topic_codes, 1):
+        print(f"\n{'='*60}")
+        print(f"🔄 Processing Topic {idx}/{len(all_topic_codes)}: {TARGET_CODE}")
+        print(f"{'='*60}")
 
-        # DB 저장 함수 호출
-        print(f"💾 Database(PostgreSQL)에 저장 중... (Topic ID: {topic_id})")
-        save_question_set(topic_id, output_data)
+        # DB에서 주제 정보 조회
+        topic_info = get_topic_info(TARGET_CODE)
+        if not topic_info:
+            print(f"❌ Error: Topic Code '{TARGET_CODE}' not found in DB. Skipping...")
+            failure_count += 1
+            continue
+
+        topic_name_kr = topic_info['name']
         
-    else:
-        print("\n❌ [실패] 재시도 횟수를 초과했거나 생성에 실패했습니다.")
-        if final_state["validation_result"]:
-            print(f"   사유: {final_state['validation_result'].feedback}")
+        # 규칙 기반 프롬프트 생성
+        rule_prompt = get_content_prompt(GEN_MODE, TARGET_DIFF, topic_name_kr)
+        
+        print(f"👉 Topic: {topic_name_kr} | Mode: {GEN_MODE} | Level: {TARGET_DIFF}")
+
+        # LangGraph 초기 상태 설정
+        initial_state = {
+            "topic": topic_name_kr,
+            "difficulty": TARGET_DIFF,
+            "gen_mode": GEN_MODE,
+            "content_prompt": rule_prompt,
+            "retry_count": 0,
+            "generated_content": None,
+            "generated_sql": None,
+            "validation_result": None,
+            "logs": []
+        }
+        
+        # 실행
+        print("\n🤖 Agent Workflow Started...")
+        final_state = app.invoke(initial_state)
+        
+        # 결과 처리
+        if final_state["validation_result"] and final_state["validation_result"].is_valid:
+            print("\n✅ [SUCCESS] Valid OPIc Set Generated!")
+            
+            sql = final_state["generated_sql"].sql_query
+            print("-" * 50)
+            print(sql)
+            print("-" * 50)
+
+            print("💾 Executing SQL...")
+            if execute_generated_sql(sql):
+                print("🎉 Saved to DB!")
+                success_count += 1
+            else:
+                print("❌ DB Execution Failed.")
+                failure_count += 1
+                
+        else:
+            print("\n❌ [FAILURE] Could not generate valid set.")
+            print("Generated Content:")
+            if final_state.get("generated_content"):
+                for q in final_state["generated_content"].questions:
+                    clean_text = q.text.replace("''", "'")
+                    print(f"  Order {q.order}: {clean_text}")
+            else:
+                print("  No content generated.")
+            failure_count += 1
+
+        # 로그 수집
+        total_logs.extend(final_state.get("logs", []))
+
+    # ========================================================
+    # [NEW] 전체 요약 리포트
+    # ========================================================
+    print("\n" + "="*80)
+    print("📊 OVERALL SUMMARY REPORT")
+    print("="*80)
+    print(f"Total Topics Processed: {len(all_topic_codes)}")
+    print(f"Successful Generations: {success_count}")
+    print(f"Failed Generations: {failure_count}")
+    print(f"Success Rate: {success_count / len(all_topic_codes) * 100:.1f}%")
+    print("="*80)
+
+    # 전체 성능 리포트
+    if total_logs:
+        print("\n📈 PERFORMANCE REPORT (Aggregated)")
+        print("-" * 80)
+        print(f"{'Step':<20} | {'Avg Time(s)':<10} | {'Total Tokens':<12} | {'Avg Cost($)':<10}")
+        print("-" * 80)
+        
+        step_stats = {}
+        for log in total_logs:
+            step = log['step']
+            if step not in step_stats:
+                step_stats[step] = {'times': [], 'tokens': [], 'costs': []}
+            step_stats[step]['times'].append(log['time_sec'])
+            step_stats[step]['tokens'].append(log['total_tokens'])
+            step_stats[step]['costs'].append(float(log['cost_usd'].replace('$', '')))
+        
+        total_time = 0
+        total_tokens = 0
+        total_cost = 0
+        
+        for step, stats in step_stats.items():
+            avg_time = sum(stats['times']) / len(stats['times'])
+            total_tokens_step = sum(stats['tokens'])
+            avg_cost = sum(stats['costs']) / len(stats['costs'])
+            print(f"{step:<20} | {avg_time:<10.2f} | {total_tokens_step:<12} | ${avg_cost:<9.4f}")
+            total_time += sum(stats['times'])
+            total_tokens += total_tokens_step
+            total_cost += sum(stats['costs'])
+        
+        print("-" * 80)
+        print(f"{'TOTALS':<20} | {total_time:<10.2f} | {total_tokens:<12} | ${total_cost:<9.4f}")
+        print("="*80 + "\n")

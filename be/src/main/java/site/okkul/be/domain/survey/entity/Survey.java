@@ -1,21 +1,14 @@
 package site.okkul.be.domain.survey.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
+
 import java.time.Instant;
 import java.util.Set;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import site.okkul.be.domain.topic.entity.Topic;
-import site.okkul.be.domain.user.entity.User;
 
 /**
  * 설문조사 엔티티
@@ -24,6 +17,8 @@ import site.okkul.be.domain.user.entity.User;
  */
 @Entity
 @Getter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 public class Survey {
 
@@ -31,22 +26,47 @@ public class Survey {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long surveyId;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	private User user;
+	@Column(name = "user_id", nullable = false)
+	private Long userId;
+
+	// Q1-1. 현재 귀하는 어느 분야에 종사하고 계십니까?
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private OccupationType occupation;
+
+	// Q1-2. 현재 귀하는 어디에서 학생을 가르치십니까?
+	@Enumerated(EnumType.STRING)
+	private TeachingLevel teachAt;
+
+	// Q1-3. 현재 귀하는 직업이 있으십니까?
+	private Boolean hasJob;
+
+	// Q1-4. 귀하의 근무 기간은 얼마나 되십니까?
+	@Enumerated(EnumType.STRING)
+	private WorkPeriod workPeriod;
+
+	// Q1-5. 귀하는 부하직원을 관리하는 관리직을 맡고 있습니까?
+	private Boolean isManager;
+
+	// Q2-1. 현재 당신은 어디에 살고 계십니까?
+	private Boolean isStudent;
+
+	// Q2-2. 현재 당신은 어디에 살고 계십니까?
+	@Enumerated(EnumType.STRING)
+	private ClassType classType;
+
+	// Q3-1. 현재 당신은 어디에 살고 계십니까?
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private ResidenceType residence;
 
 	private Integer level; // 1~6
 
-	@OneToMany(fetch = FetchType.EAGER)
-	@JoinTable(
-			name = "survey_topics",
-			joinColumns = @JoinColumn(name = "survey_id"),
-			inverseJoinColumns = @JoinColumn(name = "topic_id")
-	)
-	private Set<Topic> topics;
+	@ElementCollection(fetch = FetchType.LAZY)
+	@CollectionTable(name = "survey_topics", joinColumns = @JoinColumn(name = "survey_id"))
+	@Column(name = "topic_id")
+	private Set<Long> topicIds;
 
-	/**
-	 * 생성 일시
-	 */
 	@Column(nullable = false, updatable = false)
 	private Instant createdAt;
 }

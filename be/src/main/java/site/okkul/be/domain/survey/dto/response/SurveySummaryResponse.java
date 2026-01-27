@@ -2,12 +2,14 @@ package site.okkul.be.domain.survey.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 
 import java.time.Instant;
 import java.util.List;
 
 @Getter
+@Builder
 @AllArgsConstructor
 @Schema(description = "사용자의 설문조사 목록 조회용 요약 정보 응답 DTO")
 public class SurveySummaryResponse {

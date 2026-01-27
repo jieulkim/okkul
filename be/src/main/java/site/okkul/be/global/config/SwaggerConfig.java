@@ -19,6 +19,8 @@ public class SwaggerConfig {
 	public static final String USER = "User";
 	public static final String QUESTION = "Question";
 	public static final String PRACTICE = "Practice";
+	public static final String SURVEY = "Survey";
+	public static final String TOPIC = "Topic";
 
 
 	private final SecurityScheme securityScheme = new SecurityScheme()

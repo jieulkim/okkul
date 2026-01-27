@@ -5,6 +5,6 @@ import site.okkul.be.domain.topic.entity.Topic;
 
 import java.util.List;
 
-public interface TopicRepository extends JpaRepository<Topic, Long> {
+public interface TopicJpaRepository extends JpaRepository<Topic, Long> {
     List<Topic> findAllByCategoryIdIn(List<Long> categoryIds);
 }

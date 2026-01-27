@@ -49,3 +49,9 @@ app:
     secret: ${JWT_SECRET:your-jwt-secret-key-change-this-sure-to-change-this}
     access-token-expiration: 15m
     refresh-token-expiration: 7d
+
+minio:
+  endpoint: https://minio-gui.okkul.site
+  access-key: minioadmin
+  secret-key: minioadmin
+  bucket-name: okkul

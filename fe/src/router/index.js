@@ -68,6 +68,11 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: () => import('../views/auth/LoginView.vue')
+    },
+    {
+      path: '/oauth2/redirect',
+      name: 'oauth2-redirect',
+      component: () => import('../views/auth/OAuth2Redirect.vue')
     }
   ]
 })

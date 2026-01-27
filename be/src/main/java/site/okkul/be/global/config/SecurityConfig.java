@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -28,6 +29,7 @@ public class SecurityConfig {
 		http
 				// 1. CSRF 비활성화 (JWT 사용 시 일반적으로 끔)
 				.csrf(AbstractHttpConfigurer::disable)
+				.cors(Customizer.withDefaults())
 
 				// 2. 기본 로그인 폼 비활성화 (우리는 소셜 로그인만 함)
 				.formLogin(AbstractHttpConfigurer::disable)

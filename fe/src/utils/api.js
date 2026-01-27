@@ -4,8 +4,8 @@
  * - 401 에러 시 자동 로그인 페이지 이동
  */
 
-// API Base URL - '/api'를 사용하여 Vite Proxy를 이용합니다.
-const API_BASE_URL = '/api'
+// API Base URL
+const API_BASE_URL = 'https://api.dev.okkul.site'
 
 /**
  * Authorization 헤더가 포함된 fetch 래퍼
@@ -15,6 +15,7 @@ export const apiFetch = async (url, options = {}) => {
 
     const headers = {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
         ...options.headers,
     }
 
@@ -29,7 +30,7 @@ export const apiFetch = async (url, options = {}) => {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}${url}`, {
+        const response = await fetch(`${API_BASE_URL}/${url.replace(/^\//, '')}`, {
             ...options,
             headers,
         })
@@ -40,6 +41,15 @@ export const apiFetch = async (url, options = {}) => {
             localStorage.removeItem('refreshToken')
             window.location.href = '/login'
             throw new Error('Unauthorized')
+        }
+
+        // Check if response is JSON before the caller tries to parse it
+        const contentType = response.headers.get('content-type')
+        if (response.ok && contentType && !contentType.includes('application/json')) {
+            const text = await response.text()
+            console.error('Expected JSON but received HTML/Text. This usually means the API endpoint is wrong or the server is returning an error page.')
+            console.error('Response snippet:', text.substring(0, 200))
+            throw new Error('Invalid JSON response from server')
         }
 
         return response

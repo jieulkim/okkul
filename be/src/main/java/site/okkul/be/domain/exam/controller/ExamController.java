@@ -38,7 +38,8 @@ public class ExamController implements ExamControllerDocs {
     @PostMapping("/{examId}/questions/current")
     public ResponseEntity<List<QuestionResponse>> getRemainingQuestions(
             @PathVariable Long examId,
-            @RequestParam int adjustedDifficulty
+            @RequestParam int adjustedDifficulty,
+            @AuthenticationPrincipal UserDetails user
     ) {
         List<QuestionResponse> remaining = examService.getRemainingQuestions(examId, adjustedDifficulty);
         return ResponseEntity.ok(remaining);
@@ -56,7 +57,8 @@ public class ExamController implements ExamControllerDocs {
     public ResponseEntity<Void> submitAnswer(
             @PathVariable Long examId,
             @PathVariable Long answerId,
-            @RequestPart("file") MultipartFile file
+            @RequestPart("file") MultipartFile file,
+            @AuthenticationPrincipal UserDetails user
     ) {
         if (file == null || file.isEmpty()) {
             return ResponseEntity.badRequest().build();
@@ -71,7 +73,10 @@ public class ExamController implements ExamControllerDocs {
      */
     @Override
     @PostMapping("/{examId}/complete")
-    public ResponseEntity<Void> completeExam(@PathVariable Long examId) {
+    public ResponseEntity<Void> completeExam(
+            @PathVariable Long examId,
+            @AuthenticationPrincipal UserDetails user
+    ) {
         examService.completeExam(examId);
         return ResponseEntity.ok().build();
     }
@@ -81,7 +86,10 @@ public class ExamController implements ExamControllerDocs {
 
     @Override
     @GetMapping("/{examId}/status")
-    public ResponseEntity<ExamStatusResponse> getExamStatus(@PathVariable Long examId) {
+    public ResponseEntity<ExamStatusResponse> getExamStatus(
+            @PathVariable Long examId,
+            @AuthenticationPrincipal UserDetails user
+    ) {
         // TODO: 실제 서비스 연동 전까지 더미 유지 가능
         ExamStatusResponse dummy = ExamStatusResponse.builder()
                 .completedQuestions(12)
@@ -95,7 +103,9 @@ public class ExamController implements ExamControllerDocs {
 
     @Override
     @GetMapping("/{examId}/result")
-    public ResponseEntity<ExamResultResponse> getExamResult(@PathVariable Long examId) {
+    public ResponseEntity<ExamResultResponse> getExamResult(
+            @PathVariable Long examId,
+            @AuthenticationPrincipal UserDetails user) {
         // TODO: 실제 서비스 연동 전까지 더미 유지 가능
         return ResponseEntity.ok().build();
     }

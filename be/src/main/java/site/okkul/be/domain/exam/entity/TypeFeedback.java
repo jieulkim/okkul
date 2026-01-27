@@ -48,6 +48,12 @@ public class TypeFeedback {
     @Column(name = "fluency_feedback", columnDefinition = "TEXT")
     private String fluencyFeedback;
 
+    @Column(name = "relevance_score")
+    private Integer relevanceScore;
+
+    @Column(name = "relevance_feedback", columnDefinition = "TEXT")
+    private String relevance_feedback;
+
     /**
      * 오꿀쌤의 교정 스크립트 (AI가 다듬어준 문장)
      */

@@ -2,6 +2,7 @@
 import { ref, onMounted, inject } from 'vue';
 import { useRouter } from 'vue-router';
 import SurveySelectModal from '@/components/common/SurveySelectModal.vue';
+import api from '@/utils/api';
 
 const router = useRouter();
 const isDarkMode = inject('isDarkMode', ref(false));
@@ -12,12 +13,17 @@ const existingSurveys = ref([]);
 // ERD/API 참고용 데이터 로드 로직
 const fetchExistingSurveys = async () => {
   try {
-    // 실제 구현 시: const { data } = await axios.get('/api/surveys/me')
-    // 현재는 더미 데이터를 ERD 구조에 맞춰 유지
-    existingSurveys.value = [
-      { surveyId: 101, createdAt: '2026-01-21T14:00:00', level: 5, occupation: '직장인', topics: [1, 5, 12] },
-      { surveyId: 102, createdAt: '2026-01-25T09:30:00', level: 4, occupation: '학생', topics: [2, 8, 15] }
-    ];
+    const response = await api.get('/surveys');
+    if (response.ok) {
+        const data = await response.json();
+        existingSurveys.value = data.surveys.map(s => ({
+            surveyId: s.surveyId,
+            createdAt: s.createdAt,
+            level: s.level,
+            occupation: s.occupationAnswerId,
+            topics: s.topicList
+        }));
+    }
   } catch (error) {
     console.error("설문 목록 로드 실패", error);
   }

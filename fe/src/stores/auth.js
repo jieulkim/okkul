@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import axios from 'axios'
 import router from '@/router'
+import api from '@/utils/api'
 
 export const useAuthStore = defineStore('auth', () => {
     const user = ref(null)
@@ -12,14 +12,18 @@ export const useAuthStore = defineStore('auth', () => {
     const isAuthenticated = computed(() => !!user.value)
 
     const login = () => {
-        window.location.href = '/api/oauth2/authorization/google'
+        window.location.href = 'https://api.dev.okkul.site/oauth2/authorization/google'
     }
 
     const fetchUser = async () => {
         loading.value = true
         try {
-            const response = await axios.get('/api/users/me')
-            user.value = response.data
+            const response = await api.get('/users/me')
+            if (response.ok) {
+                user.value = await response.json()
+            } else {
+                user.value = null
+            }
         } catch (err) {
             console.error('Error fetching user:', err)
             user.value = null
@@ -31,9 +35,12 @@ export const useAuthStore = defineStore('auth', () => {
     const updateNickname = async (nickname) => {
         loading.value = true
         try {
-            const response = await axios.post('/api/users/nickname', { nickname })
-            if (user.value) user.value = response.data
-            return true
+            const response = await api.post('/users/nickname', { nickname })
+            if (response.ok) {
+                user.value = await response.json()
+                return true
+            }
+            return false
         } catch (err) {
             console.error('Error updating nickname:', err)
             return false
@@ -45,9 +52,12 @@ export const useAuthStore = defineStore('auth', () => {
     const updateTargetLevel = async (targetLevel) => {
         loading.value = true
         try {
-            const response = await axios.post('/api/users/target-level', { targetLevel })
-            if (user.value) user.value = response.data
-            return true
+            const response = await api.post('/users/target-level', { targetLevel })
+            if (response.ok) {
+                user.value = await response.json()
+                return true
+            }
+            return false
         } catch (err) {
             console.error('Error updating target level:', err)
             return false
@@ -62,13 +72,12 @@ export const useAuthStore = defineStore('auth', () => {
 
         loading.value = true
         try {
-            const response = await axios.post('/api/users/profile-image', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data'
-                }
-            })
-            if (user.value) user.value = response.data
-            return true
+            const response = await api.post('/users/profile-image', formData)
+            if (response.ok) {
+                user.value = await response.json()
+                return true
+            }
+            return false
         } catch (err) {
             console.error('Error updating profile image:', err)
             return false
@@ -81,6 +90,7 @@ export const useAuthStore = defineStore('auth', () => {
         user.value = null
         token.value = null
         localStorage.removeItem('accessToken')
+        localStorage.removeItem('refreshToken')
         router.push('/login')
     }
 

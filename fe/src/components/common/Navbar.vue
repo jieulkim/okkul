@@ -41,7 +41,7 @@ const handleDarkModeToggle = () => {
 const navItems = [
   { path: '/exam', label: '실전 모의고사', icon: 'assignment' },
   { path: '/practice', label: '유형별 연습', icon: 'category' },
-  { path: '/reports', label: '피드백 리포트', icon: 'assessment' }
+  // { path: '/reports', label: '피드백 리포트', icon: 'assessment' }
 ]
 </script>
 

@@ -2,7 +2,7 @@
 import { ref, computed, inject, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import SurveySelectModal from '@/components/common/SurveySelectModal.vue'
-import { Surveys } from '@/api/Surveys'
+import api from '@/utils/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -85,15 +85,21 @@ const surveyData = ref({
   residence: ''   // 거주지 (Part 3)
 })
 
-// ERD/API 참고용 데이터 로드 로직 (ExamView와 동일하게 유지)
+// ERD/API 참고용 데이터 로드 로직
 const fetchExistingSurveys = async () => {
   try {
-    // 실제 구현 시: const { data } = await axios.get('/api/surveys/me')
-    // 현재는 더미 데이터를 ERD 구조에 맞춰 유지
-    existingSurveys.value = [
-      { surveyId: 101, createdAt: '2026-01-21T14:00:00', level: 5, occupation: '직장인', topics: [1, 5, 12] },
-      { surveyId: 102, createdAt: '2026-01-25T09:30:00', level: 4, occupation: '학생', topics: [2, 8, 15] }
-    ];
+    const response = await api.get('/surveys');
+    if (response.ok) {
+      const data = await response.json();
+      // data.surveys structure from SurveyListResponse
+      existingSurveys.value = data.surveys.map(s => ({
+        surveyId: s.surveyId,
+        createdAt: s.createdAt,
+        level: s.level,
+        occupation: s.occupationAnswerId, // Depending on backend mapping
+        topics: s.topicList
+      }));
+    }
   } catch (error) {
     console.error("설문 목록 로드 실패", error);
   }
@@ -102,9 +108,10 @@ const fetchExistingSurveys = async () => {
 // 특정 설문 상세 조회
 const fetchSurveyDetails = async (surveyId) => {
   try {
-    const surveysApi = new Surveys();
-    const response = await surveysApi.getSurveyById(surveyId);
-    const data = response.data;
+    const response = await api.get(`/surveys/${surveyId}`);
+    if (!response.ok) throw new Error('설문 상세 조회 실패');
+    
+    const data = await response.json();
     
     // 1. 기본 토픽 (selectedTopics)
     let combinedTopics = (data.selectedTopics || []).map(t => ({
@@ -113,28 +120,22 @@ const fetchSurveyDetails = async (surveyId) => {
     }));
 
     // 2. Background Survey 항목을 토픽으로 추가
-    // Occupation (직업)
-    if (data.occupation) {
-      // API에서 occupation이 어떤 형태로 오는지 확인 필요 (여기서는 string 가정)
-      // 실제 API 응답값이 "COMPANY" 등 코드라면 한글 변환 필요할 수도 있음.
-      // 현재는 받은 값 그대로 Topic으로 추가
+    if (data.occupationAnswerId) {
       combinedTopics.unshift({
-        topicId: -1, // 임시 ID (백엔드가 어떻게 처리하냐에 따라 다름, 여기서는 UI 표시용)
-        name: data.occupation,
-        type: 'background' // 구분용
-      });
-    }
-
-    // Residence (거주지)
-    if (data.residence) {
-      combinedTopics.unshift({
-        topicId: -2,
-        name: data.residence,
+        topicId: -1,
+        name: `직업 ID: ${data.occupationAnswerId}`,
         type: 'background'
       });
     }
 
-    // Student (학생)
+    if (data.residenceAnswerId) {
+      combinedTopics.unshift({
+        topicId: -2,
+        name: `거주지 ID: ${data.residenceAnswerId}`,
+        type: 'background'
+      });
+    }
+
     if (data.student) {
        combinedTopics.unshift({
         topicId: -3,
@@ -145,10 +146,10 @@ const fetchSurveyDetails = async (surveyId) => {
 
     surveyData.value = {
       topics: combinedTopics,
-      occupation: data.occupation,
+      occupation: data.occupationAnswerId,
       hasJob: data.hasJob,
       isStudent: data.student,
-      residence: data.residence
+      residence: data.residenceAnswerId
     };
     
     selectedTopic.value = null; // 초기화

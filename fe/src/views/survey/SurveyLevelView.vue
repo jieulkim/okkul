@@ -2,7 +2,7 @@
 import { ref, inject, onBeforeUnmount } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useSurveyStore } from "@/stores/survey";
-import { Surveys } from "@/api/Surveys";
+import api from "@/utils/api";
 
 const router = useRouter();
 const route = useRoute();
@@ -112,10 +112,12 @@ const goNext = async () => {
         console.log("[SurveyLevelView] Final Data to Submit:", finalSurveyData);
 
         // 3. API 호출 (설문 생성)
-        const surveysApi = new Surveys();
-        const response = await surveysApi.createSurvey(finalSurveyData);
-        console.log("[SurveyLevelView] API Response:", response);
-        surveyId = response.data.surveyId;
+        const response = await api.post('/surveys', finalSurveyData);
+        if (!response.ok) throw new Error('설문 저장 실패');
+        
+        const data = await response.json();
+        console.log("[SurveyLevelView] API Response:", data);
+        surveyId = data.surveyId;
 
         // Store 초기화
         surveyStore.clearSurveyData();

@@ -16,7 +16,7 @@ const showSurveySelectModal = ref(false)
 const existingSurveys = ref([])
 const selectedTopic = ref(null)
 
-// [사용자 요청] 유형별 상세 정보 데이터
+// 유형별 상세 정보 데이터
 const practiceTypes = [
   {
     id: 'INTRO',
@@ -284,7 +284,7 @@ onMounted(async () => {
         @click="goToQuestionPage"
         :disabled="!selectedTopic"
       >
-        선택한 주제로 연습 시작 🚀
+        선택한 주제로 연습 시작
       </button>
     </div>
 

@@ -99,14 +99,14 @@ const pastCourseOptions = [
 
 // Part 3: 거주지
 const residenceOptions = [
-  { id: 701, text: "개인주택이나 아파트에 홀로 거주" },
-  { id: 702, text: "친구나 룸메이트와 함께 주택이나 아파트에 거주" },
+  { id: 1, text: "개인주택이나 아파트에 홀로 거주" },
+  { id: 2, text: "친구나 룸메이트와 함께 주택이나 아파트에 거주" },
   {
-    id: 703,
+    id: 3,
     text: "가족(배우자/자녀/기타 가족 일원)과 함께 주택이나 아파트에 거주",
   },
-  { id: 704, text: "학교 기숙사" },
-  { id: 705, text: "군대 막사" },
+  { id: 4, text: "학교 기숙사" },
+  { id: 5, text: "군대 막사" },
 ];
 
 // Part 4: 여가 활동 (기본값: 하드코딩)
@@ -333,7 +333,10 @@ const goBack = () => {
   if (currentStep.value > 1) {
     currentStep.value--;
   } else {
-    router.back();
+    // 1단계에서 뒤로가기 시 홈 또는 이전 페이지로 이동
+    if (confirm('설문 조사를 중단하고 홈으로 이동하시겠습니까?')) {
+      router.push('/');
+    }
   }
 };
 
@@ -348,26 +351,21 @@ const goNext = () => {
 // 설문 임시 저장 및 레벨 선택 페이지로 이동
 const submitSurvey = () => {
   try {
-    // 1. backend data.sql 기준 ID 매핑 (Category 5: Occupation)
-    let finalOccupationAnswerId = null;
-    if (surveyData.value.occupationAnswerId === 4) {
-      // 일 경험 없음
-      finalOccupationAnswerId = 503;
-    } else if (surveyData.value.hasJob) {
-      // 직업 있음
-      finalOccupationAnswerId = surveyData.value.manager ? 501 : 502;
-    } else if (surveyData.value.hasJob === false) {
-      // 무직 (직군 선택했으나 현재는 없음)
-      finalOccupationAnswerId = 503;
-    }
-
-    // 2. 최종 페이로드 구성 (data.sql에 없는 sub-IDs는 null 처리)
+    // 선택지 순서(1, 2, 3, 4...)
+    // 프론트엔드 내부 ID를 그대로 전송
     const payload = {
-      ...surveyData.value,
-      occupationAnswerId: finalOccupationAnswerId,
-      workPeriodAnswerId: null, // data.sql에 해당 ID 없음
-      teachAnswerId: null,      // data.sql에 해당 ID 없음
-      classTypeAnswerId: null,  // data.sql에 해당 ID 없음
+      occupationAnswerId: surveyData.value.occupationAnswerId, // 1, 2, 3, 4
+      hasJob: surveyData.value.hasJob,
+      workPeriodAnswerId: surveyData.value.workPeriodAnswerId, // 1, 2, 3
+      teachAnswerId: surveyData.value.teachAnswerId, // 1, 2, 3
+      manager: surveyData.value.manager,
+      student: surveyData.value.student,
+      classTypeAnswerId: surveyData.value.classTypeAnswerId, // 1, 2, 3, 4
+      residenceAnswerId: surveyData.value.residenceAnswerId, // 1, 2, 3, 4, 5
+      leisure: surveyData.value.leisure,
+      hobby: surveyData.value.hobby,
+      exercise: surveyData.value.exercise,
+      holiday: surveyData.value.holiday,
     };
 
     console.log("설문 데이터 저장 (전달용):", payload);
@@ -998,10 +996,10 @@ const showGuide = ref(false);
           <button
             @click="goBack"
             class="nav-btn back-btn"
-            :disabled="currentStep === 1"
           >
             Back
           </button>
+          <button @click="router.push('/')" class="nav-btn quit-btn">Quit</button>
           <button
             @click="goNext"
             class="nav-btn next-btn"
@@ -1369,6 +1367,22 @@ const showGuide = ref(false);
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.quit-btn {
+  background: #fee2e2;
+  color: #ef4444;
+  margin-left: 10px;
+}
+
+.dark-mode .quit-btn {
+  background: #450a0a;
+  color: #f87171;
+}
+
+.quit-btn:hover {
+  background: #fecaca;
+}
+
 
 /* Modal */
 .modal-overlay {

@@ -2,24 +2,41 @@
 import { ref, onMounted, inject } from 'vue';
 import { useRouter } from 'vue-router';
 import SurveySelectModal from '@/components/common/SurveySelectModal.vue';
+import { Surveys } from '@/api/Surveys';
+import { useSurveyStore } from '@/stores/survey';
 
 const router = useRouter();
+const surveyStore = useSurveyStore();
 const isDarkMode = inject('isDarkMode', ref(false));
 
 const showSurveySelectModal = ref(true);
 const existingSurveys = ref([]);
 
-// ERD/API 참고용 데이터 로드 로직
+// 실제 API를 사용하여 설문 목록 로드
 const fetchExistingSurveys = async () => {
   try {
-    // 실제 구현 시: const { data } = await axios.get('/api/surveys/me')
-    // 현재는 더미 데이터를 ERD 구조에 맞춰 유지
-    existingSurveys.value = [
-      { surveyId: 101, createdAt: '2026-01-21T14:00:00', level: 5, occupation: '직장인', topics: [1, 5, 12] },
-      { surveyId: 102, createdAt: '2026-01-25T09:30:00', level: 4, occupation: '학생', topics: [2, 8, 15] }
-    ];
+    const surveysApi = new Surveys();
+    const response = await surveysApi.getSurveyList();
+    console.log('[ExamView] Raw Survey List Response:', response.data);
+    
+    // API 응답 데이터 매핑 (객체 내부 배열 또는 직접 배열 대응)
+    const surveyList = response.data?.surveySummaryResponses || (Array.isArray(response.data) ? response.data : []);
+    
+    // 전역 필터 적용
+    const filteredList = surveyStore.filterSurveys(surveyList);
+
+    existingSurveys.value = filteredList.map(s => ({
+      surveyId: s.surveyId,
+      createdAt: s.createdAt,
+      level: s.level,
+      occupation: s.occupation || 'N/A',
+      topics: s.topics || []
+    }));
+    console.log('[ExamView] Mapped & Filtered Survey List:', existingSurveys.value);
   } catch (error) {
     console.error("설문 목록 로드 실패", error);
+    // 에러 발생 시 빈 목록으로 유지
+    existingSurveys.value = [];
   }
 };
 
@@ -28,9 +45,18 @@ const startNewSurvey = () => {
 };
 
 const useSelectedSurvey = (surveyId) => {
-  // TODO: 선택된 설문 ID를 저장하거나 처리하는 로직 필요
   console.log('Selected Survey ID:', surveyId);
-  router.push('/exam/setup');
+  // 선택된 설문 ID를 가지고 다음 단계로 이동
+  router.push({
+    path: '/exam/setup',
+    query: { surveyId: surveyId }
+  });
+};
+
+const handleDeleteSurvey = (surveyId) => {
+  surveyStore.deleteSurvey(surveyId);
+  existingSurveys.value = surveyStore.filterSurveys(existingSurveys.value);
+  console.log(`[ExamView] Survey ${surveyId} deleted (Global Sync)`);
 };
 
 onMounted(() => {
@@ -45,6 +71,8 @@ onMounted(() => {
       :existingSurveys="existingSurveys"
       @start-new="startNewSurvey"
       @use-selected="useSelectedSurvey"
+      @delete-survey="handleDeleteSurvey"
+      @close="showSurveySelectModal = false"
     />
   </div>
 </template>

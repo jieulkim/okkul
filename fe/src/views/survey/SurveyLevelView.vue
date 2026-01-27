@@ -90,43 +90,52 @@ const goNext = async () => {
     currentAudio.value = null;
   }
 
-  // 시험 모드에서 진입한 경우 기기 설정(Setup) 페이지로 이동
-  if (route.query.from === 'exam') {
-    router.push('/exam/setup');
-  } else {
-    // 일반 연습 모드인 경우
-    try {
-      // 1. Store에서 설문 데이터 가져오기
-      const surveyStore = useSurveyStore();
-      const surveyData = surveyStore.surveyData;
-      console.log("[SurveyLevelView] Store Data:", surveyData);
+  // 시험 모드나 일반 모드 상관없이 먼저 설문을 서버에 저장합니다.
+  try {
+    // 1. Store에서 설문 데이터 가져오기
+    const surveyStore = useSurveyStore();
+    const surveyData = surveyStore.surveyData;
+    console.log("[SurveyLevelView] Store Data:", surveyData);
 
-      let surveyId;
+    let surveyId;
 
-      if (surveyData) {
-        // 2. 레벨 정보 추가
-        const finalSurveyData = {
-          ...surveyData,
-          level: selectedLevel.value
-        };
-        console.log("[SurveyLevelView] Final Data to Submit:", finalSurveyData);
+    if (surveyData) {
+      // 2. 레벨 정보 추가
+      const finalSurveyData = {
+        ...surveyData,
+        level: selectedLevel.value
+      };
+      console.log("[SurveyLevelView] Final Data to Submit:", finalSurveyData);
 
-        // 3. API 호출 (설문 생성)
-        const surveysApi = new Surveys();
-        const response = await surveysApi.createSurvey(finalSurveyData);
-        console.log("[SurveyLevelView] API Response:", response);
-        surveyId = response.data.surveyId;
+      // 3. API 호출 (설문 생성)
+      const surveysApi = new Surveys();
+      const response = await surveysApi.createSurvey(finalSurveyData);
+      console.log("[SurveyLevelView] API Response:", response);
+      
+      // response.data가 실제 응답 객체 (HTTPClient/Axios 기준)
+      surveyId = response.data?.surveyId;
 
-        // Store 초기화
-        surveyStore.clearSurveyData();
-      } else {
-        // 설문 데이터가 없다면 (새로고침 등), 예외 처리 혹은 단순히 레벨만 가지고 이동?
-        // 기획상 설문 후 레벨 선택이므로, 데이터가 없으면 경고 후 Practice로 이동
-        console.warn("설문 데이터가 없습니다.");
-        // 테스트용: surveyId가 없으면 없는대로 이동
-      }
+      // 성공적으로 저장되었다면 로컬 스토리지에 표시 (리다이렉트 루프 방지용)
+      localStorage.setItem('survey_completed', 'true');
+      
+      // Store 초기화
+      surveyStore.clearSurveyData();
+    } else {
+      console.warn("설문 데이터가 없습니다. (새로고침 등)");
+    }
 
-      // 4. PracticeView로 이동 (query params 유지 + surveyId 추가)
+    // 4. 다음 페이지로 이동
+    if (route.query.from === 'exam') {
+      // 시험 모드에서 진입한 경우 기기 설정(Setup) 페이지로 이동
+      router.push({
+        path: '/exam/setup',
+        query: { 
+          ...route.query, 
+          surveyId: surveyId 
+        }
+      });
+    } else {
+      // 일반 연습 모드인 경우 PracticeView로 이동
       router.push({
         path: '/practice',
         query: { 
@@ -134,17 +143,17 @@ const goNext = async () => {
           surveyId: surveyId 
         }
       });
-    } catch (error) {
-      console.error("설문 생성 실패:", error);
-      let errorMsg = "설문 저장 중 오류가 발생했습니다.";
-      if (error.response) {
-        console.error("Error Response Data:", error.response.data);
-        errorMsg += `\n(${error.response.status}: ${JSON.stringify(error.response.data)})`;
-      } else {
-        errorMsg += `\n(${error.message})`;
-      }
-      alert(errorMsg);
     }
+  } catch (error) {
+    console.error("설문 생성 실패:", error);
+    let errorMsg = "설문 저장 중 오류가 발생했습니다.";
+    if (error.response) {
+      console.error("Error Response Data:", error.response.data);
+      errorMsg += `\n(${error.response.status}: ${JSON.stringify(error.response.data)})`;
+    } else {
+      errorMsg += `\n(${error.message})`;
+    }
+    alert(errorMsg);
   }
 };
 
@@ -248,6 +257,7 @@ const showGuide = ref(false);
 
     <footer class="assessment-footer">
       <button @click="router.back()" class="nav-btn back-btn">Back</button>
+      <button @click="router.push('/')" class="nav-btn quit-btn">Quit</button>
       <button
         @click="goNext"
         class="nav-btn next-btn"
@@ -612,10 +622,27 @@ const showGuide = ref(false);
   background: #e6c200;
 }
 
-.next-btn:disabled {
+.next-btn:disabled,
+.back-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.quit-btn {
+  background: #fee2e2;
+  color: #ef4444;
+  margin-left: 10px;
+}
+
+.dark-mode .quit-btn {
+  background: #450a0a;
+  color: #f87171;
+}
+
+.quit-btn:hover {
+  background: #fecaca;
+}
+
 
 /* Modal */
 .modal-overlay {

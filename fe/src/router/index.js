@@ -7,6 +7,9 @@ import SurveyView from '../views/survey/SurveyView.vue'
 import SurveyLevelView from '../views/survey/SurveyLevelView.vue'
 import SetupView from '../views/exam/SetupView.vue'
 import ExamQuestionView from '../views/exam/ExamQuestionView.vue'
+import MyPageView from '../views/mypage/MyPageView.vue'
+import LoginView from '../views/auth/LoginView.vue'
+import OAuth2Redirect from '../views/auth/OAuth2Redirect.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -26,12 +29,10 @@ const router = createRouter({
       name: 'practice-question',
       component: PracticeQuestionView
     },
-    
-    // 나중에 만들 예정
     {
       path: '/mypage',
       name: 'mypage',
-      component: () => import('../views/mypage/MyPageView.vue')
+      component: MyPageView
     },
     {
       path: '/exam',
@@ -57,13 +58,17 @@ const router = createRouter({
       path: '/survey/level',
       name: 'survey-level',
       component: SurveyLevelView
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: LoginView
+    },
+    {
+      path: '/oauth2/redirect',
+      name: 'oauth2-redirect',
+      component: OAuth2Redirect
     }
-    // reports 라우트는 나중에 추가
-    // {
-    //   path: '/reports',
-    //   name: 'reports',
-    //   component: () => import('../views/reports/ReportsView.vue')
-    // }
   ]
 })
 

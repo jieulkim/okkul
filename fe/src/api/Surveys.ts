@@ -80,4 +80,18 @@ export class Surveys<
       method: "GET",
       ...params,
     });
+  /**
+   * @description 특정 설문조사 ID를 통해 해당 설문에 포함된 토픽 목록을 조회합니다.
+   *
+   * @tags 설문조사
+   * @name GetSurveyTopicsBySurveyId
+   * @summary 특정 설문조사 토픽 조회 API
+   * @request GET:/surveys/{surveyId}/topics
+   */
+  getSurveyTopicsBySurveyId = (surveyId: number, params: RequestParams = {}) =>
+    this.request<GetSurveyTopicsData, any>({
+      path: `/surveys/${surveyId}/topics`,
+      method: "GET",
+      ...params,
+    });
 }

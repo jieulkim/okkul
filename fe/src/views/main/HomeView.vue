@@ -7,6 +7,9 @@ const userProfile = inject('userProfile')
 // 다크모드 상태 주입
 const isDarkMode = inject('isDarkMode', ref(false))
 
+const authStore = inject('authStore')
+const isLoggedIn = computed(() => !!authStore?.user)
+
 // 다크모드 변경 감지
 watch(isDarkMode, (newVal) => {
   if (newVal) {
@@ -103,16 +106,17 @@ const getStatusColor = (status) => {
 <template>
   <div class="home-container">
     <main class="main-content">
-      <div class="dashboard-grid">
+      <!-- 로그인 상태일 때 (대시보드) -->
+      <div v-if="isLoggedIn" class="dashboard-grid">
         <!-- 왼쪽 컬럼 -->
         <div class="left-column">
           <!-- 웰컴 배너 -->
           <section class="welcome-banner">
-            <h1>{{ userProfile.nickname }}님, 오늘도 <span class="highlight">꿀</span>처럼 달콤한 성과를 만들어요! 🍯</h1>
-            <p class="subtitle">목표 등급 {{ userProfile.targetLevel }} 달성까지 단 2단계 남았습니다.</p>
+            <h1>{{ userProfile.nickname || '사용자' }}님, 오늘도 <span class="highlight">꿀</span>처럼 달콤한 성과를 만들어요! 🍯</h1>
+            <p class="subtitle">오꿀과 함께 목표 등급 달성까지 달려봐요!</p>
             
             <div class="action-buttons">
-              <router-link to="/exam" class="btn-primary">
+              <router-link to="/exam" class="btn-primary" style="z-index: 10;">
                 <span class="material-icons-outlined btn-icon">play_circle_filled</span>
                 <div class="btn-text">
                   <span class="title">실전 모의고사 시작</span>
@@ -120,7 +124,7 @@ const getStatusColor = (status) => {
                 </div>
               </router-link>
               
-              <router-link to="/practice" class="btn-secondary">
+              <router-link to="/practice" class="btn-secondary" style="z-index: 10;">
                 <span class="material-icons-outlined btn-icon">category</span>
                 <div class="btn-text">
                   <span class="title">유형별 집중 연습</span>
@@ -130,7 +134,7 @@ const getStatusColor = (status) => {
             </div>
           </section>
 
-          <!-- 최근 성적 추이 -->
+          <!-- 최근 성적 추이 (기존 코드 유지) ... -->
           <section class="stats-card">
             <div class="card-header">
               <h3>최근 성적 추이</h3>
@@ -187,7 +191,7 @@ const getStatusColor = (status) => {
           </section>
         </div>
         
-        <!-- 오른쪽 컬럼 -->
+        <!-- 오른쪽 컬럼 (기존 코드 유지) ... -->
         <div class="right-column">
           <!-- 프로필 관리 카드 -->
           <section class="profile-card">
@@ -222,10 +226,10 @@ const getStatusColor = (status) => {
                   <label>닉네임</label>
                   <span>{{ userProfile.nickname }}</span>
                 </div>
-                <div class="info-row">
+                <!-- <div class="info-row">
                   <label>이름</label>
                   <span>{{ userProfile.name }}</span>
-                </div>
+                </div> -->
               </div>
             </div>
           </section>
@@ -241,7 +245,7 @@ const getStatusColor = (status) => {
               </svg>
               <div class="grade-text">
                 <span class="label">AI Predicted</span>
-                <span class="grade">{{ userProfile.currentLevel }}</span>
+                <span class="grade">{{ userProfile.currentLevel || 'IH' }}</span>
                 <span class="percent">상위 15%</span>
               </div>
             </div>
@@ -249,17 +253,52 @@ const getStatusColor = (status) => {
             <div class="grade-stats">
               <div class="stat">
                 <p>현재 예상</p>
-                <strong>{{ userProfile.currentLevel }}</strong>
+                <strong>{{ userProfile.currentLevel || 'IH' }}</strong>
               </div>
               <div class="divider"></div>
               <div class="stat">
                 <p>목표 등급</p>
-                <strong class="target">{{ userProfile.targetLevel }}</strong>
+                <strong class="target">{{ userProfile.targetLevel || 'AL' }}</strong>
               </div>
             </div>
 
             <button class="detail-btn">상세 리포트 보기</button>
           </section>
+        </div>
+      </div>
+
+      <!-- 비로그인 상태일 때 (랜딩 페이지) -->
+      <div v-else class="landing-hero">
+        <div class="hero-content">
+          <span class="badge">AI기반 OPIc 트레이닝 서비스</span>
+          <h1 class="hero-title">
+            당신의 OPIc 목표,<br/>
+            <span class="highlight">오꿀</span>과 함께 달콤하게 달성하세요! 🍯
+          </h1>
+          <p class="hero-desc">
+            최신 AI 기술로 분석하는 내 영어 실력.<br/>
+            실전 모의고사부터 취약 유형 집중 연습까지 한 번에.
+          </p>
+          <div class="hero-actions">
+            <router-link to="/login" class="hero-btn-primary">시작하기</router-link>
+          </div>
+        </div>
+        <div class="hero-features">
+          <div class="feature-card">
+            <div class="f-icon">🎯</div>
+            <h3>실전 모의고사</h3>
+            <p>실제 시험과 동일한 환경에서 연습하세요.</p>
+          </div>
+          <div class="feature-card">
+            <div class="f-icon">📊</div>
+            <h3>AI 정밀 분석</h3>
+            <p>발음, 억양, 문법까지 AI가 분석해드립니다.</p>
+          </div>
+          <div class="feature-card">
+            <div class="f-icon">📝</div>
+            <h3>성적 리포트</h3>
+            <p>등급 변화를 한눈에 파악하세요.</p>
+          </div>
         </div>
       </div>
     </main>
@@ -273,12 +312,93 @@ const getStatusColor = (status) => {
   min-height: 100vh; 
   background: linear-gradient(to bottom, #fafafa 0%, #f5f5f5 100%);
   transition: background 0.3s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  overflow: hidden;
 }
 
 .dark-mode .home-container {
   background: linear-gradient(to bottom, #0f172a 0%, #1e293b 100%);
 }
+
+.landing-hero {
+  padding: 60px 0;
+  text-align: center;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.badge {
+  display: inline-block;
+  padding: 6px 16px;
+  background: #fff7ed;
+  color: #ea580c;
+  border-radius: 50px;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+.hero-title {
+  font-size: 56px;
+  font-weight: 900;
+  color: #1e293b;
+  line-height: 1.2;
+  margin-bottom: 24px;
+}
+
+.dark-mode .hero-title {
+  color: #f1f5f9;
+}
+
+.hero-desc {
+  font-size: 20px;
+  color: #64748b;
+  line-height: 1.6;
+  margin-bottom: 48px;
+}
+
+.hero-btn-primary {
+  padding: 18px 48px;
+  background: #FFD700;
+  color: #000;
+  border-radius: 50px;
+  font-size: 20px;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
+  transition: all 0.3s;
+}
+
+.hero-btn-primary:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(255, 215, 0, 0.5);
+}
+
+.hero-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 100px;
+}
+
+.feature-card {
+  background: white;
+  padding: 40px;
+  border-radius: 24px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  transition: transform 0.3s;
+}
+
+.dark-mode .feature-card {
+  background: #1e293b;
+}
+
+.feature-card:hover {
+  transform: translateY(-10px);
+}
+
+.f-icon { font-size: 40px; margin-bottom: 20px; }
+.feature-card h3 { font-size: 20px; font-weight: 800; margin-bottom: 12px; }
+.feature-card p { font-size: 15px; color: #64748b; line-height: 1.5; }
 
 .main-content { 
   max-width: 1400px; 

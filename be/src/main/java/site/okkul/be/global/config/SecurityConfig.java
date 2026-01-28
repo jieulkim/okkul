@@ -44,6 +44,7 @@ public class SecurityConfig {
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
 						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+						.requestMatchers("/auth/**").permitAll()
 						// 2. 모든 GET 요청 허용 (상단에 위치할수록 우선순위가 높음)
 						.requestMatchers(HttpMethod.GET, "/**").permitAll()
 						// 3. 그 외 (POST, PATCH, DELETE 등)는 인증 필요

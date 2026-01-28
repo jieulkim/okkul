@@ -71,7 +71,7 @@ public class SurveyMapper {
                 .userId(userId)
                 .occupation(OccupationType.fromValue(request.getOccupationAnswerId()))
                 .teachAt(TeachingLevel.fromValue(request.getClassTypeAnswerId()))
-                .hasJob(request.getHasJob())
+                .hasJob(request.getHasJob() != null ? request.getHasJob() : false)
                 .workPeriod(WorkPeriod.fromValue(request.getWorkPeriodAnswerId()))
                 .isManager(request.getManager())
                 .isStudent(request.getStudent())

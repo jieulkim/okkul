@@ -1,19 +1,19 @@
 <script setup>
 import { ref, onUnmounted, inject, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { examApi } from '@/api';
 
 const router = useRouter()
 const route = useRoute()
 const isDarkMode = inject('isDarkMode', ref(false))
 
 const fromMode = computed(() => route.query.from || 'exam')
-
-// 1. currentStep 정의 (Setup은 Step 3)
 const currentStep = ref(3) 
 
 const isPlaying = ref(false)
 const isRecording = ref(false)
 const hasRecording = ref(false)
+const isLoading = ref(false)
 
 const audio = new Audio('https://opickoreademo.multicampus.com/Audio/EN/0.mp3')
 
@@ -36,13 +36,53 @@ const startRec = () => {
   }, 3000)
 }
 
-const handleNext = () => {
+const handleNext = async () => {
   if (fromMode.value === 'practice') {
-    // 연습 모드에서 왔다면 연습 문제 페이지로
     router.push('/practice/question')
   } else {
-    // 그 외(모의고사 등)는 모의고사 문제 페이지로
-    router.push('/exam/question')
+    await startExam()
+  }
+}
+
+const startExam = async () => {
+  try {
+    isLoading.value = true
+    const surveyId = parseInt(route.query.surveyId)
+    
+    if (!surveyId) {
+      alert('설문 정보가 없습니다.')
+      router.push('/exam')
+      return
+    }
+    
+    const response = await examApi.startExam({
+      examSetId: 1,
+      surveyId: surveyId
+    })
+    
+    const { examId, questions, totalQuestions } = response.data
+    
+    const examData = {
+      examId,
+      questions,
+      totalQuestions,
+      currentIndex: 0,
+      surveyId,
+      startedAt: new Date().toISOString()
+    }
+    
+    localStorage.setItem(`exam_${examId}`, JSON.stringify(examData))
+    
+    router.push({
+      path: '/exam/question',
+      query: { examId }
+    })
+    
+  } catch (error) {
+    console.error('시험 시작 실패:', error)
+    alert('시험을 시작하는데 실패했습니다.')
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -65,22 +105,10 @@ onUnmounted(() => audio.pause())
             <span class="step-label">Self Assessment</span>
           </div>
         </div>
-        <div class="step" :class="{ completed: currentStep > 3, active: currentStep === 3 }">
+        <div class="step last" :class="{ completed: currentStep > 3, active: currentStep === 3 }">
           <div class="step-content">
             <span class="step-number">Step 3 <span v-if="currentStep > 3" class="material-icons check-icon">check_circle</span></span>
             <span class="step-label">Setup</span>
-          </div>
-        </div>
-        <div class="step" :class="{ completed: currentStep > 4, active: currentStep === 4 }">
-          <div class="step-content">
-            <span class="step-number">Step 4 <span v-if="currentStep > 4" class="material-icons check-icon">check_circle</span></span>
-            <span class="step-label">Sample Question</span>
-          </div>
-        </div>
-        <div class="step last" :class="{ completed: currentStep > 5, active: currentStep === 5 }">
-          <div class="step-content">
-            <span class="step-number">Step 5</span>
-            <span class="step-label">Begin Test</span>
           </div>
         </div>
       </nav>
@@ -121,8 +149,10 @@ onUnmounted(() => audio.pause())
     </main>
 
     <footer class="assessment-footer">
-      <button @click="router.back()" class="nav-btn back-btn">Back</button>
-      <button @click="handleNext" class="nav-btn next-btn">Next</button>
+      <button @click="router.back()" class="nav-btn back-btn" :disabled="isLoading">Back</button>
+      <button @click="handleNext" class="nav-btn next-btn" :disabled="isLoading">
+        {{ isLoading ? '시작 중...' : 'Next' }}
+      </button>
     </footer>
   </div>
 </template>
@@ -184,6 +214,7 @@ onUnmounted(() => audio.pause())
 .assessment-footer { position: fixed; bottom: 0; left: 0; right: 0; padding: 20px 40px; display: flex; justify-content: space-between; border-top: 1px solid #e2e8f0; background: white; z-index: 100; }
 .dark-mode .assessment-footer { background: #0f172a; }
 .nav-btn { padding: 12px 30px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
+.nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .back-btn { background: #f1f5f9; color: #64748b; }
 .next-btn { background: #FFD700; color: #0f172a; }
 </style>

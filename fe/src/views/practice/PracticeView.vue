@@ -2,7 +2,7 @@
 import { ref, computed, inject, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import SurveySelectModal from '@/components/common/SurveySelectModal.vue'
-import { Surveys } from '@/api/Surveys'
+import { surveysApi } from '@/api'
 import { useSurveyStore } from '@/stores/survey'
 
 const router = useRouter()
@@ -91,7 +91,7 @@ const surveyData = ref({
 // ERD/API 참고용 데이터 로드 로직
 const fetchExistingSurveys = async () => {
   try {
-    const surveysApi = new Surveys();
+    console.log('[PracticeView] Fetching Existing Surveys...');
     const response = await surveysApi.getSurveyList();
     console.log('[PracticeView] Raw Survey List Response:', response.data);
     
@@ -99,7 +99,10 @@ const fetchExistingSurveys = async () => {
     let surveyList = response.data?.surveySummaryResponses || (Array.isArray(response.data) ? response.data : []);
     
     // 로컬 저장소 및 스토어에서 삭제된 ID 필터링
-    existingSurveys.value = surveyStore.filterSurveys(surveyList);
+    existingSurveys.value = surveyStore.filterSurveys(surveyList).map(s => ({
+      ...s,
+      topics: s.topicList || []
+    }));
     console.log('[PracticeView] Parsed Survey List (Filtered):', existingSurveys.value);
   } catch (error) {
     console.error("설문 목록 로드 실패", error);
@@ -109,7 +112,6 @@ const fetchExistingSurveys = async () => {
 // 특정 설문 상세 조회
 const fetchSurveyDetails = async (surveyId) => {
   try {
-    const surveysApi = new Surveys();
     const response = await surveysApi.getSurveyById(surveyId);
     const data = response.data;
     

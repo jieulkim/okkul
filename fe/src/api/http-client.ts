@@ -74,70 +74,8 @@ export class HttpClient<SecurityDataType = unknown> {
   }: ApiConfig<SecurityDataType> = {}) {
     this.instance = axios.create({
       ...axiosConfig,
-      baseURL: axiosConfig.baseURL || "https://api.cicd.okkul.site",
-      withCredentials: true,
+      baseURL: axiosConfig.baseURL || "https://api.dev.okkul.site",
     });
-
-    // 모든 요청에 기본 헤더 설정
-    this.instance.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-
-    this.instance.interceptors.request.use(
-      (config) => {
-        const token = localStorage.getItem('accessToken');
-
-        // 헤더 객체 초기화
-        config.headers = config.headers || {};
-
-        // X-Requested-With 헤더 강제 설정 (덮어쓰기 방지)
-        config.headers['X-Requested-With'] = 'XMLHttpRequest';
-
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-          console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url}`);
-          console.log(`[API Request] Token exists: ${token.substring(0, 30)}...`);
-        } else {
-          console.error(`[API Request] ${config.method?.toUpperCase()} ${config.url} - NO TOKEN!`);
-        }
-
-        return config;
-      },
-      (error) => Promise.reject(error)
-    );
-
-    this.instance.interceptors.response.use(
-      (response) => {
-        // HTML 응답 감지 및 에러 처리 (백엔드 설정 문제)
-        if (typeof response.data === 'string' && response.data.trim().startsWith('<!DOCTYPE')) {
-          console.error('[API] Backend config error - HTML response received');
-
-          return Promise.reject({
-            response: { status: 403, data: { message: 'Backend authentication config error' } },
-            isBackendConfigError: true
-          });
-        }
-        return response;
-      },
-      (error) => {
-        // 401 에러이고 백엔드 설정 문제가 아닐 때만 로그아웃
-        if (error.response?.status === 401 && !error.isBackendConfigError) {
-          console.warn("[Auth] Token expired");
-          localStorage.removeItem('accessToken');
-          localStorage.removeItem('user');
-          if (window.location.pathname !== '/login') {
-            window.location.href = '/login';
-          }
-        }
-
-        if (error.response?.status >= 500) {
-          console.error("[API] Server Error:", error.response.status);
-        } else if (!error.response) {
-          console.error("[API] Network Error");
-        }
-
-        return Promise.reject(error);
-      }
-    );
-
     this.secure = secure;
     this.format = format;
     this.securityWorker = securityWorker;
@@ -160,7 +98,7 @@ export class HttpClient<SecurityDataType = unknown> {
       headers: {
         ...((method &&
           this.instance.defaults.headers[
-          method.toLowerCase() as keyof HeadersDefaults
+            method.toLowerCase() as keyof HeadersDefaults
           ]) ||
           {}),
         ...(params1.headers || {}),

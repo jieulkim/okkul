@@ -2,7 +2,7 @@
 import { ref, inject, onBeforeUnmount } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useSurveyStore } from "@/stores/survey";
-import { Surveys } from "@/api/Surveys";
+import { surveysApi } from '@/api'
 
 const router = useRouter();
 const route = useRoute();
@@ -13,6 +13,7 @@ const selectedLevel = ref(null);
 
 // 현재 재생 중인 오디오를 추적
 const currentAudio = ref(null);
+const isSubmitting = ref(false);
 
 // 레벨 옵션
 const levels = [
@@ -92,6 +93,7 @@ const goNext = async () => {
 
   // 시험 모드나 일반 모드 상관없이 먼저 설문을 서버에 저장합니다.
   try {
+    isSubmitting.value = true;
     // 1. Store에서 설문 데이터 가져오기
     const surveyStore = useSurveyStore();
     const surveyData = surveyStore.surveyData;
@@ -108,7 +110,6 @@ const goNext = async () => {
       console.log("[SurveyLevelView] Final Data to Submit:", finalSurveyData);
 
       // 3. API 호출 (설문 생성)
-      const surveysApi = new Surveys();
       const response = await surveysApi.createSurvey(finalSurveyData);
       console.log("[SurveyLevelView] API Response:", response);
       
@@ -130,7 +131,6 @@ const goNext = async () => {
       router.push({
         path: '/exam/setup',
         query: { 
-          ...route.query, 
           surveyId: surveyId 
         }
       });
@@ -139,8 +139,8 @@ const goNext = async () => {
       router.push({
         path: '/practice',
         query: { 
-          ...route.query, 
-          surveyId: surveyId 
+          surveyId: surveyId,
+          type: route.query.type
         }
       });
     }
@@ -189,24 +189,10 @@ const showGuide = ref(false);
           </div>
         </div>
 
-        <div class="step">
+        <div class="step last">
           <div class="step-content">
             <span class="step-number">Step 3</span>
             <span class="step-label">Setup</span>
-          </div>
-        </div>
-
-        <div class="step">
-          <div class="step-content">
-            <span class="step-number">Step 4</span>
-            <span class="step-label">Sample Question</span>
-          </div>
-        </div>
-
-        <div class="step last">
-          <div class="step-content">
-            <span class="step-number">Step 5</span>
-            <span class="step-label">Begin Test</span>
           </div>
         </div>
       </nav>

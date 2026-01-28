@@ -7,22 +7,35 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
-// 1. 로그인 여부 판단 (authStore의 user 상태를 실시간 감시)
+// 로그인 여부
 const isLoggedIn = computed(() => !!authStore.user)
 
-// 2. 프로필 표시 데이터 (유저 닉네임의 첫 글자)
-const profileInitial = computed(() => {
-  return authStore.user?.nickname?.[0]?.toUpperCase() || 'U'
+// 프로필 이미지 URL (없거나 빈 문자열이면 기본 오꿀이 이미지)
+const profileImageUrl = computed(() => {
+  const userImage = authStore.user?.profileImageUrl
+  if (!userImage || typeof userImage !== 'string' || userImage.trim() === '') {
+    return '/default-profile.png'
+  }
+  
+  // 절대 경로거나 base64 데이터인 경우 그대로 반환
+  if (userImage.startsWith('http') || userImage.startsWith('data:')) {
+    return userImage
+  }
+  
+  // 상대 경로인 경우 API 베이스 URL 결합
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+  const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
+  const cleanPath = userImage.startsWith('/') ? userImage : `/${userImage}`
+  return `${cleanBase}${cleanPath}`
 })
 
 // 네비게이션 메뉴
 const navItems = [
   { path: '/exam', label: '실전 모의고사', icon: 'assignment' },
   { path: '/practice', label: '유형별 연습', icon: 'category' }
-  // 피드백 리포트는 추후 경로 확정 시 추가
 ]
 
-// 3. 로그아웃 처리
+// 로그아웃
 const handleLogout = () => {
   if (confirm('로그아웃 하시겠습니까?')) {
     console.log('[Navbar] Initiating logout...')
@@ -30,7 +43,7 @@ const handleLogout = () => {
   }
 }
 
-// 4. 현재 활성 메뉴 표시를 위한 함수
+// 활성 메뉴
 const isActive = (path) => {
   if (path === '/') return route.path === '/'
   return route.path.startsWith(path)
@@ -40,13 +53,13 @@ const isActive = (path) => {
 <template>
   <header class="main-navbar">
     <div class="navbar-content">
-      <!-- 로고 - 홈으로 이동 -->
+      <!-- 로고 -->
       <router-link to="/" class="logo">
         <span class="logo-icon">🍯</span>
         <span class="logo-text">오꿀</span>
       </router-link>
 
-      <!-- 네비게이션 메뉴 (로그인 시에만 노출) -->
+      <!-- 네비게이션 메뉴 -->
       <nav v-if="isLoggedIn" class="nav-menu">
         <router-link
           v-for="item in navItems"
@@ -64,23 +77,27 @@ const isActive = (path) => {
 
       <!-- 우측 컨트롤 -->
       <div class="nav-controls">
-        <!-- 로그인 상태일 때 -->
         <template v-if="isLoggedIn">
-          <!-- 프로필 - 마이페이지로 이동 -->
+          <!-- 프로필 -->
           <router-link to="/mypage" class="user-profile" :class="{ active: isActive('/mypage') }">
             <div class="profile-avatar">
-              <span class="profile-initial">{{ profileInitial }}</span>
+              <img 
+                :src="profileImageUrl" 
+                alt="프로필"
+                class="profile-image"
+                @error="(e) => e.target.src = '/default-profile.png'"
+              />
             </div>
             <span class="profile-name">{{ authStore.user?.nickname }}님</span>
           </router-link>
 
-          <!-- 로그아웃 버튼 -->
+          <!-- 로그아웃 -->
           <button class="logout-btn" @click="handleLogout" title="로그아웃">
             <span class="material-icons-outlined">logout</span>
           </button>
         </template>
 
-        <!-- 로그인 안 했을 때 -->
+        <!-- 로그인 버튼 -->
         <router-link v-else to="/login" class="login-btn">
           로그인
         </router-link>
@@ -101,27 +118,34 @@ const isActive = (path) => {
 }
 
 .navbar-content {
-  max-width: 1400px;
+  max-width: 1440px;
   margin: 0 auto;
-  height: 70px;
+  padding: 0 2rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 32px;
+  height: 70px;
+  gap: 2rem;
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 24px;
-  font-weight: 900;
-  color: #FFD700;
+  gap: 0.5rem;
   text-decoration: none;
-  cursor: pointer;
+  font-weight: 800;
+  font-size: 1.5rem;
+  color: #1f2937;
+  transition: transform 0.2s;
 }
 
-.logo-icon { font-size: 28px; }
+.logo:hover {
+  transform: scale(1.05);
+}
+
+.logo-icon {
+  font-size: 2rem;
+}
+
 .logo-text {
   background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
   -webkit-background-clip: text;
@@ -130,108 +154,158 @@ const isActive = (path) => {
 }
 
 .nav-menu {
-  display: flex;
-  gap: 8px;
   flex: 1;
-  justify-content: center;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
   border-radius: 12px;
   text-decoration: none;
-  color: #64748b;
+  color: #6b7280;
   font-weight: 600;
-  font-size: 15px;
+  font-size: 0.95rem;
   transition: all 0.2s;
+  position: relative;
 }
 
 .nav-link:hover {
-  background: #f8fafc;
-  color: #1e293b;
+  background: #f9fafb;
+  color: #1f2937;
 }
 
 .nav-link.active {
-  background: #FFD700;
-  color: #000;
-  font-weight: 800;
+  background: linear-gradient(135deg, #FFF9E6 0%, #FFE4B3 100%);
+  color: #92400e;
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 1.25rem;
+  right: 1.25rem;
+  height: 3px;
+  background: linear-gradient(90deg, #FFD700, #FFA500);
+  border-radius: 2px 2px 0 0;
+}
+
+.nav-icon {
+  font-size: 1.25rem;
+}
+
+.guest-msg {
+  color: #6b7280;
+  font-size: 0.95rem;
+  font-weight: 500;
 }
 
 .nav-controls {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 0.75rem;
 }
 
 .user-profile {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 8px 16px;
-  border-radius: 24px;
-  background: #f8fafc;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
   text-decoration: none;
+  color: #374151;
+  font-weight: 600;
   transition: all 0.2s;
+  border: 2px solid transparent;
 }
 
-.user-profile:hover, .user-profile.active {
-  background: #f1f5f9;
+.user-profile:hover {
+  background: #f9fafb;
+  border-color: #FFD700;
+}
+
+.user-profile.active {
+  background: linear-gradient(135deg, #FFF9E6 0%, #FFE4B3 100%);
+  border-color: #FFD700;
 }
 
 .profile-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  color: #000;
-}
-
-.profile-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #475569;
-}
-
-.logout-btn {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 1px solid #e2e8f0;
-  background: transparent;
+  overflow: hidden;
+  border: 2px solid #FFD700;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+  background: white;
+}
+
+.profile-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-name {
+  font-size: 0.95rem;
+}
+
+.logout-btn {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: none;
+  background: #f9fafb;
+  color: #6b7280;
   cursor: pointer;
-  color: #94a3b8;
   transition: all 0.2s;
 }
 
 .logout-btn:hover {
-  background: #fff1f2;
-  color: #e11d48;
-  border-color: #fecaca;
+  background: #fee2e2;
+  color: #dc2626;
 }
 
 .login-btn {
-  padding: 10px 24px;
-  background: #FFD700;
-  color: #000;
-  border-radius: 12px;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  color: #92400e;
   text-decoration: none;
+  border-radius: 12px;
   font-weight: 700;
+  font-size: 0.95rem;
   transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
 }
 
-.guest-msg {
-  font-size: 14px;
-  color: #64748b;
-  font-weight: 500;
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+}
+
+@media (max-width: 768px) {
+  .navbar-content {
+    padding: 0 1rem;
+    gap: 1rem;
+  }
+
+  .nav-label {
+    display: none;
+  }
+
+  .profile-name {
+    display: none;
+  }
+
+  .guest-msg {
+    font-size: 0.85rem;
+  }
 }
 </style>

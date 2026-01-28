@@ -3,18 +3,24 @@ import { ref } from 'vue'
 
 export const useSurveyStore = defineStore('survey', () => {
   const surveyData = ref(JSON.parse(localStorage.getItem('temp_survey_data')) || null)
+  // 로컬에 저장된 삭제 ID 목록
   const deletedSurveyIds = ref(JSON.parse(localStorage.getItem('deletedSurveyIds') || '[]'))
 
   const setSurveyData = (data) => {
-    console.log('[SurveyStore] setSurveyData:', data)
     surveyData.value = data
     localStorage.setItem('temp_survey_data', JSON.stringify(data))
   }
 
   const clearSurveyData = () => {
-    console.log('[SurveyStore] clearSurveyData')
     surveyData.value = null
     localStorage.removeItem('temp_survey_data')
+  }
+
+  // 삭제 목록 전체 초기화 (테스트용)
+  const resetDeletedList = () => {
+    deletedSurveyIds.value = []
+    localStorage.removeItem('deletedSurveyIds')
+    console.warn('[SurveyStore] 삭제 목록이 초기화되었습니다.')
   }
 
   const deleteSurvey = (surveyId) => {
@@ -26,11 +32,28 @@ export const useSurveyStore = defineStore('survey', () => {
   }
 
   const filterSurveys = (surveys) => {
-    if (!surveys) return []
-    return surveys.filter(s => !deletedSurveyIds.value.includes(Number(s.surveyId)))
+    if (!surveys || surveys.length === 0) return []
+    
+    const deletedIds = deletedSurveyIds.value.map(id => Number(id))
+    
+    // 필터링 결과 반환
+    return surveys.filter(s => {
+      const targetId = Number(s.surveyId)
+      const isDeleted = deletedIds.includes(targetId)
+      if (isDeleted) {
+        console.log(`%c[Filtered] ID ${targetId}는 로컬 삭제 목록에 있어 제외됨`, "color: #ff4d4f");
+      }
+      return !isDeleted
+    })
   }
 
-  return { surveyData, deletedSurveyIds, setSurveyData, clearSurveyData, deleteSurvey, filterSurveys }
+  return { 
+    surveyData, 
+    deletedSurveyIds, 
+    setSurveyData, 
+    clearSurveyData, 
+    deleteSurvey, 
+    filterSurveys,
+    resetDeletedList
+  }
 })
-
-export default useSurveyStore

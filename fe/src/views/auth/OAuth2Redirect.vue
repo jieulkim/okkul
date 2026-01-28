@@ -2,10 +2,12 @@
 import { onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useSurveyStore } from '@/stores/survey'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const surveyStore = useSurveyStore()
 
 onMounted(async () => {
   console.log('[OAuth2Redirect] Full Query Params:', route.query)
@@ -14,15 +16,22 @@ onMounted(async () => {
 
   if (accessToken) {
     console.log('[OAuth2Redirect] Token received. Saving to localStorage...')
-    // 토큰 저장
+    // 1. 토큰 저장
     localStorage.setItem('accessToken', accessToken)
     if (refreshToken) localStorage.setItem('refreshToken', refreshToken)
     
-    // 유저 정보 가져오기
+    // 2. 로그인 성공 시 이전 삭제 기록(deletedSurveyIds) 초기화
+    if (typeof surveyStore.resetDeletedList === 'function') {
+      surveyStore.resetDeletedList()
+    } else {
+      localStorage.removeItem('deletedSurveyIds')
+    }
+
+    // 3. 유저 정보 가져오기
     console.log('[OAuth2Redirect] Fetching user info...')
     await authStore.fetchUser()
 
-    // ✅ 로그인 성공 시 항상 홈으로
+    // 4. 로그인 성공 시 항상 홈으로
     console.log('[OAuth2Redirect] Redirecting to Home...')
     router.push('/')
   } else {

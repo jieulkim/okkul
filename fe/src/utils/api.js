@@ -3,7 +3,7 @@
  */
 
 // 백엔드 도메인 주소
-const API_BASE_URL = 'https://api.dev.okkul.site'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 export const apiFetch = async (url, options = {}) => {
     const accessToken = localStorage.getItem('accessToken')
@@ -16,6 +16,12 @@ export const apiFetch = async (url, options = {}) => {
 
     if (accessToken) {
         headers['Authorization'] = `Bearer ${accessToken}`
+        const refreshToken = localStorage.getItem('refreshToken')
+        if (refreshToken) {
+            headers['Authorization-Refresh'] = `Bearer ${refreshToken}`
+            headers['Authorization-refresh'] = `Bearer ${refreshToken}`
+            headers['Refresh-Token'] = `Bearer ${refreshToken}`
+        }
     }
 
     if (options.body instanceof FormData) {

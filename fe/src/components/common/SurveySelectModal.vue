@@ -17,6 +17,9 @@ const emit = defineEmits(["close", "start-new", "use-selected", "delete-survey"]
 const isDarkMode = inject("isDarkMode", ref(false));
 const selectedSurveyId = ref(null);
 
+// 디버깅: 모달에 전달된 설문 데이터 확인
+console.log('[SurveySelectModal] Received existingSurveys:', props.existingSurveys);
+
 const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString();
 };
@@ -60,7 +63,13 @@ const labels = {
 
 const getOccupationLabel = (val) => {
   if (!val) return null;
-  return labels.occupation[val] || val;
+  const occMap = {
+    1: "직장인",
+    2: "재택근무",
+    3: "교육계",
+    4: "무직/경험없음"
+  };
+  return occMap[val] || labels.occupation[val] || val;
 };
 
 const getResidenceLabel = (val) => {
@@ -76,10 +85,30 @@ const getResidenceLabel = (val) => {
   return resMap[val] || labels.residence[val] || val;
 };
 
+const topicMapping = {
+  101: "영화보기", 102: "클럽/나이트클럽 가기", 103: "공연보기", 104: "콘서트보기", 
+  105: "박물관가기", 106: "공원가기", 107: "캠핑하기", 108: "해변가기", 
+  109: "스포츠 관람", 110: "주거 개선",
+  201: "아이에게 책 읽어주기", 202: "음악 감상하기", 203: "악기 연주하기", 
+  204: "혼자 노래부르거나 합창하기", 205: "춤추기", 206: "글쓰기", 207: "그림 그리기", 
+  208: "요리하기", 209: "애완동물 기르기",
+  301: "농구", 302: "야구/소프트볼", 303: "축구", 304: "미식축구", 305: "하키", 
+  306: "크리켓", 307: "골프", 308: "배구", 309: "테니스", 310: "배드민턴", 
+  311: "탁구", 312: "수영", 313: "자전거", 314: "스키/스노우보드", 
+  315: "아이스 스케이트", 316: "조깅", 317: "걷기", 318: "요가", 
+  319: "하이킹/트레킹", 320: "낚시", 321: "헬스", 322: "운동 안 함",
+  401: "국내출장", 402: "해외출장", 403: "집 휴가", 404: "국내 여행", 405: "해외 여행"
+};
+
 const getTopicsSummary = (topics) => {
-  if (!topics || topics.length === 0) return "";
-  // Check if topics is array of strings or objects
-  const names = topics.map((t) => (typeof t === "string" ? t : t.topicName || t.name));
+  if (!topics || topics.length === 0) return "선택된 주제 없음";
+  
+  const names = topics.map((t) => {
+    if (typeof t === "string") return t;
+    if (typeof t === "number") return topicMapping[t] || `토픽 ${t}`;
+    return t.topicName || t.name || topicMapping[t.topicId] || topicMapping[t] || "알 수 없는 주제";
+  });
+  
   const validNames = names.filter(n => n && !n.includes('난이도'));
   
   if (validNames.length <= 3) return validNames.join(", ");

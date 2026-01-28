@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
-import api from '@/utils/api'
+import { usersApi } from '@/api'
 
 export const useAuthStore = defineStore('auth', () => {
     const user = ref(null)
@@ -13,8 +13,8 @@ export const useAuthStore = defineStore('auth', () => {
         // 현재 내가 접속한 주소 (localhost:5173 또는 dev.okkul.site)
         const currentOrigin = window.location.origin
         const redirectUri = `${currentOrigin}/oauth2/redirect`
-
-        window.location.href = `https://api.dev.okkul.site/oauth2/authorization/google?redirect_uri=${redirectUri}`
+        console.log(import.meta.env.VITE_API_BASE_URL)
+        window.location.href = `${import.meta.env.VITE_API_BASE_URL}/oauth2/authorization/google?redirect_uri=${redirectUri}`
     }
 
     const fetchUser = async () => {
@@ -22,9 +22,10 @@ export const useAuthStore = defineStore('auth', () => {
 
         loading.value = true
         try {
-            const response = await api.get('/users/me')
-            if (response.ok) {
-                user.value = await response.json()
+            const response = await usersApi.getMyInfo()
+            if (response.data) {
+                user.value = response.data
+                token.value = localStorage.getItem('accessToken') // 토큰 상태도 동기화
             } else {
                 user.value = null
             }

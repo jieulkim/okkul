@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, inject } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { Exam } from '@/api/Exam';
+import { examApi } from '@/api';
 
 const router = useRouter();
 const route = useRoute();
@@ -16,7 +16,7 @@ const showDetailModal = ref(false);
 const loadExamResult = async () => {
   try {
     isLoading.value = true;
-    const examApi = new Exam();
+    // const examApi = new Exam(); // Removed - using shared instance
     const examId = parseInt(route.query.examId);
     
     if (!examId) {

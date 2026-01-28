@@ -87,6 +87,15 @@ public class ExamService {
 		return ExamDetailResponse.from(exam);
 	}
 
+	@Transactional(readOnly = true)
+	public ExamDetailResponse getExamInfo(Long userId, Long examId) {
+		Exam exam = examRepository.findByIdAndUserId(examId, userId).orElseThrow(
+				() -> new IllegalArgumentException("존재하지 않는 시험 세션입니다. ID: " + examId)
+		);
+
+		return ExamDetailResponse.from(exam);
+	}
+
 	/**
 	 * 문제 레벨 업데이트
 	 *
@@ -117,6 +126,7 @@ public class ExamService {
 	@Async
 	@Transactional
 	public void allocateQuestion(Long examId) {
+		log.info("비동기처리: 문제를 할당합니다");
 		Exam exam = examRepository.findById(examId).orElseThrow(
 				() -> new IllegalArgumentException("존재하지 않는 시험 세션입니다. ID: " + examId)
 		);
@@ -170,6 +180,9 @@ public class ExamService {
 				log.error("님들아 큰일남 문제가 없음!!!");
 			}
 		}
+		log.info("비동기처리: 문제 할당이 완료 되었습니다.");
+		log.info("비동기처리: :{}", exam.getQuestionSets().size());
+		examRepository.save(exam);
 	}
 
 	/**

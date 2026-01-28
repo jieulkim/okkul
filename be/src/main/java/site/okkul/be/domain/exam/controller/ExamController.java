@@ -85,13 +85,17 @@ public class ExamController implements ExamControllerDocs {
 	 *
 	 * @param examId 시험번호
 	 */
+	@Override
 	@GetMapping("/{examId}")
 	public ResponseEntity<ExamDetailResponse> getExamInfo(
 			@PathVariable Long examId,
 			@AuthenticationPrincipal UserDetails user
 	) {
 		return ResponseEntity.ok(
-				null
+				examService.getExamInfo(
+						Long.parseLong(user.getUsername()),
+						examId
+				)
 		);
 	}
 

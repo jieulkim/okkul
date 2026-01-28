@@ -111,7 +111,9 @@ const fetchExistingSurveys = async () => {
 
 // 특정 설문 상세 조회
 const fetchSurveyDetails = async (surveyId) => {
+  console.log("11 설문 ID:", surveyId);
   try {
+    console.log("22 설문 ID:", surveyId);
     const response = await surveysApi.getSurveyById(surveyId);
     const data = response.data;
     
@@ -208,6 +210,12 @@ const selectTopic = (topic) => {
 
 const goToQuestionPage = () => {
   if (!selectedTopic.value) return;
+  
+  console.log('[PracticeView] Navigating to PracticeQuestionView', {
+    type: selectedType.value?.id,
+    topic: selectedTopic.value.topicId,
+    surveyId: activeSurveyId.value
+  });
   
   router.push({
     name: 'practice-question',

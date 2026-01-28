@@ -431,6 +431,24 @@ export interface ExamStartResponse {
   questions?: QuestionResponse[];
 }
 
+/** 토큰 재발급 요청 */
+export interface TokenReissueRequest {
+  /**
+   * 리프레시 토큰
+   * @example "eyJhbG..."
+   */
+  refreshToken: string;
+}
+
+/** 액세스 토큰 응답 */
+export interface AccessTokenResponse {
+  /**
+   * 새로 발급된 액세스 토큰
+   * @example "eyJhbG..."
+   */
+  accessToken?: string;
+}
+
 /** 설문조사용 카테고리별 토픽 목록 응답 DTO */
 export interface CategoryTopicResponse {
   /** 카테고리 목록 */
@@ -880,6 +898,8 @@ export interface SubmitAnswerPayload {
 export type SubmitAnswerData = any;
 
 export type CompleteExamData = any;
+
+export type ReissueData = AccessTokenResponse;
 
 export type GetQuestionTypeData = QuestionType;
 

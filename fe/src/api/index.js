@@ -1,43 +1,77 @@
 import { Exam } from "./Exam";
 import { Surveys } from "./Surveys";
 import { Users } from "./Users";
+import { Practices } from "./Practices";
 
 const commonConfig = {
-  baseURL: "https://api.dev.okkul.site",
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   secure: true,
   securityWorker: async () => {
-    const token = localStorage.getItem("accessToken");
-    if (token) {
-      return {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+    const accessToken = localStorage.getItem("accessToken");
+    const refreshToken = localStorage.getItem("refreshToken");
+    
+    // 디버깅을 위한 로그 추가
+    console.log('[SecurityWorker] Fetching tokens from localStorage:', { 
+      accessToken: accessToken ? `${accessToken.substring(0, 10)}...` : 'MISSING', 
+      refreshToken: refreshToken ? `${refreshToken.substring(0, 10)}...` : 'MISSING' 
+    });
+
+    if (accessToken) {
+      const headers = {
+        Authorization: `Bearer ${accessToken}`,
       };
+      
+      if (refreshToken) {
+        headers["Authorization-Refresh"] = `Bearer ${refreshToken}`;
+        headers["Authorization-refresh"] = `Bearer ${refreshToken}`;
+        headers["Refresh-Token"] = `Bearer ${refreshToken}`;
+      }
+      
+      return { headers };
     }
+    return {};
   },
 };
 
 export const examApi = new Exam(commonConfig);
 export const surveysApi = new Surveys(commonConfig);
 export const usersApi = new Users(commonConfig);
+export const practicesApi = new Practices(commonConfig);
 
-// CORS 및 경로 이슈 해결을 위한 인터셉터
- examApi.instance.interceptors.request.use(config => {
-
-  // 1. 경로 중복 수정 (/exam/exam/ -> /exam/)
-  if (config.url && config.url.includes('/exam/exam/')) {
-    config.url = config.url.replace('/exam/exam/', '/exam/');
-  }
-
-  // 2. FormData 전송 시 Content-Type 수동 설정 제거 (브라우저가 boundary를 자동 생성하도록 함)
-  if (config.data instanceof FormData) {
-    if (config.headers['Content-Type']) {
-      delete config.headers['Content-Type'];
+// 모든 인스턴스에 공통으로 적용할 인터셉터 설정 함수
+const setupInterceptors = (apiInstance) => {
+  apiInstance.instance.interceptors.request.use(config => {
+    // 1. 경로 중복 수정 (예: /exam/exam/ -> /exam/)
+    // 특정 API들에서 발생하는 경로 중복 문제를 정규식으로 안전하게 처리
+    if (config.url) {
+      config.url = config.url.replace(/\/exam\/exam\//, '/exam/')
+                             .replace(/\/surveys\/surveys\//, '/surveys/')
+                             .replace(/\/practices\/practices\//, '/practices/')
+                             .replace(/\/users\/users\//, '/users/');
     }
-  }
 
-  console.log(`[API Request] ${config.method.toUpperCase()} ${config.url}`, config.headers);
-  return config;
-});
+    // 2. FormData 전송 시 Content-Type 수동 설정 제거 (브라우저가 boundary를 자동 생성하도록 함)
+    if (config.data instanceof FormData) {
+      if (config.headers['Content-Type']) {
+        delete config.headers['Content-Type'];
+      }
+    }
+
+      console.log(`[API Request] ${config.method.toUpperCase()} ${config.url}`, {
+        url: config.url,
+        method: config.method,
+        headers: { ...config.headers } // 헤더 전체를 로그로 확인
+      });
+    return config;
+  }, error => {
+    return Promise.reject(error);
+  });
+};
+
+// 각 API 인스턴스에 인터셉터 적용
+setupInterceptors(examApi);
+setupInterceptors(surveysApi);
+setupInterceptors(usersApi);
+setupInterceptors(practicesApi);
 
 

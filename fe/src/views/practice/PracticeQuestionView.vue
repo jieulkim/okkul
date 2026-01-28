@@ -1,18 +1,17 @@
 <script setup>
 import { ref, computed, onUnmounted, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
-import { Practices } from "@/api/Practices";
-import { Surveys } from "@/api/Surveys";
+import { practicesApi, surveysApi } from "@/api";
+import { useAuthStore } from "@/stores/auth";
+
+const route = useRoute();
+const authStore = useAuthStore();
+const userId = computed(() => authStore.user?.id);
 
 // ============================================
 // Props 정의 (부모 컴포넌트에서 받을 데이터)
 // ============================================
 const props = defineProps({
-  // 사용자 정보
-  userId: {
-    type: Number,
-    required: true,
-  },
   // 연습 세션 정보
   practiceSession: {
     type: Object,
@@ -247,7 +246,6 @@ const analyze = async () => {
   if (!currentQuestion.value) return;
 
   try {
-    const practicesApi = new Practices();
 
     // 1. Audio Blob 생성
     const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
@@ -339,10 +337,6 @@ const highlightFromCard = (index) => {
 // ============================================
 // 5. 초기화 및 정리
 // ============================================
-// ============================================
-// 5. 초기화 및 정리
-// ============================================
-const route = useRoute(); // import useRoute from 'vue-router' needed
 
 onMounted(async () => {
   // 1. 라우터 쿼리 파라미터 확인
@@ -353,8 +347,10 @@ onMounted(async () => {
   // 2. 주제 데이터 로드 (surveyId가 있으면 해당 설문 토픽 우선)
   if (surveyId) {
     try {
-      const surveysApi = new Surveys();
+      console.log("[PracticeQuestionView] loading survey details. ID:", surveyId);
+      console.log("[PracticeQuestionView] Calling surveysApi.getSurveyById...");
       const response = await surveysApi.getSurveyById(surveyId);
+      console.log("[PracticeQuestionView] surveysApi.getSurveyById success:", response.status);
       if (response.data && response.data.selectedTopics) {
         localTopics.value = response.data.selectedTopics.map((t) => ({
           topic_id: t.topicId,
@@ -389,7 +385,6 @@ onMounted(async () => {
   ) {
     if (surveyId && queryTopicId) {
       try {
-        const practicesApi = new Practices();
         // 연습 세션 시작
         const startRes = await practicesApi.startPractice({
           surveyId,

@@ -1,21 +1,58 @@
 <script setup>
-import { ref, inject } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { usersApi } from '@/api'
 
-// 사용자 프로필 데이터 (전역 상태 주입)
-const userProfile = inject('userProfile')
+const router = useRouter()
+const authStore = useAuthStore()
+
+// 프로필 이미지 URL (없거나 빈 문자열이면 기본 오꿀이 이미지)
+// 프로필 이미지 URL
+const profileImageUrl = computed(() => {
+  const userImage = authStore.user?.profileImageUrl
+  if (!userImage || typeof userImage !== 'string' || userImage.trim() === '') {
+    return '/default-profile.png'
+  }
+  
+  if (userImage.startsWith('http') || userImage.startsWith('data:')) {
+    return userImage
+  }
+  
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
+  const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
+  const cleanPath = userImage.startsWith('/') ? userImage : `/${userImage}`
+  return `${cleanBase}${cleanPath}`
+})
 
 // 프로필 이미지 업로드
 const profileImageInput = ref(null)
+const isUploadingImage = ref(false)
 
-const handleProfileImageUpload = (event) => {
+const handleProfileImageUpload = async (event) => {
   const file = event.target.files[0]
-  if (file) {
+  if (!file) return
+  
+  try {
+    isUploadingImage.value = true
+    
+    const response = await usersApi.updateProfileImage({ file })
+    
+    // authStore 업데이트
+    if (response.data?.profileImageUrl) {
+      authStore.user.profileImageUrl = response.data.profileImageUrl
+      alert('프로필 이미지가 변경되었습니다.')
+    }
+  } catch (error) {
+    console.error('이미지 업로드 실패:', error)
+    // 임시로 로컬 프리뷰만 표시
     const reader = new FileReader()
     reader.onload = (e) => {
-      userProfile.value.profileImage = e.target.result
-      // 실제로는 서버에 업로드하고 URL을 받아와야 함
+      authStore.user.profileImageUrl = e.target.result
     }
     reader.readAsDataURL(file)
+  } finally {
+    isUploadingImage.value = false
   }
 }
 
@@ -23,19 +60,26 @@ const triggerImageUpload = () => {
   profileImageInput.value?.click()
 }
 
-// 프로필 편집 모드
+// 프로필 편집
 const isEditing = ref(false)
 const editForm = ref({
   nickname: '',
-  name: '',
   targetLevel: ''
 })
 
+const levelOptions = [
+  { value: 'ADVANCED_LOW', label: 'AL (Advanced Low)' },
+  { value: 'INTERMEDIATE_HIGH', label: 'IH (Intermediate High)' },
+  { value: 'INTERMEDIATE_MID_3', label: 'IM3 (Intermediate Mid 3)' },
+  { value: 'INTERMEDIATE_MID_2', label: 'IM2 (Intermediate Mid 2)' },
+  { value: 'INTERMEDIATE_MID_1', label: 'IM1 (Intermediate Mid 1)' },
+  { value: 'INTERMEDIATE_LOW', label: 'IL (Intermediate Low)' }
+]
+
 const startEdit = () => {
   editForm.value = {
-    nickname: userProfile.value.nickname,
-    name: userProfile.value.name,
-    targetLevel: userProfile.value.targetLevel
+    nickname: authStore.user?.nickname || '',
+    targetLevel: authStore.user?.targetLevel || 'INTERMEDIATE_HIGH'
   }
   isEditing.value = true
 }
@@ -44,20 +88,139 @@ const cancelEdit = () => {
   isEditing.value = false
 }
 
-const saveProfile = () => {
-  userProfile.value.nickname = editForm.value.nickname
-  userProfile.value.name = editForm.value.name
-  userProfile.value.targetLevel = editForm.value.targetLevel
-  isEditing.value = false
-  // 실제로는 서버에 저장
+const saveProfile = async () => {
+  try {
+    // 닉네임 변경
+    if (editForm.value.nickname !== authStore.user?.nickname) {
+      await usersApi.updateNickname({ nickname: editForm.value.nickname })
+    }
+    
+    // 목표 등급 변경
+    if (editForm.value.targetLevel !== authStore.user?.targetLevel) {
+      await usersApi.updateTargetLevel({ targetLevel: editForm.value.targetLevel })
+    }
+    
+    // authStore 업데이트
+    const response = await usersApi.getMyInfo()
+    authStore.user = response.data
+    
+    isEditing.value = false
+    alert('프로필이 저장되었습니다.')
+  } catch (error) {
+    console.error('프로필 저장 실패:', error)
+    // 임시로 로컬에만 저장
+    authStore.user.nickname = editForm.value.nickname
+    authStore.user.targetLevel = editForm.value.targetLevel
+    isEditing.value = false
+  }
 }
 
-// 학습 통계 (더미 데이터)
-const learningStats = ref({
-  totalExams: 12,
-  totalPractice: 48,
+// 모의고사 내역
+const examHistory = ref([])
+const isLoadingExams = ref(false)
+
+const loadExamHistory = async () => {
+  try {
+    isLoadingExams.value = true
+    // TODO: 실제 API 엔드포인트 구현 필요
+    
+    // 임시 더미 데이터
+    examHistory.value = [
+      {
+        examId: 1,
+        title: '제 12회 실전 모의고사',
+        createdAt: '2026-01-20T10:30:00',
+        grade: 'IH',
+        totalScore: 85.5,
+        status: 'COMPLETED'
+      },
+      {
+        examId: 2,
+        title: '제 11회 실전 모의고사',
+        createdAt: '2026-01-15T14:20:00',
+        grade: 'IM3',
+        totalScore: 78.2,
+        status: 'COMPLETED'
+      },
+      {
+        examId: 3,
+        title: '제 10회 실전 모의고사',
+        createdAt: '2026-01-10T09:15:00',
+        grade: 'IM2',
+        totalScore: 72.8,
+        status: 'COMPLETED'
+      }
+    ]
+  } catch (error) {
+    console.error('시험 내역 로드 실패:', error)
+  } finally {
+    isLoadingExams.value = false
+  }
+}
+
+// 유형 연습 내역
+const practiceHistory = ref([])
+const isLoadingPractice = ref(false)
+
+const loadPracticeHistory = async () => {
+  try {
+    isLoadingPractice.value = true
+    // TODO: 실제 API 엔드포인트 구현 필요
+    
+    // 임시 더미 데이터
+    practiceHistory.value = [
+      {
+        practiceId: 1,
+        questionId: 101,
+        typeName: '롤플레이',
+        topicName: '여행 중 겪은 경험',
+        createdAt: '2026-01-23T16:40:00',
+        status: 'REVIEWED'
+      },
+      {
+        practiceId: 2,
+        questionId: 202,
+        typeName: '콤보',
+        topicName: '음악 감상 및 기기',
+        createdAt: '2026-01-22T11:20:00',
+        status: 'REVIEWED'
+      },
+      {
+        practiceId: 3,
+        questionId: 303,
+        typeName: '자유주제',
+        topicName: '좋아하는 음식',
+        createdAt: '2026-01-18T15:30:00',
+        status: 'REVIEWED'
+      }
+    ]
+  } catch (error) {
+    console.error('연습 내역 로드 실패:', error)
+  } finally {
+    isLoadingPractice.value = false
+  }
+}
+
+// 학습 통계
+const learningStats = computed(() => ({
+  totalExams: examHistory.value.length,
+  totalPractice: practiceHistory.value.length,
   studyDays: 23,
   totalMinutes: 1420
+}))
+
+// 결과 보기
+const viewExamResult = (examId) => {
+  router.push({ path: '/exam/result', query: { examId } })
+}
+
+const viewPracticeFeedback = (practiceId, questionId) => {
+  router.push({ path: '/practice/feedback', query: { practiceId, questionId } })
+}
+
+onMounted(() => {
+  loadExamHistory()
+  loadPracticeHistory()
 })
 </script>
 
@@ -78,19 +241,18 @@ const learningStats = ref({
           </div>
 
           <div class="profile-card">
+            <!-- 프로필 이미지 -->
             <div class="profile-image-section" @click="triggerImageUpload">
               <div class="profile-preview-large">
                 <img 
-                  v-if="userProfile.profileImage" 
-                  :src="userProfile.profileImage" 
+                  :src="profileImageUrl" 
                   alt="프로필"
+                  class="profile-img"
+                  @error="(e) => e.target.src = '/default-profile.png'"
                 />
-                <span v-else class="profile-placeholder-large">
-                  {{ userProfile.nickname?.[0]?.toUpperCase() || 'U' }}
-                </span>
                 <div class="upload-overlay">
                   <span class="material-icons-outlined">photo_camera</span>
-                  <p>사진 변경</p>
+                  <p>{{ isUploadingImage ? '업로드 중...' : '사진 변경' }}</p>
                 </div>
               </div>
               <input 
@@ -102,47 +264,39 @@ const learningStats = ref({
               />
             </div>
 
+            <!-- 프로필 정보 (읽기 모드) -->
             <div v-if="!isEditing" class="profile-info">
-              <div class="info-item">
-                <label>닉네임</label>
-                <span>{{ userProfile.nickname }}</span>
+              <div class="info-row">
+                <span class="info-label">닉네임</span>
+                <span class="info-value">{{ authStore.user?.nickname }}</span>
               </div>
-              <div class="info-item">
-                <label>이름</label>
-                <span>{{ userProfile.name }}</span>
+              <div class="info-row">
+                <span class="info-label">이메일</span>
+                <span class="info-value">{{ authStore.user?.email }}</span>
               </div>
-              <div class="info-item">
-                <label>현재 등급</label>
-                <span class="level-badge">{{ userProfile.currentLevel }}</span>
-              </div>
-              <div class="info-item">
-                <label>목표 등급</label>
-                <span class="level-badge target">{{ userProfile.targetLevel }}</span>
+              <div class="info-row">
+                <span class="info-label">목표 등급</span>
+                <span class="info-value badge">{{ authStore.user?.targetLevel || 'IH' }}</span>
               </div>
             </div>
 
-            <!-- 편집 폼 -->
-            <div v-else class="profile-edit-form">
+            <!-- 프로필 편집 폼 -->
+            <div v-else class="profile-edit">
               <div class="form-group">
                 <label>닉네임</label>
-                <input v-model="editForm.nickname" type="text" placeholder="닉네임" />
-              </div>
-              <div class="form-group">
-                <label>이름</label>
-                <input v-model="editForm.name" type="text" placeholder="이름" />
+                <input v-model="editForm.nickname" type="text" class="form-input" />
               </div>
               <div class="form-group">
                 <label>목표 등급</label>
-                <select v-model="editForm.targetLevel">
-                  <option value="AL">AL</option>
-                  <option value="IH">IH</option>
-                  <option value="IM">IM</option>
-                  <option value="IL">IL</option>
+                <select v-model="editForm.targetLevel" class="form-select">
+                  <option v-for="option in levelOptions" :key="option.value" :value="option.value">
+                    {{ option.label }}
+                  </option>
                 </select>
               </div>
               <div class="form-actions">
-                <button @click="cancelEdit" class="cancel-btn">취소</button>
-                <button @click="saveProfile" class="save-btn">저장</button>
+                <button @click="cancelEdit" class="btn-cancel">취소</button>
+                <button @click="saveProfile" class="btn-save">저장</button>
               </div>
             </div>
           </div>
@@ -150,93 +304,134 @@ const learningStats = ref({
 
         <!-- 학습 통계 -->
         <section class="stats-section">
-          <h2>학습 통계</h2>
-          
+          <h2 class="section-title">학습 통계</h2>
           <div class="stats-grid">
             <div class="stat-card">
-              <div class="stat-icon" style="background: rgba(255, 215, 0, 0.2); color: #FFD700;">
-                <span class="material-icons-outlined">assignment</span>
-              </div>
-              <div class="stat-info">
-                <p class="stat-label">실전 모의고사</p>
-                <p class="stat-value">{{ learningStats.totalExams }}회</p>
+              <span class="stat-icon">📝</span>
+              <div class="stat-content">
+                <span class="stat-value">{{ learningStats.totalExams }}</span>
+                <span class="stat-label">모의고사</span>
               </div>
             </div>
-
             <div class="stat-card">
-              <div class="stat-icon" style="background: rgba(16, 185, 129, 0.2); color: #10b981;">
-                <span class="material-icons-outlined">category</span>
-              </div>
-              <div class="stat-info">
-                <p class="stat-label">유형별 연습</p>
-                <p class="stat-value">{{ learningStats.totalPractice }}회</p>
+              <span class="stat-icon">✏️</span>
+              <div class="stat-content">
+                <span class="stat-value">{{ learningStats.totalPractice }}</span>
+                <span class="stat-label">유형 연습</span>
               </div>
             </div>
-
             <div class="stat-card">
-              <div class="stat-icon" style="background: rgba(99, 102, 241, 0.2); color: #6366f1;">
-                <span class="material-icons-outlined">calendar_today</span>
-              </div>
-              <div class="stat-info">
-                <p class="stat-label">연속 학습일</p>
-                <p class="stat-value">{{ learningStats.studyDays }}일</p>
+              <span class="stat-icon">🔥</span>
+              <div class="stat-content">
+                <span class="stat-value">{{ learningStats.studyDays }}</span>
+                <span class="stat-label">학습일</span>
               </div>
             </div>
-
             <div class="stat-card">
-              <div class="stat-icon" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b;">
-                <span class="material-icons-outlined">schedule</span>
-              </div>
-              <div class="stat-info">
-                <p class="stat-label">총 학습 시간</p>
-                <p class="stat-value">{{ Math.floor(learningStats.totalMinutes / 60) }}시간 {{ learningStats.totalMinutes % 60 }}분</p>
+              <span class="stat-icon">⏱️</span>
+              <div class="stat-content">
+                <span class="stat-value">{{ Math.floor(learningStats.totalMinutes / 60) }}</span>
+                <span class="stat-label">학습 시간</span>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- 설정 -->
-        <section class="settings-section">
-          <h2>설정</h2>
+        <!-- 모의고사 내역 -->
+        <section class="history-section">
+          <h2 class="section-title">
+            <span class="material-icons-outlined">assignment</span>
+            모의고사 내역
+          </h2>
           
-          <div class="settings-list">
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="material-icons-outlined">notifications</span>
-                <div>
-                  <p class="setting-title">알림 설정</p>
-                  <p class="setting-desc">학습 리마인더 및 성적 업데이트 알림</p>
+          <div v-if="isLoadingExams" class="loading">
+            <div class="spinner"></div>
+            <p>로딩 중...</p>
+          </div>
+          
+          <div v-else-if="examHistory.length === 0" class="empty-state">
+            <span class="material-icons-outlined empty-icon">assignment</span>
+            <p>아직 모의고사 기록이 없습니다</p>
+            <button @click="router.push('/exam')" class="start-btn">
+              모의고사 시작하기
+            </button>
+          </div>
+          
+          <div v-else class="history-list">
+            <div 
+              v-for="exam in examHistory" 
+              :key="exam.examId" 
+              class="history-card"
+              @click="viewExamResult(exam.examId)"
+            >
+              <div class="history-content">
+                <div class="history-header">
+                  <h3>{{ exam.title }}</h3>
+                  <span class="grade-badge">{{ exam.grade }}</span>
+                </div>
+                <div class="history-meta">
+                  <span class="meta-item">
+                    <span class="material-icons-outlined">calendar_today</span>
+                    {{ new Date(exam.createdAt).toLocaleDateString('ko-KR') }}
+                  </span>
+                  <span class="meta-item">
+                    <span class="material-icons-outlined">score</span>
+                    {{ Math.round(exam.totalScore) }}점
+                  </span>
                 </div>
               </div>
-              <label class="toggle-switch">
-                <input type="checkbox" checked />
-                <span class="toggle-slider"></span>
-              </label>
+              <div class="history-action">
+                <span class="material-icons-outlined">chevron_right</span>
+              </div>
             </div>
+          </div>
+        </section>
 
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="material-icons-outlined">language</span>
-                <div>
-                  <p class="setting-title">언어 설정</p>
-                  <p class="setting-desc">앱 언어 변경</p>
+        <!-- 유형 연습 내역 -->
+        <section class="history-section">
+          <h2 class="section-title">
+            <span class="material-icons-outlined">category</span>
+            유형 연습 내역
+          </h2>
+          
+          <div v-if="isLoadingPractice" class="loading">
+            <div class="spinner"></div>
+            <p>로딩 중...</p>
+          </div>
+          
+          <div v-else-if="practiceHistory.length === 0" class="empty-state">
+            <span class="material-icons-outlined empty-icon">category</span>
+            <p>아직 유형 연습 기록이 없습니다</p>
+            <button @click="router.push('/practice')" class="start-btn">
+              유형 연습 시작하기
+            </button>
+          </div>
+          
+          <div v-else class="history-list">
+            <div 
+              v-for="practice in practiceHistory" 
+              :key="practice.practiceId" 
+              class="history-card"
+              @click="viewPracticeFeedback(practice.practiceId, practice.questionId)"
+            >
+              <div class="history-content">
+                <div class="history-header">
+                  <h3>{{ practice.typeName }}: {{ practice.topicName }}</h3>
+                </div>
+                <div class="history-meta">
+                  <span class="meta-item">
+                    <span class="material-icons-outlined">calendar_today</span>
+                    {{ new Date(practice.createdAt).toLocaleDateString('ko-KR') }}
+                  </span>
+                  <span class="meta-item status-reviewed">
+                    <span class="material-icons-outlined">check_circle</span>
+                    피드백 확인 완료
+                  </span>
                 </div>
               </div>
-              <select class="lang-select">
-                <option value="ko">한국어</option>
-                <option value="en">English</option>
-              </select>
-            </div>
-
-            <div class="setting-item">
-              <div class="setting-info">
-                <span class="material-icons-outlined">logout</span>
-                <div>
-                  <p class="setting-title">로그아웃</p>
-                  <p class="setting-desc">계정에서 로그아웃</p>
-                </div>
+              <div class="history-action">
+                <span class="material-icons-outlined">chevron_right</span>
               </div>
-              <button class="logout-btn">로그아웃</button>
             </div>
           </div>
         </section>
@@ -246,17 +441,13 @@ const learningStats = ref({
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Material+Icons+Outlined&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined');
 
 .mypage-container {
   min-height: 100vh;
-  background: linear-gradient(to bottom, #fafafa 0%, #f5f5f5 100%);
+  background: #f8fafc;
   padding: 40px 20px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-}
-
-.dark-mode .mypage-container {
-  background: linear-gradient(to bottom, #0f172a 0%, #1e293b 100%);
 }
 
 .mypage-content {
@@ -267,12 +458,10 @@ const learningStats = ref({
 .page-title {
   font-size: 32px;
   font-weight: 900;
-  color: #0f172a;
   margin-bottom: 32px;
-}
-
-.dark-mode .page-title {
-  color: #f1f5f9;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .mypage-grid {
@@ -280,17 +469,15 @@ const learningStats = ref({
   gap: 24px;
 }
 
-section {
+/* 섹션 공통 */
+.profile-section,
+.stats-section,
+.history-section {
   background: white;
   border-radius: 20px;
-  border: 1px solid #f1f5f9;
-  padding: 28px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-
-.dark-mode section {
-  background: #1e293b;
-  border-color: #334155;
+  padding: 32px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e2e8f0;
 }
 
 .section-header {
@@ -300,15 +487,14 @@ section {
   margin-bottom: 24px;
 }
 
-section h2 {
+.section-header h2,
+.section-title {
   font-size: 20px;
-  font-weight: 800;
-  color: #1e293b;
-  margin-bottom: 24px;
-}
-
-.dark-mode section h2 {
-  color: #f1f5f9;
+  font-weight: 700;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .edit-btn {
@@ -316,24 +502,16 @@ section h2 {
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: #f1f5f9;
+  border: none;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.dark-mode .edit-btn {
-  background: #0f172a;
-  border-color: #334155;
-  color: #f1f5f9;
-}
-
 .edit-btn:hover {
-  background: #FFD700;
-  border-color: #FFD700;
-  color: #000;
+  background: #e2e8f0;
 }
 
 /* 프로필 카드 */
@@ -341,7 +519,7 @@ section h2 {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 32px;
+  gap: 24px;
 }
 
 .profile-image-section {
@@ -354,42 +532,29 @@ section h2 {
   height: 150px;
   border-radius: 50%;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-  border: 5px solid #fff;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   position: relative;
+  border: 4px solid #FFD700;
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+  background: white;
 }
 
-.dark-mode .profile-preview-large {
-  border-color: #1e293b;
-}
-
-.profile-preview-large img {
+.profile-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.profile-placeholder-large {
-  font-size: 64px;
-  font-weight: 900;
-  color: #000;
-}
-
 .upload-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   opacity: 0;
   transition: opacity 0.2s;
-  gap: 8px;
+  color: white;
 }
 
 .profile-image-section:hover .upload-overlay {
@@ -397,152 +562,114 @@ section h2 {
 }
 
 .upload-overlay .material-icons-outlined {
-  color: white;
-  font-size: 40px;
-  font-family: 'Material Icons Outlined';
+  font-size: 32px;
+  margin-bottom: 8px;
 }
 
 .upload-overlay p {
-  color: white;
+  font-size: 14px;
   font-weight: 600;
+}
+
+/* 프로필 정보 */
+.profile-info {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.info-label {
+  font-weight: 600;
+  color: #64748b;
+}
+
+.info-value {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.badge {
+  padding: 4px 12px;
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #92400e;
+  border-radius: 6px;
   font-size: 14px;
 }
 
-.profile-info {
+/* 프로필 편집 */
+.profile-edit {
   width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.info-item label {
-  font-size: 13px;
-  color: #94a3b8;
-  font-weight: 600;
-}
-
-.info-item span {
-  font-size: 16px;
-  color: #1e293b;
-  font-weight: 700;
-}
-
-.dark-mode .info-item span {
-  color: #f1f5f9;
-}
-
-.level-badge {
-  display: inline-block;
-  padding: 6px 14px;
-  background: #f8fafc;
-  border-radius: 8px;
-  font-size: 15px !important;
-  font-weight: 800 !important;
-  color: #1e293b !important;
-}
-
-.dark-mode .level-badge {
-  background: #0f172a;
-  color: #f1f5f9 !important;
-}
-
-.level-badge.target {
-  background: #fff7ed;
-  color: #FFD700 !important;
-}
-
-.dark-mode .level-badge.target {
-  background: rgba(255, 215, 0, 0.2);
-  color: #FFD700 !important;
-}
-
-/* 편집 폼 */
-.profile-edit-form {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
 }
 
 .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  margin-bottom: 20px;
 }
 
 .form-group label {
-  font-size: 13px;
-  color: #64748b;
+  display: block;
+  margin-bottom: 8px;
   font-weight: 600;
+  color: #374151;
 }
 
-.form-group input,
-.form-group select {
+.form-input,
+.form-select {
+  width: 100%;
   padding: 12px;
-  border: 1px solid #e2e8f0;
+  border: 2px solid #e2e8f0;
   border-radius: 8px;
   font-size: 15px;
-  font-weight: 600;
+  transition: border-color 0.2s;
 }
 
-.dark-mode .form-group input,
-.dark-mode .form-group select {
-  background: #0f172a;
-  border-color: #334155;
-  color: #f1f5f9;
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: #FFD700;
 }
 
 .form-actions {
   display: flex;
   gap: 12px;
-  margin-top: 12px;
+  justify-content: flex-end;
 }
 
-.cancel-btn,
-.save-btn {
-  flex: 1;
-  padding: 12px;
-  border-radius: 10px;
-  font-weight: 700;
+.btn-cancel,
+.btn-save {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.cancel-btn {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+.btn-cancel {
+  background: #f1f5f9;
+  border: none;
   color: #64748b;
 }
 
-.save-btn {
-  background: #FFD700;
-  border: 2px solid #000;
-  color: #000;
-  box-shadow: 0 4px 0 #000;
+.btn-save {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  border: none;
+  color: #92400e;
 }
 
-.save-btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 #000;
-}
-
-/* 학습 통계 */
+/* 통계 */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 16px;
-}
-
-@media (max-width: 768px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 .stat-card {
@@ -552,35 +679,22 @@ section h2 {
   padding: 20px;
   background: #f8fafc;
   border-radius: 12px;
+  border: 2px solid #e2e8f0;
+  transition: all 0.2s;
 }
 
-.dark-mode .stat-card {
-  background: #0f172a;
+.stat-card:hover {
+  border-color: #FFD700;
+  transform: translateY(-2px);
 }
 
 .stat-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
+  font-size: 32px;
+}
+
+.stat-content {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.stat-icon .material-icons-outlined {
-  font-size: 28px;
-  font-family: 'Material Icons Outlined';
-}
-
-.stat-info {
-  flex: 1;
-}
-
-.stat-label {
-  font-size: 13px;
-  color: #64748b;
-  margin-bottom: 6px;
+  flex-direction: column;
 }
 
 .stat-value {
@@ -589,128 +703,163 @@ section h2 {
   color: #1e293b;
 }
 
-.dark-mode .stat-value {
-  color: #f1f5f9;
-}
-
-/* 설정 */
-.settings-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.setting-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  background: #f8fafc;
-  border-radius: 12px;
-}
-
-.dark-mode .setting-item {
-  background: #0f172a;
-}
-
-.setting-info {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.setting-info .material-icons-outlined {
-  font-size: 24px;
-  color: #64748b;
-  font-family: 'Material Icons Outlined';
-}
-
-.setting-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 4px;
-}
-
-.dark-mode .setting-title {
-  color: #f1f5f9;
-}
-
-.setting-desc {
+.stat-label {
   font-size: 13px;
   color: #64748b;
-}
-
-/* 토글 스위치 */
-.toggle-switch {
-  position: relative;
-  width: 52px;
-  height: 28px;
-}
-
-.toggle-switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.toggle-slider {
-  position: absolute;
-  cursor: pointer;
-  inset: 0;
-  background-color: #cbd5e1;
-  border-radius: 28px;
-  transition: 0.3s;
-}
-
-.toggle-slider:before {
-  position: absolute;
-  content: "";
-  height: 20px;
-  width: 20px;
-  left: 4px;
-  bottom: 4px;
-  background-color: white;
-  border-radius: 50%;
-  transition: 0.3s;
-}
-
-.toggle-switch input:checked + .toggle-slider {
-  background-color: #FFD700;
-}
-
-.toggle-switch input:checked + .toggle-slider:before {
-  transform: translateX(24px);
-}
-
-.lang-select {
-  padding: 8px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
   font-weight: 600;
-  cursor: pointer;
 }
 
-.dark-mode .lang-select {
-  background: #0f172a;
-  border-color: #334155;
-  color: #f1f5f9;
+/* 로딩 */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  gap: 16px;
 }
 
-.logout-btn {
-  padding: 8px 16px;
-  background: #fee2e2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  color: #ef4444;
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #FFD700;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 빈 상태 */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #94a3b8;
+}
+
+.empty-icon {
+  font-size: 64px !important;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state p {
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.start-btn {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #92400e;
+  border: none;
+  border-radius: 12px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.logout-btn:hover {
-  background: #ef4444;
-  border-color: #ef4444;
-  color: white;
+.start-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+/* 내역 리스트 */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.history-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.history-card:hover {
+  border-color: #FFD700;
+  transform: translateX(4px);
+}
+
+.history-content {
+  flex: 1;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 16px;
+}
+
+.history-header h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  flex: 1;
+}
+
+.grade-badge {
+  padding: 4px 12px;
+  background: #FFD700;
+  color: #92400e;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.history-meta {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.meta-item .material-icons-outlined {
+  font-size: 18px;
+}
+
+.status-reviewed {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.history-action {
+  color: #94a3b8;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .history-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .history-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 </style>

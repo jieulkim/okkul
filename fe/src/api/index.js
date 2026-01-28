@@ -24,6 +24,7 @@ const commonConfig = {
       if (refreshToken) {
         headers["Authorization-Refresh"] = `Bearer ${refreshToken}`;
         headers["Authorization-refresh"] = `Bearer ${refreshToken}`;
+        headers["X-Refresh-Token"] = `Bearer ${refreshToken}`;
         headers["Refresh-Token"] = `Bearer ${refreshToken}`;
       }
       
@@ -41,16 +42,8 @@ export const practicesApi = new Practices(commonConfig);
 // 모든 인스턴스에 공통으로 적용할 인터셉터 설정 함수
 const setupInterceptors = (apiInstance) => {
   apiInstance.instance.interceptors.request.use(config => {
-    // 1. 경로 중복 수정 (예: /exam/exam/ -> /exam/)
-    // 특정 API들에서 발생하는 경로 중복 문제를 정규식으로 안전하게 처리
-    if (config.url) {
-      config.url = config.url.replace(/\/exam\/exam\//, '/exam/')
-                             .replace(/\/surveys\/surveys\//, '/surveys/')
-                             .replace(/\/practices\/practices\//, '/practices/')
-                             .replace(/\/users\/users\//, '/users/');
-    }
 
-    // 2. FormData 전송 시 Content-Type 수동 설정 제거 (브라우저가 boundary를 자동 생성하도록 함)
+    //  FormData 전송 시 Content-Type 수동 설정 제거 (브라우저가 boundary를 자동 생성하도록 함)
     if (config.data instanceof FormData) {
       if (config.headers['Content-Type']) {
         delete config.headers['Content-Type'];

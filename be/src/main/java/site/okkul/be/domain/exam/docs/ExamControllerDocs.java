@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,10 +16,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
+import site.okkul.be.domain.exam.dto.request.ExamCreateRequest;
 import site.okkul.be.domain.exam.dto.response.ExamResultResponse;
-import site.okkul.be.domain.exam.dto.request.ExamStartRequest;
-import site.okkul.be.domain.exam.dto.response.ExamStartResponse;
-import site.okkul.be.domain.exam.dto.response.ExamStatusResponse;
+import site.okkul.be.domain.exam.dto.response.ExamDetailResponse;
 import site.okkul.be.domain.exam.dto.response.QuestionResponse;
 import site.okkul.be.global.config.SwaggerConfig;
 
@@ -31,9 +31,9 @@ public interface ExamControllerDocs {
 	)
 	@SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
 	@PostMapping
-	ResponseEntity<ExamStartResponse> startExam(
+	ResponseEntity<ExamDetailResponse> startExam(
 			@Parameter(hidden = true) UserDetails user,
-			@RequestBody ExamStartRequest request
+			@RequestBody ExamCreateRequest request
 	);
 
 	@Operation(
@@ -42,18 +42,21 @@ public interface ExamControllerDocs {
 	)
 	@SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
 	@PatchMapping("/{examId}/adjust-level")
-	ResponseEntity<List<QuestionResponse>> getRemainingQuestions(
+	ResponseEntity<ExamDetailResponse> getRemainingQuestions(
 			@PathVariable Long examId,
-			@RequestParam int adjustedDifficulty,
+			@RequestParam Integer adjustedDifficulty,
 			@Parameter(hidden = true) UserDetails user
 	);
 
 	@Operation(
-			summary = "음성 답변 제출",
+			summary = "답변 제출",
 			description = "사용자의 음성 녹음 파일(mp3/m4a 등)을 서버로 업로드합니다."
 	)
 	@SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
-	@PostMapping(value = "/{examId}/answers/{answerId}", consumes = "multipart/form-data")
+	@PostMapping(
+			value = "/{examId}/answers/{answerId}",
+			consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+	)
 	ResponseEntity<Void> submitAnswer(
 			@PathVariable Long examId,
 			@PathVariable Long answerId,
@@ -75,7 +78,7 @@ public interface ExamControllerDocs {
 	)
 	@SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
 	@GetMapping("/{examId}/status")
-	ResponseEntity<ExamStatusResponse> getExamStatus(
+	ResponseEntity<ExamDetailResponse> getExamStatus(
 			@Parameter(description = "시험 ID") @PathVariable Long examId,
 			@Parameter(hidden = true) UserDetails user
 	);

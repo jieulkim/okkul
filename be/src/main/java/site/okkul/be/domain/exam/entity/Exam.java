@@ -9,14 +9,14 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.OrderColumn;
 import jakarta.persistence.Table;
 import java.time.Instant;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -71,12 +71,8 @@ public class Exam {
 	private Integer adjustedDifficulty;
 
 	// 단방향 매핑
-	@OneToMany
-	@JoinTable(
-			name = "exam_question_set",
-			joinColumns = @JoinColumn(name = "exam_id"),
-			inverseJoinColumns = @JoinColumn(name = "question_set_id")
-	)
+	@ManyToMany
+	@JoinTable(name = "exam_question_set", joinColumns = @JoinColumn(name = "exam_id"), inverseJoinColumns = @JoinColumn(name = "question_set_id"))
 	@OrderColumn(name = "question_order")
 	private List<QuestionSet> questionSets;
 
@@ -111,81 +107,49 @@ public class Exam {
 	private Instant updatedAt;
 
 	/**
+	 * 모의고사 팩토리메소드
+	 *
+	 * @param initialDifficulty 초기 난이도
+	 * @param surveyId          참조하는 설문조사 ID
+	 * @param userId            응시 사용자 ID
+	 * @return 생성된 모의고사 엔티티
+	 */
+	public static Exam create(Long surveyId, Integer initialDifficulty, Long userId) {
+		return Exam.builder()
+				.id(null)
+				.initialDifficulty(initialDifficulty)
+				.endAt(null)
+				.adjustedDifficulty(null)
+				.questionSets(new ArrayList<>())
+				.examAnswers(new ArrayList<>())
+				.surveyId(surveyId)
+				.userId(userId)
+				.createdAt(Instant.now())
+				.updatedAt(Instant.now())
+				.build();
+	}
+
+	/**
 	 * 시험 종료 처리
 	 * - completed=true 로 바꾸고
 	 * - endAt에 종료 시각을 기록
 	 */
 	public void completeExam() {
-//		this.completed = true;
 		this.endAt = Instant.now();
 	}
 
 	/**
 	 * 난이도 재조정 반영 (7번 이후)
-	 * - 값이 1~6 범위를 벗어나면 반영하지 않음
+	 * - 난이도는 위 아래로 1칸만 조정이 가능합니다
+	 *
+	 * @throws IllegalArgumentException 잘못된 난이도를 넣었을 경우
 	 */
 	public void updateAdjustedDifficulty(Integer newDifficulty) {
-		if (newDifficulty != null && newDifficulty >= 1 && newDifficulty <= 6) {
+		if (Math.abs(newDifficulty - this.initialDifficulty) < 2) {
 			this.adjustedDifficulty = newDifficulty;
+			this.updatedAt = Instant.now();
+		} else {
+			throw new IllegalArgumentException("잘못된 값을 넣었다");
 		}
-	}
-
-	/**
-	 * 시험 시작 시 호출: topicOrder와 topicCursor를 초기화
-	 *
-	 * @param topicIds 설문에서 선택된 topicId 목록(셔플된 상태 권장)
-	 */
-	public void initializeTopicOrder(List<Long> topicIds) {
-		if (topicIds == null || topicIds.isEmpty()) {
-			throw new IllegalArgumentException("topicIds가 비어있습니다.");
-		}
-//		this.topicOrder = topicIds.stream()
-//				.map(String::valueOf)
-//				.collect(Collectors.joining(","));
-//		this.topicCursor = 0;
-	}
-
-	/**
-	 * 현재 커서가 가리키는 topicId를 반환
-	 * <p>
-	 * 동작
-	 * - topicOrder 문자열을 파싱하여 topic 리스트를 만든 뒤
-	 * - topicCursor가 범위를 넘으면 0으로 순환시켜
-	 * - 현재 topicId를 반환
-	 */
-	public Long getCurrentTopicId() {
-//		if (topicOrder == null || topicOrder.isBlank()) {
-//			throw new IllegalStateException("topicOrder가 설정되지 않았습니다.");
-//		}
-//		if (topicCursor == null) {
-//			topicCursor = 0;
-//		}
-//
-//		List<Long> topics = Arrays.stream(topicOrder.split(","))
-//				.map(String::trim)
-//				.filter(s -> !s.isEmpty())
-//				.map(Long::valueOf)
-//				.toList();
-//
-//		if (topics.isEmpty()) {
-//			throw new IllegalStateException("topicOrder 파싱 결과가 비어있습니다.");
-//		}
-//
-//		if (topicCursor >= topics.size()) {
-//			topicCursor = 0; // 주제 순환
-//		}
-//
-//		return topics.get(topicCursor);
-		return 1L;
-	}
-
-	/**
-	 * 문제 세트 하나 출제 후 호출: 다음 주제를 사용하도록 커서를 1 증가
-	 */
-	public void incrementTopicCursor() {
-//		if (topicCursor == null) {
-//			topicCursor = 0;
-//		}
-//		topicCursor++;
 	}
 }

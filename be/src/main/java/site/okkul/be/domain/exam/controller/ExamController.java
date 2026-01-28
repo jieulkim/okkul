@@ -1,6 +1,6 @@
 package site.okkul.be.domain.exam.controller;
 
-import java.util.List;
+import java.net.URI;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,11 +17,9 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import site.okkul.be.domain.exam.docs.ExamControllerDocs;
+import site.okkul.be.domain.exam.dto.request.ExamCreateRequest;
+import site.okkul.be.domain.exam.dto.response.ExamDetailResponse;
 import site.okkul.be.domain.exam.dto.response.ExamResultResponse;
-import site.okkul.be.domain.exam.dto.request.ExamStartRequest;
-import site.okkul.be.domain.exam.dto.response.ExamStartResponse;
-import site.okkul.be.domain.exam.dto.response.ExamStatusResponse;
-import site.okkul.be.domain.exam.dto.response.QuestionResponse;
 import site.okkul.be.domain.exam.service.ExamService;
 
 @RestController
@@ -34,18 +32,30 @@ public class ExamController implements ExamControllerDocs {
 	 */
 	private final ExamService examService;
 
+	/**
+	 * 시험 생성
+	 *
+	 * @param user    생성하려는 유저
+	 * @param request 요청 Body
+	 * @return 생성된 모의시험 정보
+	 */
 	@Override
 	@PostMapping
-	public ResponseEntity<ExamStartResponse> startExam(
+	public ResponseEntity<ExamDetailResponse> startExam(
 			@AuthenticationPrincipal UserDetails user,
-			@RequestBody ExamStartRequest request
+			@RequestBody ExamCreateRequest request
 	) {
-		return ResponseEntity.ok(
-				examService.startExam(
-						Long.parseLong(user.getUsername()),
-						request
-				)
+		// 문제 생성
+		ExamDetailResponse exam = examService.createExam(
+				Long.parseLong(user.getUsername()),
+				request.surveyId()
 		);
+		// 비동기로 문제 할당
+		examService.allocateQuestion(exam.id());
+
+		return ResponseEntity.created(
+				URI.create("/exam/" + exam.id())
+		).body(exam);
 	}
 
 	/**
@@ -53,36 +63,30 @@ public class ExamController implements ExamControllerDocs {
 	 */
 	@Override
 	@PatchMapping("/{examId}/adjust-level")
-	public ResponseEntity<List<QuestionResponse>> getRemainingQuestions(
+	public ResponseEntity<ExamDetailResponse> getRemainingQuestions(
 			@PathVariable Long examId,
-			@RequestParam int adjustedDifficulty,
+			@RequestParam Integer adjustedDifficulty,
 			@AuthenticationPrincipal UserDetails user
 	) {
+		ExamDetailResponse exam = examService.updateLevel(
+				Long.parseLong(user.getUsername()),
+				examId,
+				adjustedDifficulty
+		);
+		examService.allocateQuestion(exam.id());
+
 		return ResponseEntity.ok(
-				// TODO: 레벨 수정하기
-				null
+				exam
 		);
 	}
 
 	/**
 	 * 시험정보 가져오기
-	 * @param   examId 시험번호
+	 *
+	 * @param examId 시험번호
 	 */
 	@GetMapping("/{examId}")
-	public ResponseEntity<List<QuestionResponse>> getExamInfo(
-			@PathVariable Long examId,
-			@AuthenticationPrincipal UserDetails user
-	) {
-		return ResponseEntity.ok(
-				null
-		);
-	}
-
-	/**
-	 * 문제 가져오기
-	 */
-	@GetMapping("/{examId}/questions")
-	public ResponseEntity<List<QuestionResponse>> getQuestions(
+	public ResponseEntity<ExamDetailResponse> getExamInfo(
 			@PathVariable Long examId,
 			@AuthenticationPrincipal UserDetails user
 	) {
@@ -127,18 +131,12 @@ public class ExamController implements ExamControllerDocs {
 	// 아래 status/result는 아직 서비스가 더미라면 유지 가능
 	@Override
 	@GetMapping("/{examId}/status")
-	public ResponseEntity<ExamStatusResponse> getExamStatus(
+	public ResponseEntity<ExamDetailResponse> getExamStatus(
 			@PathVariable Long examId,
 			@AuthenticationPrincipal UserDetails user
 	) {
 		// TODO: 실제 서비스 연동 전까지 더미 유지 가능
-		ExamStatusResponse dummy = ExamStatusResponse.builder()
-				.completedQuestions(12)
-				.totalQuestions(15)
-				.isAllAnalyzed(false)
-				.estimatedRemainingSeconds(15)
-				.build();
-
+		ExamDetailResponse dummy = null;
 		return ResponseEntity.ok(dummy);
 	}
 

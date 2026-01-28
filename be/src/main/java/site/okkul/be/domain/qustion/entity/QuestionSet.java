@@ -1,7 +1,18 @@
 package site.okkul.be.domain.qustion.entity;
 
-import jakarta.persistence.*;
-
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
+import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +22,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import site.okkul.be.domain.qustion.entity.converter.QuestionTypeConverter;
 import site.okkul.be.domain.topic.entity.Topic;
 
 @Entity
@@ -36,9 +48,8 @@ public class QuestionSet {
 	@JoinColumn(name = "topic_id", nullable = false)
 	private Topic topic;
 
-//	@ManyToOne(fetch = FetchType.EAGER)
-//	@JoinColumn(name = "type_id", nullable = false)
-	@Enumerated(EnumType.STRING)
+	@Convert(converter = QuestionTypeConverter.class)
+	@Column(name = "type_id")
 	private QuestionType questionType;
 
 	@Builder.Default

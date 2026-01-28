@@ -418,26 +418,13 @@ const showGuide = ref(false);
             </div>
           </div>
 
-          <div class="step">
+          <div class="step last">
             <div class="step-content">
               <span class="step-number">Step 3</span>
               <span class="step-label">Setup</span>
             </div>
           </div>
 
-          <div class="step">
-            <div class="step-content">
-              <span class="step-number">Step 4</span>
-              <span class="step-label">Sample Question</span>
-            </div>
-          </div>
-
-          <div class="step last">
-            <div class="step-content">
-              <span class="step-number">Step 5</span>
-              <span class="step-label">Begin Test</span>
-            </div>
-          </div>
         </nav>
 
         <section class="survey-content">

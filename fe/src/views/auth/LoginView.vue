@@ -19,7 +19,7 @@ const handleLogin = () => {
 
       <div class="login-actions">
         <button @click="handleLogin" class="google-login-btn">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" />
+          <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" />
           구글로 시작하기
         </button>
       </div>

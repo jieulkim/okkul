@@ -14,7 +14,7 @@ export const useAuthStore = defineStore('auth', () => {
         const currentOrigin = window.location.origin
         const redirectUri = `${currentOrigin}/oauth2/redirect`
 
-        window.location.href = `https://api.cicd.okkul.site/oauth2/authorization/google?redirect_uri=${redirectUri}`
+        window.location.href = `https://api.dev.okkul.site/oauth2/authorization/google?redirect_uri=${redirectUri}`
     }
 
     const fetchUser = async () => {

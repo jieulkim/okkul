@@ -41,10 +41,49 @@ const handleDeleteSurvey = (event, surveyId) => {
   }
 };
 
+const labels = {
+  occupation: {
+    COMPANY: "직장인",
+    HOME: "재택근무",
+    EDUCATION: "교육계",
+    NONE: "무직/경험없음",
+    MILITARY: "군인",
+  },
+  residence: {
+    ALONE: "1인 가구",
+    FRIENDS: "공동 거주",
+    FAMILY: "가족 거주",
+    DORMITORY: "기숙사",
+    MILITARY: "군대 막사",
+  },
+};
+
+const getOccupationLabel = (val) => {
+  if (!val) return null;
+  return labels.occupation[val] || val;
+};
+
+const getResidenceLabel = (val) => {
+  if (!val) return null;
+  // Handle numeric IDs if they come as numbers
+  const resMap = {
+    1: "1인 가구",
+    2: "공동 거주",
+    3: "가족 거주",
+    4: "기숙사",
+    5: "군대 막사",
+  };
+  return resMap[val] || labels.residence[val] || val;
+};
+
 const getTopicsSummary = (topics) => {
   if (!topics || topics.length === 0) return "";
-  if (topics.length <= 3) return topics.join(", ");
-  return `${topics.slice(0, 3).join(", ")} 외 ${topics.length - 3}개`;
+  // Check if topics is array of strings or objects
+  const names = topics.map((t) => (typeof t === "string" ? t : t.topicName || t.name));
+  const validNames = names.filter(n => n && !n.includes('난이도'));
+  
+  if (validNames.length <= 3) return validNames.join(", ");
+  return `${validNames.slice(0, 3).join(", ")} 외 ${validNames.length - 3}개`;
 };
 </script>
 
@@ -79,15 +118,15 @@ const getTopicsSummary = (topics) => {
             <span class="date">{{ formatDate(survey.createdAt) }}</span>
             <div class="tags">
               <span class="tag level-tag">난이도 {{ survey.level }}</span>
-              <span class="tag" v-if="survey.occupation">{{
-                survey.occupation
-              }}</span>
-              <span class="tag" v-if="survey.student != null">{{
-                survey.student ? "학생" : "비학생"
-              }}</span>
-              <span class="tag" v-if="survey.residence">{{
-                survey.residence
-              }}</span>
+              <span class="tag" v-if="survey.occupation && survey.occupation !== 'N/A'">
+                💼 {{ getOccupationLabel(survey.occupation) }}
+              </span>
+              <span class="tag" v-if="survey.student !== null && survey.student !== undefined">
+                🎓 {{ survey.student ? "학생" : "비학생" }}
+              </span>
+              <span class="tag" v-if="survey.residence">
+                🏠 {{ getResidenceLabel(survey.residence) }}
+              </span>
             </div>
             <!-- 주제 미리보기 (요약형) -->
             <div
@@ -95,7 +134,7 @@ const getTopicsSummary = (topics) => {
               v-if="survey.topics && survey.topics.length > 0"
             >
               <span class="topic-summary-text">
-                📌 {{ getTopicsSummary(survey.topics) }}
+                {{ getTopicsSummary(survey.topics) }}
               </span>
             </div>
           </div>
@@ -291,16 +330,34 @@ const getTopicsSummary = (topics) => {
 }
 
 .tag {
-  font-size: 12px;
-  background: rgba(0, 0, 0, 0.05);
-  padding: 4px 8px;
-  border-radius: 4px;
-  color: #64748b;
+  font-size: 11px;
+  background: rgba(0, 0, 0, 0.04);
+  padding: 4px 10px;
+  border-radius: 6px;
+  color: #475569;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .dark-mode-item .tag {
-  background: rgba(255, 255, 255, 0.1);
-  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.level-tag {
+  background: #fffbeb !important;
+  color: #b45309 !important;
+  border-color: #fde68a !important;
+}
+
+.dark-mode-item .level-tag {
+  background: rgba(251, 191, 36, 0.1) !important;
+  color: #fbbf24 !important;
+  border-color: rgba(251, 191, 36, 0.2) !important;
 }
 
 .radio-circle {

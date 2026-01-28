@@ -3,7 +3,7 @@
  */
 
 // 백엔드 도메인 주소
-const API_BASE_URL = 'https://api.cicd.okkul.site'
+const API_BASE_URL = 'https://api.dev.okkul.site'
 
 export const apiFetch = async (url, options = {}) => {
     const accessToken = localStorage.getItem('accessToken')

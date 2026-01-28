@@ -187,6 +187,113 @@ export interface QuestionType {
   description?: string;
 }
 
+/** 문항 세트 생성/수정 요청 */
+export interface QuestionSetRequest {
+  /**
+   * 난이도 (1~6)
+   * @format int32
+   * @example 3
+   */
+  level?: number;
+  /**
+   * 연관 토픽 ID
+   * @format int64
+   * @example 101
+   */
+  topicId?: number;
+  /**
+   * 문제 유형 ID
+   * @format int64
+   * @example 1
+   */
+  typeId?: number;
+}
+
+/** 개별 문항 상세 정보 */
+export interface QuestionDetailResponse {
+  /**
+   * 문항 ID
+   * @format int64
+   * @example 1
+   */
+  id?: number;
+  /**
+   * 질문 텍스트
+   * @example "Tell me about your house."
+   */
+  questionText?: string;
+  /**
+   * 질문 음성 파일 URL
+   * @example "https://cdn.okkul.site/audio/q1.mp3"
+   */
+  audioUrl?: string;
+  /**
+   * 세트 내 출력 순서
+   * @format int32
+   * @example 1
+   */
+  order?: number;
+}
+
+/** 문항 세트 응답 정보 */
+export interface QuestionSetResponse {
+  /**
+   * 세트 ID
+   * @format int64
+   * @example 10
+   */
+  setId?: number;
+  /**
+   * 난이도 (1~6)
+   * @format int32
+   * @example 4
+   */
+  level?: number;
+  /**
+   * 세트에 포함된 문항 수
+   * @format int32
+   * @example 3
+   */
+  questionCnt?: number;
+  /**
+   * 토픽 이름
+   * @example "영화 보기"
+   */
+  topicName?: string;
+  /**
+   * 문제 유형 코드
+   * @example "COMBO3"
+   */
+  typeCode?: string;
+  /** 포함된 상세 문항 리스트 */
+  questions?: QuestionDetailResponse[];
+  /**
+   * 생성 일시
+   * @format date-time
+   */
+  createdAt?: string;
+}
+
+/** 문제 내용 */
+export interface QuestionRequest {
+  /**
+   * 질문 텍스트
+   * @example "Tell me about your favorite park."
+   */
+  questionText?: string;
+  /**
+   * 질문 음성 파일 URL
+   * @example "https://cdn.okkul.site/audio/q1.mp3"
+   */
+  audioUrl?: string;
+  /**
+   * 세트 내 출력 순서
+   * @format int32
+   * @example 1
+   */
+  order?: number;
+}
+
 export interface PracticeStartResponse {
   /**
    * 생성된 연습의 ID
@@ -324,6 +431,39 @@ export interface ExamStartResponse {
   questions?: QuestionResponse[];
 }
 
+/** 설문조사용 카테고리별 토픽 목록 응답 DTO */
+export interface CategoryTopicResponse {
+  /** 카테고리 목록 */
+  categories?: Type카테고리정보[];
+}
+
+/** 토픽 정보 */
+export interface TopicInfo {
+  /**
+   * 토픽 ID
+   * @format int64
+   * @example 101
+   */
+  id?: number;
+  /**
+   * 토픽 이름
+   * @example "여행가기"
+   */
+  name?: string;
+}
+
+/** 카테고리 목록 */
+export interface Type카테고리정보 {
+  /**
+   * @format int64
+   * @example 1
+   */
+  "카테고리 ID"?: number;
+  /** @example "학생여부" */
+  "카테고리 이름"?: string;
+  "카테고리에 속한 토픽 목록"?: TopicInfo[];
+}
+
 /** 사용자의 설문조사 리스트 응답 DTO */
 export interface SurveyListResponse {
   surveySummaryResponses?: SurveySummaryResponse[];
@@ -386,20 +526,21 @@ export interface SurveySummaryResponse {
   topicList?: number[];
 }
 
-/** 선택된 개별 소재(토픽) 정보 */
+/**
+ * 설문조사 생성 응답 DTO
+ * @example [101,102,201]
+ */
 export interface SelectedTopic {
-  /**
-   * 카테고리 ID
-   * @format int64
-   * @example 1
-   */
-  categoryId?: number;
   /**
    * 토픽 ID
    * @format int64
    * @example 101
    */
   topicId?: number;
+  /**
+   * 토픽 이름
+   * @example "여행가기"
+   */
   topicName?: string;
 }
 
@@ -412,67 +553,66 @@ export interface SurveyResponse {
    */
   surveyId?: number;
   /**
-   * 사용자 ID
-   * @format int64
-   * @example 1
-   */
-  userId?: number;
-  /**
    * 생성일 (UTC)
    * @format date-time
    * @example "2024-01-22T12:30:00Z"
    */
   createdAt?: string;
+  /**
+   * 직군
+   * @example "COMPANY"
+   */
   occupation?: string;
-  hasJob?: boolean;
-  workPeriod?: string;
-  teachAt?: string;
-  manager?: boolean;
-  student?: boolean;
-  classType?: string;
-  residence?: string;
-  /** @format int32 */
+  /**
+   * 자가진단 레벨
+   * @format int32
+   * @example 4
+   */
   level?: number;
+  /**
+   * 직업 유무
+   * @example true
+   */
+  hasJob?: boolean;
+  /**
+   * 학생 여부
+   * @example false
+   */
+  student?: boolean;
+  /**
+   * 근무 기간
+   * @example "MANY"
+   */
+  workPeriod?: string;
+  /**
+   * 관리직 여부
+   * @example true
+   */
+  manager?: boolean;
+  /**
+   * 거주지 형태
+   * @example "FAMILY"
+   */
+  residence?: string;
+  /**
+   * 교육 장소
+   * @example "SCHOOL"
+   */
+  teachAt?: string;
+  /**
+   * 강의 수강 유형
+   * @example "DEGREE"
+   */
+  classType?: string;
+  /**
+   * 선택된 토픽 목록
+   * @example [101,102,201]
+   */
   selectedTopics?: SelectedTopic[];
 }
 
-/** 소재 카테고리 정보 */
-export interface CategoryInfo {
-  /**
-   * 카테고리 ID
-   * @format int64
-   */
-  categoryId?: number;
-  /** 카테고리 이름 */
-  categoryName?: string;
-  /** 해당 카테고리에 속한 소재(토픽) 목록 */
-  items?: TopicInfo[];
-}
-
-/** 설문조사용 카테고리별 소재 목록 응답 DTO */
-export interface SurveyCategoryTopicResponse {
-  /**
-   * 전체 카테고리 개수
-   * @format int32
-   */
-  count?: number;
-  /** 카테고리 목록 */
-  categories?: CategoryInfo[];
-}
-
-/** 토픽 정보 */
-export interface TopicInfo {
-  /**
-   * 토픽 ID
-   * @format int64
-   * @example 101
-   */
-  topicId?: number;
-  /**
-   * 토픽 이름
-   * @example "여행가기"
-   */
-  topicName?: string;
+export interface Type선택된토픽목록 {
+  selectedTopics?: SelectedTopic[];
 }
 
 export interface PageMetadata {
@@ -488,6 +628,11 @@ export interface PageMetadata {
 
 export interface PagedModelQuestionType {
   content?: QuestionType[];
+  page?: PageMetadata;
+}
+
+export interface PagedModelQuestionSetResponse {
+  content?: QuestionSetResponse[];
   page?: PageMetadata;
 }
 
@@ -703,6 +848,12 @@ export type GetQuestionTypesData = PagedModelQuestionType;
 
 export type CreateQuestionTypeData = QuestionType;
 
+export type GetQuestionSetsData = PagedModelQuestionSetResponse;
+
+export type CreateQuestionSetData = QuestionSetResponse;
+
+export type AddQuestionData = QuestionDetailResponse;
+
 export type StartPracticeData = PracticeStartResponse;
 
 export interface SavePracticeSessionPayload {
@@ -736,11 +887,23 @@ export type DeleteQuestionTypeData = any;
 
 export type UpdateQuestionTypeData = QuestionType;
 
+export type GetQuestionSetData = QuestionSetResponse;
+
+export type DeleteQuestionSetData = any;
+
+export type UpdateQuestionSetData = QuestionSetResponse;
+
+export type DeleteQuestionData = any;
+
+export type UpdateQuestionData = QuestionDetailResponse;
+
 export type GetMyInfoData = UserResponse;
+
+export type GetSurveyTopicsData = CategoryTopicResponse;
 
 export type GetSurveyByIdData = SurveyResponse;
 
-export type GetSurveyTopicsData = SurveyCategoryTopicResponse;
+export type GetSurveyTopicByIdData = Type선택된토픽목록;
 
 export type GetPracticeProblemData = PracticeProblemResponse;
 

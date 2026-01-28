@@ -85,10 +85,16 @@ async def analyze_overall_gemini(question: str, answer: str):
     headers = {"Content-Type": "application/json", "x-goog-api-key": GMS_KEY}
     
     prompt = f"""
-    당신은 오픽 채점관입니다. 질문과 답변을 분석해 종합 피드백을 JSON으로, 특히 feedback은 반드시 한국말로 응답하세요.
-    필요 필드: improved_answer, relevance_feedback, logic_feedback, fluency_feedback
+    당신은 오픽(OPIc) 채점관입니다. 아래 규칙을 엄격히 지켜 JSON으로 응답하세요.
+
+    규칙:
+    1. improved_answer: 사용자의 답변을 토대로 AL 등급 수준의 '영어' 모범 답안을 작성하세요. (절대 한국어 금지)
+    2. relevance_feedback: 질문 적합성을 '한국어'로 평가하세요.
+    3. logic_feedback: 논리 전개를 '한국어'로 평가하세요.
+    4. fluency_feedback: 유창성을 '한국어'로 평가하세요.
+
     질문: {question}
-    답변: {answer}
+    사용자 답변: {answer}
     """
     
     payload = {

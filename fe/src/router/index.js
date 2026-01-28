@@ -10,6 +10,8 @@ import ExamQuestionView from '../views/exam/ExamQuestionView.vue'
 import MyPageView from '../views/mypage/MyPageView.vue'
 import LoginView from '../views/auth/LoginView.vue'
 import OAuth2Redirect from '../views/auth/OAuth2Redirect.vue'
+import ExamFeedbackView from '../views/feedback/ExamFeedbackView.vue'
+import PracticeFeedbackView from '../views/feedback/PracticeFeedbackView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -68,7 +70,18 @@ const router = createRouter({
       path: '/oauth2/redirect',
       name: 'oauth2-redirect',
       component: OAuth2Redirect
+    },
+    {
+      path: '/practice/feedback',
+      name: 'practice-feedback',
+      component: PracticeFeedbackView
+    },
+    {
+      path: '/exam/feedback',
+      name: 'exam-feedback',
+      component: ExamFeedbackView
     }
+
   ]
 })
 

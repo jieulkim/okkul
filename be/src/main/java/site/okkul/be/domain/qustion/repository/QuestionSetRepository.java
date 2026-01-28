@@ -17,7 +17,7 @@ public interface QuestionSetRepository extends JpaRepository<QuestionSet, Long> 
     @Query(value = """
         SELECT qs.*
         FROM question_set qs
-        JOIN questiontype qt ON qs.type_id = qt.type_id
+        JOIN question_type qt ON qs.type_id = qt.type_id
         WHERE qs.level = :level
           AND qs.topic_id = :topicId
           AND qt.type_code = :typeCode
@@ -33,7 +33,7 @@ public interface QuestionSetRepository extends JpaRepository<QuestionSet, Long> 
     @Query(value = """
     SELECT qs.*
     FROM question_set qs
-    JOIN questiontype qt ON qs.type_id = qt.type_id
+    JOIN question_type qt ON qs.type_id = qt.type_id
     WHERE qt.type_code = :typeCode
     ORDER BY random()
     LIMIT 1

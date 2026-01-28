@@ -18,10 +18,6 @@ import java.util.List;
 @Schema(description = "모의고사 시작 요청 데이터")
 public class ExamStartRequest {
 
-    @NotNull(message = "시험 세트 ID는 필수입니다.")
-    @Schema(description = "선택한 시험 세트의 고유 ID", example = "101")
-    private Long examSetId;
-
     @NotNull(message = "설문조사 ID는 필수입니다.")
     @Schema(description = "DB에 저장된 사용자의 설문조사 완료 데이터 ID", example = "5001")
     private Long surveyId;

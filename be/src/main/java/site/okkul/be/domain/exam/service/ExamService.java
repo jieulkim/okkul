@@ -44,9 +44,9 @@ public class ExamService {
     private final ExamAnswerJpaRepository examAnswerRepository;
     private final SurveyJpaRepository surveyRepository;
     private final QuestionSetRepository questionSetRepository;
-    private final MinioService minioService;
-    private final SttService sttService;
-    private final AiAnalysisService aiAnalysisService;
+//    private final MinioService minioService;
+//    private final SttService sttService;
+//    private final AiAnalysisService aiAnalysisService;
 
     // DB seed의 questiontype.type_code와 동일해야 함
     private static final String INTRO = "INTRODUCTION";
@@ -75,7 +75,7 @@ public class ExamService {
                 .surveyId(request.getSurveyId())
                 .initialDifficulty(level)
                 .createdAt(Instant.now())
-                .completed(false)
+//                .completed(false)
                 .build());
 
         // 2) Topic 순서 셔플 후 Exam에 저장
@@ -116,7 +116,7 @@ public class ExamService {
         // 2) 8번 이후가 이미 있으면 삭제 (중복 생성 방지)
         List<ExamAnswer> existingAnswers = examAnswerRepository.findAllByExamId(examId);
         List<ExamAnswer> answersToRemove = existingAnswers.stream()
-                .filter(a -> a.getQuestionOrder() >= 8)
+//                .filter(a -> a.getQuestionOrder() >= 8)
                 .toList();
         if (!answersToRemove.isEmpty()) {
             examAnswerRepository.deleteAll(answersToRemove);
@@ -145,23 +145,23 @@ public class ExamService {
     public void submitAnswer(Long examId, Long answerId, MultipartFile file) {
         ExamAnswer answer = examAnswerRepository.findById(answerId).orElseThrow();
 
-        if (!Objects.equals(answer.getExamId(), examId)) {
-            throw new IllegalArgumentException("examId와 answerId가 일치하지 않습니다.");
-        }
+//        if (!Objects.equals(answer.getExamId(), examId)) {
+//            throw new IllegalArgumentException("examId와 answerId가 일치하지 않습니다.");
+//        }
 
-        try {
-            String audioUrl = minioService.upload(file);
-            answer.uploadVoiceFile(audioUrl);
-
-            answer.startStt();
-            String script = sttService.convert(file);
-
-            answer.completeSttAndStartAnalysis(script);
-            aiAnalysisService.analyzeAndSaveFeedback(answerId, script);
-        } catch (Exception e) {
-            answer.markAsFailed();
-            throw new RuntimeException("답변 처리 중 오류가 발생했습니다.", e);
-        }
+//        try {
+//            String audioUrl = minioService.upload(file);
+//            answer.uploadVoiceFile(audioUrl);
+//
+//            answer.startStt();
+//            String script = sttService.convert(file);
+//
+//            answer.completeSttAndStartAnalysis(script);
+//            aiAnalysisService.analyzeAndSaveFeedback(answerId, script);
+//        } catch (Exception e) {
+//            answer.markAsFailed();
+//            throw new RuntimeException("답변 처리 중 오류가 발생했습니다.", e);
+//        }
     }
 
     @Transactional
@@ -292,9 +292,9 @@ public class ExamService {
 
         for (Question q : questions) {
             answerEntities.add(ExamAnswer.builder()
-                    .examId(exam.getId())
-                    .question(q)
-                    .questionOrder(order++)
+//                    .examId(exam.getId())
+//                    .question(q)
+//                    .questionOrder(order++)
                     .status(AnswerStatus.READY)
                     .build());
         }
@@ -303,10 +303,10 @@ public class ExamService {
 
         List<QuestionResponse> dtos = saved.stream()
                 .map(a -> QuestionResponse.builder()
-                        .answerId(a.getId())
-                        .questionOrder(a.getQuestionOrder())
-                        .questionText(a.getQuestion().getQuestionText())
-                        .audioUrl(a.getQuestion().getAudioUrl())
+//                        .answerId(a.getId())
+//                        .questionOrder(a.getQuestionOrder())
+//                        .questionText(a.getQuestion().getQuestionText())
+//                        .audioUrl(a.getQuestion().getAudioUrl())
                         .build())
                 .toList();
 

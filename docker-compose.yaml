@@ -13,14 +13,16 @@ services:
     networks:
       - server-tools_default
 
-  ai-service:
+ai-service:
     image: ai:${TAG}
     container_name: okkul-ai
     restart: always
     ports:
       - "8000:8000"
     networks:
-      - server-tools_default
+      server-tools_default:
+        aliases:
+          - okkul-ai-develop  # http://okkul-ai-develop:8000으로 호출 가능
 
 networks:
   server-tools_default:

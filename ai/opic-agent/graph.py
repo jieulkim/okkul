@@ -102,13 +102,13 @@ def content_node(state: GraphState):
     }
 
 def validate_node(state: GraphState):
-    """Step 2: 로직 검수 (SQL 문법 검사는 제외, 내용만 검수)"""
+    """Step 2: 로직 검수 (Count 검증만 수행)"""
     print("--- [2. VALIDATOR] Reviewing Content Logic ---")
     start_time = time.time()
 
     structured_llm = llm.with_structured_output(ValidationResult)
     
-    # 검수 대상: 만들어진 '질문 내용'만 확인하면 됨 (SQL은 코드로 짰으니 문법 오류 없음)
+    # 검수 대상: 생성된 질문 개수만 확인 (count만 체크)
     content = state["generated_content"]
     questions_text = "\n".join([f"Order {q.order}: {q.text}" for q in content.questions])
 
@@ -117,7 +117,7 @@ def validate_node(state: GraphState):
     Questions Generated:
     {questions_text}
     
-    Check if the 'Order Rules' are followed correctly (e.g., Past Experience at the correct order).
+    Count the number of question items and check if it matches the required count for the mode.
     """
     
     chain = ChatPromptTemplate.from_messages([

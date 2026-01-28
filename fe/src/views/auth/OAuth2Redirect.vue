@@ -8,29 +8,26 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 onMounted(async () => {
+  console.log('[OAuth2Redirect] Full Query Params:', route.query)
   const accessToken = route.query.accessToken
   const refreshToken = route.query.refreshToken
-  const isFirst = route.query.isFirst === 'true'
 
   if (accessToken) {
+    console.log('[OAuth2Redirect] Token received. Saving to localStorage...')
     // 토큰 저장
     localStorage.setItem('accessToken', accessToken)
     if (refreshToken) localStorage.setItem('refreshToken', refreshToken)
     
     // 유저 정보 가져오기
+    console.log('[OAuth2Redirect] Fetching user info...')
     await authStore.fetchUser()
 
-    // 리다이렉트 처리
-    if (isFirst) {
-      // 첫 로그인인 경우 설문조사 페이지로 이동
-      router.push('/survey')
-    } else {
-      // 기존 유저인 경우 홈으로 이동
-      router.push('/')
-    }
+    // ✅ 로그인 성공 시 항상 홈으로
+    console.log('[OAuth2Redirect] Redirecting to Home...')
+    router.push('/')
   } else {
-    // 토큰이 없는 경우 로그인 페이지로 back
-    console.error('Authentication failed: No access token received')
+    // 토큰이 없는 경우 로그인 페이지로
+    console.error('[OAuth2Redirect] Authentication failed: No access token received')
     router.push('/login')
   }
 })

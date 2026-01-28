@@ -2,10 +2,12 @@
 import { ref, computed, inject, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import SurveySelectModal from '@/components/common/SurveySelectModal.vue'
-import api from '@/utils/api'
+import { surveysApi } from '@/api'
+import { useSurveyStore } from '@/stores/survey'
 
 const router = useRouter()
 const route = useRoute()
+const surveyStore = useSurveyStore()
 const isDarkMode = inject('isDarkMode', ref(false))
 
 // 상태 관리
@@ -15,8 +17,9 @@ const hoveredType = ref(null)
 const showSurveySelectModal = ref(false)
 const existingSurveys = ref([])
 const selectedTopic = ref(null)
+const activeSurveyId = ref(null) // 현재 선택된 설문 ID 추적
 
-// [사용자 요청] 유형별 상세 정보 데이터
+// 유형별 상세 정보 데이터
 const practiceTypes = [
   {
     id: 'INTRO',
@@ -88,18 +91,19 @@ const surveyData = ref({
 // ERD/API 참고용 데이터 로드 로직
 const fetchExistingSurveys = async () => {
   try {
-    const response = await api.get('/surveys');
-    if (response.ok) {
-      const data = await response.json();
-      // data.surveys structure from SurveyListResponse
-      existingSurveys.value = data.surveys.map(s => ({
-        surveyId: s.surveyId,
-        createdAt: s.createdAt,
-        level: s.level,
-        occupation: s.occupationAnswerId, // Depending on backend mapping
-        topics: s.topicList
-      }));
-    }
+    console.log('[PracticeView] Fetching Existing Surveys...');
+    const response = await surveysApi.getSurveyList();
+    console.log('[PracticeView] Raw Survey List Response:', response.data);
+    
+    // 백엔드 응답 구조: { surveySummaryResponses: [...] } 또는 직접 배열
+    let surveyList = response.data?.surveySummaryResponses || (Array.isArray(response.data) ? response.data : []);
+    
+    // 로컬 저장소 및 스토어에서 삭제된 ID 필터링
+    existingSurveys.value = surveyStore.filterSurveys(surveyList).map(s => ({
+      ...s,
+      topics: s.topicList || []
+    }));
+    console.log('[PracticeView] Parsed Survey List (Filtered):', existingSurveys.value);
   } catch (error) {
     console.error("설문 목록 로드 실패", error);
   }
@@ -108,54 +112,76 @@ const fetchExistingSurveys = async () => {
 // 특정 설문 상세 조회
 const fetchSurveyDetails = async (surveyId) => {
   try {
-    const response = await api.get(`/surveys/${surveyId}`);
-    if (!response.ok) throw new Error('설문 상세 조회 실패');
+    const response = await surveysApi.getSurveyById(surveyId);
+    const data = response.data;
     
-    const data = await response.json();
-    
-    // 1. 기본 토픽 (selectedTopics)
-    let combinedTopics = (data.selectedTopics || []).map(t => ({
-      topicId: t.topicId,
-      name: t.topicName
-    }));
+    // 카테고리 매핑 (주관적 정의 혹은 DB 코드 연동)
+    const categoryNames = {
+      0: '배경 정보',
+      1: '여가 활동',
+      2: '취미/관심사',
+      3: '운동/스포츠',
+      4: '휴가/출장'
+    };
 
-    // 2. Background Survey 항목을 토픽으로 추가
-    if (data.occupationAnswerId) {
-      combinedTopics.unshift({
-        topicId: -1,
-        name: `직업 ID: ${data.occupationAnswerId}`,
-        type: 'background'
+    let groups = {
+      0: { name: categoryNames[0], topics: [] },
+      1: { name: categoryNames[1], topics: [] },
+      2: { name: categoryNames[2], topics: [] },
+      3: { name: categoryNames[3], topics: [] },
+      4: { name: categoryNames[4], topics: [] }
+    };
+
+    // 1. 기본 토픽 (selectedTopics) 및 중복 제거
+    (data.selectedTopics || []).forEach(t => {
+      const catId = t.categoryId || 1; // 기본값 여가
+      
+      // 배경 정보와 겹칠 수 있는 항목 제외 (단순 문자열 매칭 등)
+      const lowerName = t.topicName.toLowerCase();
+      if (lowerName.includes('직장인') || lowerName.includes('학생') || lowerName.includes('거주')) {
+        return;
+      }
+
+      if (groups[catId]) {
+        groups[catId].topics.push({
+          topicId: t.topicId,
+          name: t.topicName
+        });
+      }
+    });
+
+    // 2. Background 정보 가공 (배경 정보 섹션으로 강제 할당)
+    if (data.occupation) {
+      groups[0].topics.push({ topicId: -1, name: `직업: ${data.occupation}`, type: 'background' });
+    }
+    if (data.residence) {
+      groups[0].topics.push({ topicId: -2, name: `거주: ${data.residence}`, type: 'background' });
+    }
+    if (data.student !== undefined) {
+      groups[0].topics.push({ 
+        topicId: -3, 
+        name: data.student ? "학생 신분" : "직장인/비학생", 
+        type: 'background' 
       });
     }
 
-    if (data.residenceAnswerId) {
-      combinedTopics.unshift({
-        topicId: -2,
-        name: `거주지 ID: ${data.residenceAnswerId}`,
-        type: 'background'
-      });
-    }
-
-    if (data.student) {
-       combinedTopics.unshift({
-        topicId: -3,
-        name: "학생",
-        type: 'background'
-      });
-    }
+    // 빈 그룹 제거
+    const finalGroups = Object.values(groups).filter(g => g.topics.length > 0);
 
     surveyData.value = {
-      topics: combinedTopics,
-      occupation: data.occupationAnswerId,
+      topicGroups: finalGroups,
+      occupation: data.occupation,
       hasJob: data.hasJob,
       isStudent: data.student,
-      residence: data.residenceAnswerId
+      residence: data.residence
     };
     
-    selectedTopic.value = null; // 초기화
+    selectedTopic.value = null; 
+    currentStep.value = 'topic-check';
   } catch (error) {
-    console.error("설문 상세 조회 실패", error);
+    console.error("설문 상세 조회 실패:", error);
     alert("설문 정보를 불러오는데 실패했습니다.");
+    currentStep.value = 'type';
   }
 }
 
@@ -171,9 +197,9 @@ const startNewSurvey = () => {
 
 const useSelectedSurvey = async (surveyId) => {
   console.log('Use existing survey:', surveyId);
+  activeSurveyId.value = surveyId; // 활성 설문 ID 저장
   await fetchSurveyDetails(surveyId);
   showSurveySelectModal.value = false;
-  currentStep.value = 'topic-check';
 };
 
 const selectTopic = (topic) => {
@@ -188,9 +214,20 @@ const goToQuestionPage = () => {
     query: { 
       type: selectedType.value?.id,
       topic: selectedTopic.value.topicId,
-      topicName: selectedTopic.value.name
+      topicName: selectedTopic.value.name,
+      surveyId: activeSurveyId.value || route.query.surveyId // 활성 ID 또는 쿼리 ID 사용
     }
   });
+};
+
+const handleDeleteSurvey = (surveyId) => {
+  // 1. 스토어 및 로컬 저장소에 삭제 반영
+  surveyStore.deleteSurvey(surveyId);
+  
+  // 2. 현재 목록 UI 즉시 업데이트
+  existingSurveys.value = surveyStore.filterSurveys(existingSurveys.value);
+  
+  console.log(`[PracticeView] Survey ${surveyId} deleted (Global FE Sync)`);
 };
 
 onMounted(async () => {
@@ -207,6 +244,7 @@ onMounted(async () => {
     }
 
     // 2. 설문 상세 데이터 로드 및 주제 선택 화면으로 전환
+    activeSurveyId.value = Number(surveyId); // 라우트에서 온 ID도 저장
     await useSelectedSurvey(Number(surveyId));
   }
 });
@@ -244,12 +282,11 @@ onMounted(async () => {
       <h1 class="page-title">연습 주제 선택</h1>
       
       <div class="condition-card">
-        <div class="section-top">
-          <div class="section-label">주제 선택 (취미/여가)</div>
-          <p class="section-desc">연습하고 싶은 주제를 하나 선택해주세요.</p>
+        <div v-for="group in surveyData.topicGroups" :key="group.name" class="topic-group-section">
+          <div class="section-label">{{ group.name }}</div>
           <div class="tag-group">
             <button 
-              v-for="t in surveyData.topics" 
+              v-for="t in group.topics" 
               :key="t.topicId" 
               class="topic-btn"
               :class="{ active: selectedTopic?.topicId === t.topicId }"
@@ -258,25 +295,7 @@ onMounted(async () => {
               # {{ t.name }}
             </button>
           </div>
-        </div>
-
-        <div class="section-divider"></div>
-
-        <div class="section-bottom">
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="info-label">직업</span>
-              <span class="info-value">{{ surveyData.hasJob ? '있음' : '없음' }} ({{ surveyData.occupation }})</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">학생</span>
-              <span class="info-value">{{ surveyData.isStudent ? '학생임' : '아님' }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">거주</span>
-              <span class="info-value">{{ surveyData.residence }}</span>
-            </div>
-          </div>
+          <div class="section-divider"></div>
         </div>
       </div>
       
@@ -285,7 +304,7 @@ onMounted(async () => {
         @click="goToQuestionPage"
         :disabled="!selectedTopic"
       >
-        선택한 주제로 연습 시작 🚀
+        선택한 주제로 연습 시작
       </button>
     </div>
 
@@ -294,6 +313,7 @@ onMounted(async () => {
       :existingSurveys="existingSurveys"
       @start-new="startNewSurvey"
       @use-selected="useSelectedSurvey"
+      @delete-survey="handleDeleteSurvey"
       @close="showSurveySelectModal = false"
     />
 

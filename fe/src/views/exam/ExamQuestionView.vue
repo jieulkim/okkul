@@ -1,875 +1,834 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, inject } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, computed, onMounted, onUnmounted, inject } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import { examApi } from '@/api';
 
-const router = useRouter()
-const route = useRoute()
-const isDarkMode = inject('isDarkMode', ref(false))
-
-// 시험 정보
-const examId = ref(null)
-const surveyId = ref(null)
-const currentQuestionIndex = ref(1)
-const totalQuestions = ref(15)
-const questions = ref([])
-const currentQuestion = ref(null)
+const router = useRouter();
+const route = useRoute();
+const isDarkMode = inject('isDarkMode', ref(false));
 
 // 상태 관리
-const isPlaying = ref(false)
-const isRecording = ref(false)
-const hasReplayed = ref(false)
-const canReplay = ref(false)
-const replayTimeout = ref(null)
-const recordingStartTime = ref(null)
-const recordingDuration = ref(0)
-const recordingInterval = ref(null)
+const examId = ref(null);
+const currentQuestionIndex = ref(0);
+const questions = ref([]);
+const totalQuestions = ref(15);
+const isRecording = ref(false);
+const recordingTime = ref(0);
+const audioLevel = ref(0);
+const currentAudio = ref(null);
+const isPlaying = ref(false);
+const showRelevelModal = ref(false);
+const adjustedDifficulty = ref(null);
+const isLoading = ref(true);
+const errorMessage = ref(null);
 
-// 오디오/비디오
-const videoElement = ref(null)
-const currentAudio = ref(null)
+let mediaRecorder = null;
+let audioChunks = [];
+let recordingTimer = null;
+let volumeMonitor = null;
 
-// 미디어 레코더
-const mediaRecorder = ref(null)
-const audioChunks = ref([])
-const recordedBlob = ref(null)
+// 포맷팅된 시간
+const formattedTime = computed(() => {
+  const mins = Math.floor(recordingTime.value / 60);
+  const secs = recordingTime.value % 60;
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+});
 
-// Step Progress (Setup 완료 후 Sample Question)
-const currentStep = ref(5)
+// 볼륨 레벨 (0-10 사이)
+const volumeLevel = computed(() => {
+  return Math.round(audioLevel.value / 10);
+});
 
-// 난이도 재조정 모달
-const showDifficultyAdjustModal = ref(false)
-const adjustedDifficulty = ref(null)
+// 현재 문제
+const currentQuestion = computed(() => {
+  return questions.value[currentQuestionIndex.value];
+});
 
-// Guide 모달
-const showGuide = ref(false)
-
-// 시험 시작
-onMounted(async () => {
-  surveyId.value = route.query.surveyId
-  
-  if (!surveyId.value) {
-    alert('설문 정보가 없습니다. 처음부터 다시 시작해주세요.')
-    router.push('/exam')
-    return
-  }
-  
-  await startExam()
-})
-
-// 시험 시작 API 호출
-const startExam = async () => {
+// 시험 시작/재개
+const initializeExam = async () => {
   try {
-    const response = await fetch('https://api.dev.okkul.site/exam/start', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        // TODO: JWT 토큰 추가
-      },
-      body: JSON.stringify({
-        examSetId: 1, // TODO: 실제 examSetId
-        surveyId: parseInt(surveyId.value)
-      })
-    })
+    isLoading.value = true;
+    const { examId: queryExamId, resume } = route.query;
     
-    if (!response.ok) throw new Error('시험 시작 실패')
+    console.log('[ExamQuestionView] 초기화 시작:', { queryExamId, resume });
     
-    const data = await response.json()
-    examId.value = data.examId
-    totalQuestions.value = data.totalQuestions
-    questions.value = data.questions // 1~7번 문항
-    currentQuestion.value = questions.value[0]
+    if (!queryExamId) {
+      errorMessage.value = '시험 정보가 없습니다.';
+      alert('시험 정보가 없습니다.');
+      router.push('/exam');
+      return;
+    }
     
-    console.log('시험 시작:', data)
+    examId.value = parseInt(queryExamId);
+    const savedData = localStorage.getItem(`exam_${examId.value}`);
+    
+    console.log('[ExamQuestionView] localStorage 데이터:', savedData);
+    
+    if (!savedData) {
+      errorMessage.value = '시험 데이터를 찾을 수 없습니다.';
+      alert('시험 데이터를 찾을 수 없습니다.');
+      router.push('/exam');
+      return;
+    }
+    
+    const data = JSON.parse(savedData);
+    questions.value = data.questions || [];
+    totalQuestions.value = data.totalQuestions || 15;
+    currentQuestionIndex.value = data.currentIndex || 0;
+    
+    console.log('[ExamQuestionView] 시험 초기화 완료:', {
+      examId: examId.value,
+      totalQuestions: totalQuestions.value,
+      currentIndex: currentQuestionIndex.value,
+      questionsCount: questions.value.length,
+      firstQuestion: questions.value[0]
+    });
+    
+    if (questions.value.length === 0) {
+      errorMessage.value = '문제 데이터가 없습니다.';
+      alert('문제 데이터가 없습니다.');
+      router.push('/exam');
+      return;
+    }
+    
+    isLoading.value = false;
+    
   } catch (error) {
-    console.error('시험 시작 오류:', error)
-    alert('시험 시작에 실패했습니다.')
+    console.error('시험 초기화 실패:', error);
+    errorMessage.value = '시험을 불러오는데 실패했습니다.';
+    alert('시험을 불러오는데 실패했습니다.');
+    router.push('/exam');
   }
-}
+};
 
-// Play 버튼
-const playQuestion = () => {
-  if (!currentQuestion.value) return
+// 오디오 재생
+const togglePlay = () => {
+  if (!currentQuestion.value?.audioUrl) return;
   
-  isPlaying.value = true
-  canReplay.value = false
-  hasReplayed.value = false
-  
-  // 비디오 재생 (아바타)
-  if (videoElement.value) {
-    videoElement.value.play()
-  }
-  
-  // 오디오 재생
-  if (currentAudio.value) {
-    currentAudio.value.pause()
-    currentAudio.value = null
-  }
-  
-  currentAudio.value = new Audio(currentQuestion.value.audioUrl)
-  currentAudio.value.play()
-  
-  currentAudio.value.onended = () => {
-    isPlaying.value = false
+  if (isPlaying.value && currentAudio.value) {
+    currentAudio.value.pause();
+    isPlaying.value = false;
+  } else {
+    if (currentAudio.value) {
+      currentAudio.value.pause();
+    }
+    currentAudio.value = new Audio(currentQuestion.value.audioUrl);
+    currentAudio.value.play();
+    isPlaying.value = true;
     
-    // 5초 안에 Replay 가능
-    canReplay.value = true
-    replayTimeout.value = setTimeout(() => {
-      canReplay.value = false
-      startRecording()
-    }, 5000)
+    currentAudio.value.onended = () => {
+      isPlaying.value = false;
+    };
   }
-}
-
-// Replay 버튼
-const replayQuestion = () => {
-  if (!canReplay.value || hasReplayed.value) return
-  
-  clearTimeout(replayTimeout.value)
-  hasReplayed.value = true
-  canReplay.value = false
-  
-  playQuestion()
-}
+};
 
 // 녹음 시작
 const startRecording = async () => {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    mediaRecorder.value = new MediaRecorder(stream)
-    audioChunks.value = []
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream);
+    audioChunks = [];
     
-    mediaRecorder.value.ondataavailable = (event) => {
-      audioChunks.value.push(event.data)
-    }
+    mediaRecorder.ondataavailable = (event) => {
+      audioChunks.push(event.data);
+    };
     
-    mediaRecorder.value.onstop = async () => {
-      recordedBlob.value = new Blob(audioChunks.value, { type: 'audio/webm' })
-      await submitAnswer()
-    }
+    mediaRecorder.onstop = async () => {
+      const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+      await submitAnswer(audioBlob);
+    };
     
-    mediaRecorder.value.start()
-    isRecording.value = true
-    recordingStartTime.value = Date.now()
+    // 볼륨 모니터링
+    const audioContext = new AudioContext();
+    const analyser = audioContext.createAnalyser();
+    const microphone = audioContext.createMediaStreamSource(stream);
+    microphone.connect(analyser);
+    analyser.fftSize = 512;
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
     
-    // 녹음 시간 카운트
-    recordingInterval.value = setInterval(() => {
-      recordingDuration.value = Math.floor((Date.now() - recordingStartTime.value) / 1000)
-    }, 1000)
+    volumeMonitor = setInterval(() => {
+      analyser.getByteFrequencyData(dataArray);
+      const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+      audioLevel.value = average;
+    }, 100);
+    
+    mediaRecorder.start();
+    isRecording.value = true;
+    recordingTime.value = 0;
+    
+    recordingTimer = setInterval(() => {
+      recordingTime.value++;
+    }, 1000);
     
   } catch (error) {
-    console.error('녹음 시작 실패:', error)
-    alert('마이크 접근 권한이 필요합니다.')
+    console.error('녹음 시작 실패:', error);
+    if (error.name === 'NotAllowedError') {
+      alert('마이크 권한이 거부되었습니다.\n브라우저 설정에서 마이크 권한을 허용해주세요.');
+    } else {
+      alert('마이크를 사용할 수 없습니다.');
+    }
   }
-}
+};
 
 // 녹음 중지
 const stopRecording = () => {
-  if (mediaRecorder.value && isRecording.value) {
-    mediaRecorder.value.stop()
-    isRecording.value = false
-    clearInterval(recordingInterval.value)
-    
-    // 스트림 정지
-    mediaRecorder.value.stream.getTracks().forEach(track => track.stop())
+  if (mediaRecorder && isRecording.value) {
+    mediaRecorder.stop();
+    isRecording.value = false;
+    clearInterval(recordingTimer);
+    clearInterval(volumeMonitor);
+    mediaRecorder.stream.getTracks().forEach(track => track.stop());
   }
-}
+};
 
 // 답변 제출
-const submitAnswer = async () => {
-  if (!recordedBlob.value) return
-  
+const submitAnswer = async (audioBlob) => {
   try {
-    const formData = new FormData()
-    formData.append('file', recordedBlob.value, 'answer.webm')
-    
-    const response = await fetch(
-      `https://api.dev.okkul.site/exam/exam/${examId.value}/questions/${currentQuestion.value.answerId}/answer`,
-      {
-        method: 'POST',
-        body: formData
-      }
-    )
-    
-    if (!response.ok) throw new Error('답변 제출 실패')
-    
-    console.log('답변 제출 성공')
-    
-    // 7번 문항 완료 시 난이도 재조정
-    if (currentQuestionIndex.value === 7) {
-      showDifficultyAdjustModal.value = true
-    } else {
-      goNextQuestion()
+    if (!currentQuestion.value) {
+      console.error('현재 문제 정보가 없습니다.');
+      return;
     }
     
-  } catch (error) {
-    console.error('답변 제출 오류:', error)
-    alert('답변 제출에 실패했습니다.')
-  }
-}
 
-// 난이도 선택 후 나머지 문항 가져오기
-const selectDifficulty = async (difficulty) => {
-  adjustedDifficulty.value = difficulty
-  showDifficultyAdjustModal.value = false
+    const formData = new FormData();
+    formData.append('audioFile', audioBlob, 'answer.webm');
+    
+    await examApi.submitAnswer(
+      examId.value,
+      currentQuestion.value.answerId,
+      formData
+    );
+    
+    // 진행 상황 저장
+    saveProgress();
+    
+  } catch (error) {
+    console.error('답변 제출 실패:', error);
+    alert('답변 제출에 실패했습니다.');
+  }
+};
+
+// 다음 문제
+const goNext = () => {
+  if (currentQuestionIndex.value === 6) {
+    // 7번 문제 종료 - 난이도 재조정
+    showRelevelModal.value = true;
+  } else if (currentQuestionIndex.value < questions.value.length - 1) {
+    currentQuestionIndex.value++;
+    resetRecordingState();
+  } else {
+    // 시험 종료
+    completeExam();
+  }
+};
+
+// 난이도 재조정
+const setRelevel = async (choice) => {
+  const difficultyMap = {
+    easy: -1,
+    same: 0,
+    hard: 1
+  };
+  
+  adjustedDifficulty.value = difficultyMap[choice];
+  showRelevelModal.value = false;
   
   try {
-    const response = await fetch(
-      `https://api.dev.okkul.site/exam/${examId.value}/questions/current?adjustedDifficulty=${difficulty}`,
-      { method: 'POST' }
-    )
+
+    const response = await examApi.getRemainingQuestions(examId.value, {
+      adjustedDifficulty: adjustedDifficulty.value
+    });
     
-    if (!response.ok) throw new Error('문항 조회 실패')
-    
-    const remainingQuestions = await response.json()
-    questions.value = [...questions.value, ...remainingQuestions]
-    
-    goNextQuestion()
+    // 나머지 문제 추가
+    questions.value = [...questions.value, ...response.data.questions];
+    currentQuestionIndex.value++;
+    resetRecordingState();
     
   } catch (error) {
-    console.error('나머지 문항 조회 오류:', error)
-    alert('문항을 불러오는데 실패했습니다.')
+    console.error('문제 로드 실패:', error);
+    alert('문제를 불러오는데 실패했습니다.');
   }
-}
+};
 
-// 다음 문제로
-const goNextQuestion = () => {
-  recordedBlob.value = null
-  recordingDuration.value = 0
-  
-  if (currentQuestionIndex.value < totalQuestions.value) {
-    currentQuestionIndex.value++
-    currentQuestion.value = questions.value[currentQuestionIndex.value - 1]
-  } else {
-    completeExam()
+// 녹음 상태 초기화
+const resetRecordingState = () => {
+  recordingTime.value = 0;
+  audioLevel.value = 0;
+  if (currentAudio.value) {
+    currentAudio.value.pause();
+    isPlaying.value = false;
   }
-}
+};
+
+// 진행 상황 저장
+const saveProgress = () => {
+  const data = {
+    examId: examId.value,
+    currentIndex: currentQuestionIndex.value,
+    questions: questions.value,
+    timestamp: new Date().toISOString()
+  };
+  
+  localStorage.setItem(`exam_${examId.value}`, JSON.stringify(data));
+  localStorage.setItem('incompleteExam', JSON.stringify({
+    examId: examId.value,
+    currentQuestion: currentQuestionIndex.value + 1,
+    remainingTime: formattedTime.value
+  }));
+};
 
 // 시험 완료
 const completeExam = async () => {
   try {
-    const response = await fetch(
-      `https://api.dev.okkul.site/exam/exam/${examId.value}/complete`,
-      { method: 'POST' }
-    )
+    if (!examId.value) {
+      console.error('examId가 없습니다.');
+      return;
+    }
     
-    if (!response.ok) throw new Error('시험 완료 처리 실패')
+
+    await examApi.completeExam(examId.value);
     
-    console.log('시험 완료')
+    localStorage.removeItem(`exam_${examId.value}`);
+    localStorage.removeItem('incompleteExam');
     
-    // 결과 대기 페이지로 이동
     router.push({
       path: '/exam/result',
       query: { examId: examId.value }
-    })
-    
+    });
   } catch (error) {
-    console.error('시험 완료 오류:', error)
-    alert('시험 완료 처리에 실패했습니다.')
+    console.error('시험 완료 처리 실패:', error);
+    alert('시험 완료 처리에 실패했습니다.');
   }
-}
+};
 
-// 정리
-onBeforeUnmount(() => {
+// 시험 나가기
+const exitExam = () => {
+  if (confirm('시험을 나가시겠습니까? 진행 상황은 저장됩니다.')) {
+    saveProgress();
+    router.push('/exam');
+  }
+};
+
+onMounted(() => {
+  initializeExam();
+});
+
+onUnmounted(() => {
   if (currentAudio.value) {
-    currentAudio.value.pause()
-    currentAudio.value = null
+    currentAudio.value.pause();
   }
-  stopRecording()
-  clearTimeout(replayTimeout.value)
-  clearInterval(recordingInterval.value)
-})
-
-// 녹음 시간 포맷
-const formattedDuration = computed(() => {
-  const minutes = Math.floor(recordingDuration.value / 60)
-  const seconds = recordingDuration.value % 60
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`
-})
-
-// 프롬프트 상태 텍스트
-const promptStatusText = computed(() => {
-  if (isRecording.value) return 'Recording'
-  if (isPlaying.value) return 'Playing'
-  if (canReplay.value && !hasReplayed.value) return 'Click REPLAY to listen again (5 sec)'
-  return 'Click PLAY button to Listen'
-})
+  stopRecording();
+});
 </script>
 
 <template>
-  <div class="exam-page" :class="{ 'dark-mode': isDarkMode }">
-    <!-- Header -->
-    <header class="exam-header">
-      <div class="info-section">
-        <button @click="showGuide = true" class="info-btn">
-          <span class="material-icons">info</span>
+  <div class="exam-question-page" :class="{ 'dark-mode': isDarkMode }">
+    <!-- 로딩 화면 -->
+    <div v-if="isLoading" class="loading-screen">
+      <div class="loading-content">
+        <div class="spinner"></div>
+        <p>시험을 불러오는 중...</p>
+      </div>
+    </div>
+
+    <!-- 에러 화면 -->
+    <div v-else-if="errorMessage" class="error-screen">
+      <div class="error-content">
+        <span class="material-icons error-icon">error_outline</span>
+        <h2>{{ errorMessage }}</h2>
+        <button @click="router.push('/exam')" class="back-to-exam-btn">
+          모의고사 홈으로 돌아가기
         </button>
       </div>
+    </div>
 
-      <!-- Step Progress -->
-      <nav class="step-progress">
-        <div class="step completed">
-          <div class="step-content">
-            <span class="step-number">Step 1 <span class="material-icons check-icon">check_circle</span></span>
-            <span class="step-label">Background Survey</span>
-          </div>
-        </div>
-        <div class="step completed">
-          <div class="step-content">
-            <span class="step-number">Step 2 <span class="material-icons check-icon">check_circle</span></span>
-            <span class="step-label">Self Assessment</span>
-          </div>
-        </div>
-        <div class="step completed">
-          <div class="step-content">
-            <span class="step-number">Step 3 <span class="material-icons check-icon">check_circle</span></span>
-            <span class="step-label">Setup</span>
-          </div>
-        </div>
-        <div class="step completed">
-          <div class="step-content">
-            <span class="step-number">Step 4 <span class="material-icons check-icon">check_circle</span></span>
-            <span class="step-label">Sample Question</span>
-          </div>
-        </div>
-        <div class="step active last">
-          <div class="step-content">
-            <span class="step-number">Step 5</span>
-            <span class="step-label">Begin Test</span>
-          </div>
-        </div>
-      </nav>
-
-      <h1 class="page-title">OPIc Test</h1>
-      <h2 class="question-header">Question {{ currentQuestionIndex }} of {{ totalQuestions }}</h2>
-    </header>
-
-    <!-- Main Content -->
-    <main class="exam-main">
-      <div class="exam-container">
-        <!-- 왼쪽: 비디오 & 컨트롤 -->
-        <div class="video-section">
-          <div class="video-card">
-            <video
-              ref="videoElement"
-              class="avatar-video"
-              poster="https://opickoreademo.multicampus.com/images/NewEuroAvatarCaptured.png"
-              muted
-              loop
-            >
-              <source src="https://opickoreademo.multicampus.com/file/NewEuroStandBy" type="video/mp4">
-            </video>
-          </div>
-
-          <!-- 컨트롤 버튼 -->
-          <div class="controls">
-            <button
-              v-if="!isPlaying && !canReplay"
-              @click="playQuestion"
-              class="control-btn play-btn"
-              :disabled="isRecording"
-            >
-              <span class="material-icons">play_arrow</span>
-            </button>
-            
-            <button
-              v-if="canReplay && !hasReplayed"
-              @click="replayQuestion"
-              class="control-btn replay-btn"
-            >
-              <span class="material-icons">replay</span>
-            </button>
-
-            <div class="playback-bar">
-              <div class="playback-track"></div>
-            </div>
-          </div>
-
-          <!-- 상태 표시 -->
-          <div class="status-indicator" :class="{ 
-            'status-playing': isPlaying,
-            'status-recording': isRecording,
-            'status-replay': canReplay
-          }">
-            {{ promptStatusText }}
-          </div>
-        </div>
-
-        <!-- 오른쪽: 문항 진행 & 안내 -->
-        <div class="info-section-right">
-          <h3 class="section-title">문항 진행:</h3>
-          <ul class="question-progress">
-            <li
-              v-for="i in totalQuestions"
-              :key="i"
-              :class="{ 
-                active: i === currentQuestionIndex,
-                completed: i < currentQuestionIndex
-              }"
-            >
-              {{ i }}
-            </li>
-          </ul>
-
-          <!-- 안내 메시지 -->
-          <div v-if="!isPlaying && !isRecording && !canReplay" class="alert-box blue">
-            <b>Play</b> 아이콘(▶)을 눌러 질문을 청취하십시오.<br><br>
-            <b>중요!</b> 5초 이내에 버튼을 누르면 질문 다시듣기가 가능하며, 재청취는 <b>한번</b>만 가능합니다.
-          </div>
-
-          <div v-if="canReplay && !hasReplayed" class="alert-box blue">
-            5초 이내에 <b>Replay</b> 아이콘을 눌러야만 질문 다시듣기가 가능합니다.
-          </div>
-
-          <div v-if="isRecording" class="alert-box purple">
-            <b>중요!</b> 문항 재생 후 자동으로 답변 녹음이 시작됩니다.<br>
-            Recording 표시 확인 후 답변을 시작하십시오.<br>
-            문항별 답변 제한시간은 없습니다.
-          </div>
-
-          <!-- 녹음 시간 -->
-          <div v-if="isRecording" class="recording-timer">
-            <h3>답변 시간:</h3>
-            <div class="timer-display">{{ formattedDuration }}</div>
-            <button @click="stopRecording" class="stop-btn">
-              답변 완료
-            </button>
-          </div>
+    <!-- 메인 화면 -->
+    <template v-else>
+    <!-- 헤더 -->
+    <div class="exam-header">
+      <div class="header-left">
+        <button @click="exitExam" class="exit-btn">
+          <span class="material-icons">arrow_back</span>
+          나가기
+        </button>
+      </div>
+      <div class="header-center">
+        <span class="question-number">Question {{ currentQuestionIndex + 1 }} / {{ totalQuestions }}</span>
+      </div>
+      <div class="header-right">
+        <div class="time-display">
+          <span class="material-icons">timer</span>
+          {{ formattedTime }}
         </div>
       </div>
-    </main>
+    </div>
 
-    <!-- 난이도 재조정 모달 -->
-    <transition name="fade">
-      <div v-if="showDifficultyAdjustModal" class="modal-overlay">
-        <div class="modal-card difficulty-modal">
-          <div class="modal-header">
-            <h3>난이도 재조정</h3>
+    <!-- 메인 콘텐츠 -->
+    <div class="main-content">
+      <div class="content-wrapper">
+        <!-- 질문 섹션 -->
+        <div class="question-section">
+          <div class="question-card">
+            <div class="question-header">
+              <h2>{{ currentQuestion?.questionText || 'Loading...' }}</h2>
+            </div>
+            
+            <div class="audio-controls">
+              <button @click="togglePlay" class="play-button" :class="{ playing: isPlaying }">
+                <span class="material-icons">{{ isPlaying ? 'pause' : 'play_arrow' }}</span>
+                {{ isPlaying ? 'Stop' : 'Listen' }}
+              </button>
+            </div>
           </div>
-          <div class="modal-body">
-            <p class="modal-text">
-              7번 문항까지 완료하셨습니다.<br>
-              나머지 문항의 난이도를 선택해주세요.
-            </p>
-            <div class="difficulty-options">
-              <button
-                v-for="level in [1, 2, 3, 4, 5, 6]"
-                :key="level"
-                @click="selectDifficulty(level)"
-                class="difficulty-btn"
+        </div>
+
+        <!-- 녹음 섹션 -->
+        <div class="recording-section">
+          <div class="recording-card">
+            <div class="recording-header">
+              <div class="status-indicator" :class="{ recording: isRecording }">
+                <span class="status-dot"></span>
+                {{ isRecording ? 'RECORDING' : 'READY' }}
+              </div>
+            </div>
+
+            <!-- 볼륨 미터 -->
+            <div class="volume-meter">
+              <div 
+                v-for="n in 20" 
+                :key="n" 
+                class="volume-bar"
+                :class="{ 
+                  active: volumeLevel >= n,
+                  low: n <= 7,
+                  mid: n > 7 && n <= 14,
+                  high: n > 14
+                }"
+              ></div>
+            </div>
+
+            <!-- 녹음 컨트롤 -->
+            <div class="recording-controls">
+              <button 
+                v-if="!isRecording" 
+                @click="startRecording" 
+                class="record-btn"
               >
-                난이도 {{ level }}
+                <span class="material-icons">mic</span>
+                녹음 시작
+              </button>
+              <button 
+                v-else 
+                @click="stopRecording" 
+                class="stop-btn"
+              >
+                <span class="material-icons">stop</span>
+                녹음 중지
+              </button>
+            </div>
+
+            <!-- 다음 버튼 -->
+            <div class="navigation-controls">
+              <button @click="goNext" class="next-btn">
+                다음 문제
+                <span class="material-icons">arrow_forward</span>
               </button>
             </div>
           </div>
         </div>
       </div>
-    </transition>
+    </div>
 
-    <!-- Guide 모달 -->
-    <transition name="fade">
-      <div v-if="showGuide" class="modal-overlay" @click="showGuide = false">
-        <div class="modal-card" @click.stop>
-          <div class="modal-header">
-            <h3>Guide</h3>
-          </div>
-          <div class="modal-body">
-            <ul class="guide-list">
-              <li>· OPIc 모의고사 화면입니다.</li>
-              <li>· Play 버튼을 눌러 질문을 청취하고, 자동으로 녹음이 시작됩니다.</li>
-              <li>· 5초 이내에 Replay 버튼을 누르면 질문을 다시 들을 수 있습니다 (1회만).</li>
-              <li>· 7번 문항 이후 난이도 재조정이 진행됩니다.</li>
-              <li>· 모든 문항에 성실히 답변해주세요.</li>
-            </ul>
-          </div>
-          <div class="modal-footer">
-            <button @click="showGuide = false" class="close-btn">닫기</button>
-          </div>
+    <!-- 난이도 재조정 모달 -->
+    <div v-if="showRelevelModal" class="modal-overlay">
+      <div class="modal-card" :class="{ 'dark-mode-card': isDarkMode }">
+        <div class="modal-header">
+          <h3>난이도 재조정</h3>
+          <p class="subtitle">전반부 7문제를 완료하셨습니다.<br>남은 문제의 난이도를 선택해주세요.</p>
+        </div>
+
+        <div class="difficulty-options">
+          <button @click="setRelevel('easy')" class="difficulty-btn easy">
+            <span class="emoji">😊</span>
+            <span class="label">쉬운 질문</span>
+          </button>
+          <button @click="setRelevel('same')" class="difficulty-btn same active">
+            <span class="emoji">😐</span>
+            <span class="label">비슷한 질문</span>
+          </button>
+          <button @click="setRelevel('hard')" class="difficulty-btn hard">
+            <span class="emoji">😤</span>
+            <span class="label">어려운 질문</span>
+          </button>
         </div>
       </div>
-    </transition>
+    </div>
+    </template>
   </div>
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
-@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 
-.exam-page {
+.exam-question-page {
   min-height: 100vh;
-  background: #ffffff;
-  color: #1e293b;
-  padding: 40px 20px;
+  background: #f8fafc;
   font-family: 'Noto Sans KR', sans-serif;
 }
 
-.dark-mode {
-  background: #0f172a;
-  color: #f1f5f9;
-}
-
-/* Header */
-.exam-header {
-  max-width: 1280px;
-  margin: 0 auto 40px;
-}
-
-.info-section {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 16px;
-}
-
-.info-btn {
-  background: none;
-  border: none;
-  color: #94a3b8;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.info-btn:hover {
-  color: #FFD700;
-}
-
-.material-icons {
-  font-family: 'Material Icons';
-  font-size: 24px;
-}
-
-/* Step Progress */
-.step-progress {
-  display: flex;
-  height: 48px;
-  margin-bottom: 30px;
-}
-
-.step {
-  flex: 1;
+/* 로딩 화면 */
+.loading-screen {
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #eee;
-  color: #94a3b8;
-  font-size: 12px;
-  clip-path: polygon(0% 0%, 90% 0%, 100% 50%, 90% 100%, 0% 100%, 10% 50%);
-  margin-right: -2px;
+  background: #f8fafc;
 }
 
-.step:first-child { clip-path: polygon(0% 0%, 90% 0%, 100% 50%, 90% 100%, 0% 100%); }
-.step.last { clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 10% 50%); }
-
-.step.active {
-  background: #FFD700 !important;
-  color: #1e293b !important;
-  font-weight: bold;
+.loading-content {
+  text-align: center;
 }
 
-.step.completed {
-  background: #e2e8f0;
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #e2e8f0;
+  border-top-color: #FFD700;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-content p {
+  font-size: 16px;
   color: #64748b;
+  font-weight: 600;
 }
 
-.dark-mode .step { background: #1e293b; }
-.dark-mode .step.active { background: #FFD700 !important; }
-.dark-mode .step.completed { background: #334155; }
+/* 에러 화면 */
+.error-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+}
 
-.step-content { display: flex; flex-direction: column; align-items: center; }
-.step-number { font-weight: 700; display: flex; align-items: center; gap: 4px; }
-.step-label { font-size: 10px; }
-.check-icon { font-size: 14px !important; }
+.error-content {
+  text-align: center;
+  padding: 40px;
+}
 
-.page-title {
-  font-size: 28px;
+.error-icon {
+  font-size: 80px !important;
+  color: #ef4444;
+  margin-bottom: 20px;
+}
+
+.error-content h2 {
+  font-size: 24px;
+  color: #1e293b;
+  margin-bottom: 30px;
+}
+
+.back-to-exam-btn {
+  padding: 14px 32px;
+  background: #FFD700;
+  color: #1e293b;
+  border: none;
+  border-radius: 12px;
   font-weight: 700;
-  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.back-to-exam-btn:hover {
+  background: #ffc800;
+  transform: translateY(-2px);
+}
+
+/* 헤더 */
+.exam-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px;
+  background: white;
+  border-bottom: 2px solid #e2e8f0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.exit-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: transparent;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.exit-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.question-number {
+  font-size: 18px;
+  font-weight: 700;
   color: #1e293b;
 }
 
-.dark-mode .page-title {
-  color: #f1f5f9;
+.time-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #fffef0;
+  border: 2px solid #FFD700;
+  border-radius: 12px;
+  font-weight: 700;
+  color: #1e293b;
 }
 
-.question-header {
-  font-size: 20px;
-  font-weight: 600;
-  color: #64748b;
-  margin-bottom: 32px;
+/* 메인 콘텐츠 */
+.main-content {
+  padding: 40px 20px;
 }
 
-.dark-mode .question-header {
-  color: #94a3b8;
-}
-
-/* Main Content */
-.exam-main {
-  max-width: 1280px;
+.content-wrapper {
+  max-width: 1200px;
   margin: 0 auto;
-}
-
-.exam-container {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 40px;
+  gap: 30px;
 }
 
-@media (max-width: 968px) {
-  .exam-container {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* 비디오 섹션 */
-.video-section {
+/* 질문 섹션 */
+.question-section {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.video-card {
-  background: #f8f9fa;
-  border-radius: 16px;
-  overflow: hidden;
-  aspect-ratio: 4/5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.question-card {
+  background: white;
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e2e8f0;
 }
 
-.dark-mode .video-card {
-  background: #1e293b;
-}
-
-.avatar-video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* 컨트롤 */
-.controls {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.control-btn {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: none;
-  background: #FFD700;
+.question-header h2 {
+  font-size: 24px;
+  font-weight: 700;
   color: #1e293b;
+  line-height: 1.5;
+  margin-bottom: 30px;
+}
+
+.audio-controls {
+  display: flex;
+  justify-content: center;
+}
+
+.play-button {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 10px;
+  padding: 16px 40px;
+  background: #FFD700;
+  border: none;
+  border-radius: 16px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
 }
 
-.control-btn:hover:not(:disabled) {
-  background: #E6C200;
-  transform: scale(1.05);
+.play-button:hover {
+  background: #ffc800;
+  transform: translateY(-2px);
 }
 
-.control-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.play-button.playing {
+  background: #ef4444;
+  color: white;
 }
 
-.control-btn .material-icons {
-  font-size: 32px;
+/* 녹음 섹션 */
+.recording-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.playback-bar {
-  flex: 1;
-  height: 8px;
-  background: #e2e8f0;
-  border-radius: 4px;
-  overflow: hidden;
+.recording-card {
+  background: white;
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
 }
 
-.dark-mode .playback-bar {
-  background: #334155;
+.recording-header {
+  display: flex;
+  justify-content: center;
 }
 
-.playback-track {
-  height: 100%;
-  background: #FFD700;
-  width: 0%;
-  transition: width 0.3s;
-}
-
-/* 상태 표시 */
 .status-indicator {
-  text-align: center;
-  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
   background: #f1f5f9;
-  border-radius: 8px;
-  font-weight: 500;
+  border-radius: 12px;
+  font-weight: 700;
   color: #64748b;
 }
 
-.dark-mode .status-indicator {
-  background: #1e293b;
-  color: #94a3b8;
+.status-indicator.recording {
+  background: #fee2e2;
+  color: #ef4444;
 }
 
-.status-indicator.status-playing {
-  background: #dbeafe;
-  color: #1e40af;
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #cbd5e1;
 }
 
-.status-indicator.status-recording {
-  background: #fce7f3;
-  color: #be123c;
+.status-indicator.recording .status-dot {
+  background: #ef4444;
   animation: pulse 1.5s infinite;
-}
-
-.status-indicator.status-replay {
-  background: #fef3c7;
-  color: #92400e;
 }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  50% { opacity: 0.3; }
 }
 
-/* 오른쪽 정보 섹션 */
-.info-section-right {
+/* 볼륨 미터 */
+.volume-meter {
   display: flex;
-  flex-direction: column;
-  gap: 20px;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 4px;
+  height: 80px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 12px;
 }
 
-.section-title {
-  font-size: 18px;
-  font-weight: 700;
-  margin: 0;
+.volume-bar {
+  width: 12px;
+  height: 10px;
+  background: #e2e8f0;
+  border-radius: 3px;
+  transition: all 0.1s;
 }
 
-.question-progress {
+.volume-bar.active {
+  height: 100%;
+}
+
+.volume-bar.active.low {
+  background: #10b981;
+}
+
+.volume-bar.active.mid {
+  background: #fbbf24;
+}
+
+.volume-bar.active.high {
+  background: #ef4444;
+}
+
+/* 녹음 컨트롤 */
+.recording-controls {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  list-style: none;
-  padding: 0;
-  margin: 0;
+  justify-content: center;
 }
 
-.question-progress li {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: #f1f5f9;
+.record-btn, .stop-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  color: #64748b;
-  transition: all 0.2s;
-}
-
-.dark-mode .question-progress li {
-  background: #1e293b;
-  color: #94a3b8;
-}
-
-.question-progress li.active {
-  background: #FFD700;
-  color: #1e293b;
-  transform: scale(1.1);
-}
-
-.question-progress li.completed {
-  background: #e2e8f0;
-  color: #10b981;
-}
-
-.dark-mode .question-progress li.completed {
-  background: #334155;
-}
-
-/* 알림 박스 */
-.alert-box {
-  padding: 16px;
-  border-radius: 12px;
-  line-height: 1.6;
-}
-
-.alert-box.blue {
-  background: #dbeafe;
-  color: #1e40af;
-  border: 2px solid #3b82f6;
-}
-
-.alert-box.purple {
-  background: #f3e8ff;
-  color: #6b21a8;
-  border: 2px solid #a855f7;
-}
-
-.dark-mode .alert-box.blue {
-  background: #1e3a8a;
-  color: #bfdbfe;
-}
-
-.dark-mode .alert-box.purple {
-  background: #581c87;
-  color: #e9d5ff;
-}
-
-/* 녹음 타이머 */
-.recording-timer {
-  padding: 24px;
-  background: #fce7f3;
-  border: 2px solid #f472b6;
-  border-radius: 12px;
-  text-align: center;
-}
-
-.dark-mode .recording-timer {
-  background: #831843;
-  border-color: #f472b6;
-}
-
-.recording-timer h3 {
-  font-size: 16px;
-  margin-bottom: 12px;
-}
-
-.timer-display {
-  font-size: 32px;
-  font-weight: 700;
-  color: #be123c;
-  margin-bottom: 16px;
-}
-
-.dark-mode .timer-display {
-  color: #fda4af;
-}
-
-.stop-btn {
-  padding: 12px 32px;
-  background: #dc2626;
-  color: white;
+  gap: 10px;
+  padding: 16px 40px;
   border: none;
-  border-radius: 8px;
-  font-weight: 600;
+  border-radius: 16px;
+  font-size: 18px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
 }
 
+.record-btn {
+  background: #FFD700;
+  color: #1e293b;
+}
+
+.record-btn:hover {
+  background: #ffc800;
+  transform: translateY(-2px);
+}
+
+.stop-btn {
+  background: #ef4444;
+  color: white;
+}
+
 .stop-btn:hover {
-  background: #b91c1c;
+  background: #dc2626;
+  transform: translateY(-2px);
+}
+
+/* 네비게이션 */
+.navigation-controls {
+  display: flex;
+  justify-content: center;
+  padding-top: 20px;
+  border-top: 2px solid #e2e8f0;
+}
+
+.next-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 32px;
+  background: #1e293b;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.next-btn:hover {
+  background: #0f172a;
+  transform: translateY(-2px);
 }
 
 /* 모달 */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -882,118 +841,120 @@ const promptStatusText = computed(() => {
   border-radius: 24px;
   max-width: 600px;
   width: 90%;
+  padding: 40px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
-.dark-mode .modal-card {
-  background: #1e293b;
-}
-
 .modal-header {
-  padding: 24px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.dark-mode .modal-header {
-  border-bottom-color: #374155;
+  text-align: center;
+  margin-bottom: 30px;
 }
 
 .modal-header h3 {
-  font-size: 20px;
-  font-weight: 700;
-  margin: 0;
-}
-
-.modal-body {
-  padding: 24px;
-}
-
-.modal-text {
-  text-align: center;
-  font-size: 16px;
-  line-height: 1.6;
-  margin-bottom: 24px;
-  color: #64748b;
-}
-
-.dark-mode .modal-text {
-  color: #94a3b8;
+  font-size: 28px;
+  font-weight: 900;
+  margin-bottom: 12px;
+  color: #1e293b;
 }
 
 .difficulty-options {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  display: flex;
+  gap: 16px;
+  justify-content: center;
 }
 
 .difficulty-btn {
-  padding: 16px;
-  background: #f1f5f9;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  font-weight: 600;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+  background: #f8fafc;
+  border: 3px solid #e2e8f0;
+  border-radius: 16px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
-.dark-mode .difficulty-btn {
+.difficulty-btn:hover {
+  border-color: #FFD700;
+  transform: translateY(-3px);
+}
+
+.difficulty-btn.active {
+  border-color: #FFD700;
+  background: #fffef0;
+}
+
+.difficulty-btn .emoji {
+  font-size: 40px;
+}
+
+.difficulty-btn .label {
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* 다크모드 */
+.dark-mode {
   background: #0f172a;
+}
+
+.dark-mode .exam-header {
+  background: #1e293b;
   border-color: #334155;
+}
+
+.dark-mode .question-number {
   color: #f1f5f9;
 }
 
-.difficulty-btn:hover {
-  background: #FFD700;
-  border-color: #FFD700;
-  color: #1e293b;
-  transform: scale(1.05);
+.dark-mode .question-card,
+.dark-mode .recording-card {
+  background: #1e293b;
+  border-color: #334155;
 }
 
-.guide-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.dark-mode .question-header h2 {
+  color: #f1f5f9;
 }
 
-.guide-list li {
-  color: #64748b;
-  line-height: 1.6;
-}
-
-.dark-mode .guide-list li {
+.dark-mode .status-indicator {
+  background: #0f172a;
   color: #94a3b8;
 }
 
-.modal-footer {
-  padding: 16px 24px;
-  display: flex;
-  justify-content: flex-end;
+.dark-mode .volume-meter {
+  background: #0f172a;
 }
 
-.close-btn {
-  padding: 8px 24px;
-  background: #f1f5f9;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.dark-mode .close-btn {
-  background: #374155;
+.dark-mode-card {
+  background: #1e293b;
   color: #f1f5f9;
 }
 
-/* Animations */
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s ease;
+.dark-mode-card .modal-header h3 {
+  color: #f1f5f9;
 }
 
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
+.dark-mode-card .difficulty-btn {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.dark-mode-card .difficulty-btn .label {
+  color: #f1f5f9;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .content-wrapper {
+    grid-template-columns: 1fr;
+  }
+  
+  .difficulty-options {
+    flex-direction: column;
+  }
 }
 </style>

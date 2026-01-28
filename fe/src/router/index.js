@@ -29,8 +29,6 @@ const router = createRouter({
       name: 'practice-question',
       component: PracticeQuestionView
     },
-
-    // 나중에 만들 예정
     {
       path: '/mypage',
       name: 'mypage',
@@ -61,21 +59,15 @@ const router = createRouter({
       name: 'survey-level',
       component: SurveyLevelView
     },
-    // reports 라우트는 나중에 추가
-    // {
-    //   path: '/reports',
-    //   name: 'reports',
-    //   component: () => import('../views/reports/ReportsView.vue')
-    // }
     {
       path: '/login',
       name: 'login',
-      component: () => import('../views/auth/LoginView.vue')
+      component: LoginView
     },
     {
       path: '/oauth2/redirect',
       name: 'oauth2-redirect',
-      component: () => import('../views/auth/OAuth2Redirect.vue')
+      component: OAuth2Redirect
     }
   ]
 })

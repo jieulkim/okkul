@@ -1,27 +1,16 @@
 <script setup>
 import { ref, computed, inject, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
 
-// 1. Auth Store 및 Router 초기화
-const authStore = useAuthStore()
-const router = useRouter()
+// 사용자 프로필 데이터 (전역 상태 주입)
+const userProfile = inject('userProfile')
 
-// 2. 로그인 상태 및 사용자 데이터 계산
-// authStore.user 존재 여부로 로그인 확인
-const isLoggedIn = computed(() => !!authStore.user)
-
-const userProfile = computed(() => authStore.user || {
-  nickname: '게스트',
-  targetLevel: '-',
-  currentLevel: '-',
-  name: '게스트'
-})
-
-// 3. 다크모드 설정 및 주입
+// 다크모드 상태 주입
 const isDarkMode = inject('isDarkMode', ref(false))
 
-// 다크모드 변경 감지 및 클래스 적용
+const authStore = inject('authStore')
+const isLoggedIn = computed(() => !!authStore?.user)
+
+// 다크모드 변경 감지
 watch(isDarkMode, (newVal) => {
   if (newVal) {
     document.documentElement.classList.add('dark-mode')
@@ -30,19 +19,24 @@ watch(isDarkMode, (newVal) => {
   }
 }, { immediate: true })
 
+// 컴포넌트 마운트 시 다크모드 클래스 적용
 onMounted(() => {
   if (isDarkMode.value) {
     document.documentElement.classList.add('dark-mode')
   }
 })
 
-// 4. 프로필 이미지 관련 기능
+// 프로필 이미지 업로드
 const profileImageInput = ref(null)
 
-const handleProfileImageUpload = async (event) => {
+const handleProfileImageUpload = (event) => {
   const file = event.target.files[0]
   if (file) {
-    await authStore.updateProfileImage(file)
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      userProfile.value.profileImage = e.target.result
+    }
+    reader.readAsDataURL(file)
   }
 }
 
@@ -50,7 +44,7 @@ const triggerImageUpload = () => {
   profileImageInput.value?.click()
 }
 
-// 5. 더미 데이터 (최근 성적 및 활동)
+// 최근 성적 데이터
 const recentScores = ref([
   { day: '월', score: 65, height: 40 },
   { day: '화', score: 72, height: 55 },
@@ -60,6 +54,7 @@ const recentScores = ref([
   { day: '오늘', score: 85, height: 82, active: true }
 ])
 
+// 최근 학습 기록
 const recentActivities = ref([
   {
     id: 1,
@@ -111,8 +106,11 @@ const getStatusColor = (status) => {
 <template>
   <div class="home-container">
     <main class="main-content">
+      <!-- 로그인 상태일 때 (대시보드) -->
       <div v-if="isLoggedIn" class="dashboard-grid">
+        <!-- 왼쪽 컬럼 -->
         <div class="left-column">
+          <!-- 웰컴 배너 -->
           <section class="welcome-banner">
             <h1>{{ userProfile.nickname || '사용자' }}님, 오늘도 <span class="highlight">꿀</span>처럼 달콤한 성과를 만들어요! 🍯</h1>
             <p class="subtitle">오꿀과 함께 목표 등급 달성까지 달려봐요!</p>
@@ -136,11 +134,13 @@ const getStatusColor = (status) => {
             </div>
           </section>
 
+          <!-- 최근 성적 추이 (기존 코드 유지) ... -->
           <section class="stats-card">
             <div class="card-header">
               <h3>최근 성적 추이</h3>
               <span class="header-meta">최근 7일 기준</span>
             </div>
+            
             <div class="chart-area">
               <div 
                 v-for="(item, idx) in recentScores" 
@@ -152,16 +152,19 @@ const getStatusColor = (status) => {
                 <span class="score-label">{{ item.score }}</span>
               </div>
             </div>
+            
             <div class="chart-labels">
               <span v-for="item in recentScores" :key="item.day">{{ item.day }}</span>
             </div>
           </section>
 
+          <!-- 최근 학습 기록 -->
           <section class="recent-activities">
             <div class="card-header">
               <h3>최근 학습 기록</h3>
               <a href="#" class="header-link">전체보기</a>
             </div>
+            
             <div class="activity-list">
               <div 
                 v-for="activity in recentActivities" 
@@ -171,6 +174,7 @@ const getStatusColor = (status) => {
                 <div class="activity-icon" :style="{ backgroundColor: getStatusColor(activity.status) + '20', color: getStatusColor(activity.status) }">
                   <span class="material-icons-outlined">{{ getStatusIcon(activity.status) }}</span>
                 </div>
+                
                 <div class="activity-content">
                   <div class="activity-header">
                     <h4>{{ activity.title }}</h4>
@@ -187,9 +191,12 @@ const getStatusColor = (status) => {
           </section>
         </div>
         
+        <!-- 오른쪽 컬럼 (기존 코드 유지) ... -->
         <div class="right-column">
+          <!-- 프로필 관리 카드 -->
           <section class="profile-card">
             <h3>프로필 관리</h3>
+            
             <div class="profile-edit">
               <div class="profile-image-section" @click="triggerImageUpload">
                 <div class="profile-preview">
@@ -213,17 +220,24 @@ const getStatusColor = (status) => {
                   style="display: none"
                 />
               </div>
+    
               <div class="profile-info">
                 <div class="info-row">
                   <label>닉네임</label>
                   <span>{{ userProfile.nickname }}</span>
                 </div>
+                <!-- <div class="info-row">
+                  <label>이름</label>
+                  <span>{{ userProfile.name }}</span>
+                </div> -->
               </div>
             </div>
           </section>
           
+          <!-- AI 등급 분석 -->
           <section class="ai-analysis-card">
             <h3>AI 등급 분석</h3>
+            
             <div class="grade-circle">
               <svg viewBox="0 0 100 100">
                 <circle class="bg" cx="50" cy="50" r="45"></circle>
@@ -235,6 +249,7 @@ const getStatusColor = (status) => {
                 <span class="percent">상위 15%</span>
               </div>
             </div>
+
             <div class="grade-stats">
               <div class="stat">
                 <p>현재 예상</p>
@@ -246,11 +261,13 @@ const getStatusColor = (status) => {
                 <strong class="target">{{ userProfile.targetLevel || 'AL' }}</strong>
               </div>
             </div>
+
             <button class="detail-btn">상세 리포트 보기</button>
           </section>
         </div>
       </div>
 
+      <!-- 비로그인 상태일 때 (랜딩 페이지) -->
       <div v-else class="landing-hero">
         <div class="hero-content">
           <span class="badge">AI기반 OPIc 트레이닝 서비스</span>

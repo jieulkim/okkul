@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed, onUnmounted, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import api from '@/utils/api'
+import { ref, computed, onUnmounted, onMounted, watch } from "vue";
+import { useRoute } from "vue-router";
+import { Practices } from "@/api/Practices";
+import { Surveys } from "@/api/Surveys";
 
 // ============================================
 // Props 정의 (부모 컴포넌트에서 받을 데이터)
@@ -246,37 +247,42 @@ const analyze = async () => {
   if (!currentQuestion.value) return;
 
   try {
+    const practicesApi = new Practices();
+
     // 1. Audio Blob 생성
     const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
     const audioFile = new File([audioBlob], "recording.wav", {
       type: "audio/wav",
     });
 
-    // 2. FormData 준비 (Multipart 요청)
-    const formData = new FormData();
-    formData.append('request', new Blob([JSON.stringify({
+    // 2. JSON 데이터 준비
+    const requestData = {
       koreanScript: koreanScript.value,
-      englishScript: sttResult.value
-    })], { type: 'application/json' }));
-    formData.append('audio', audioFile);
+      englishScript: sttResult.value,
+    };
 
-    // 3. API 호출
-    const practiceId = props.practiceSession.practice_id;
-    const questionId = currentQuestion.value.question_id;
-    
-    const response = await api.post(`/practices/${practiceId}/questions/${questionId}`, formData);
-    if (!response.ok) throw new Error('분석 저장 실패');
-    
-    const data = await response.json();
-    console.log("분석 결과:", data);
+    // 3. Payload 생성
+    const payload = {
+      request: requestData,
+      audio: audioFile,
+    };
+
+    // 4. API 호출
+    const response = await practicesApi.savePracticeSession(
+      props.practiceSession.practice_id,
+      currentQuestion.value.question_id,
+      payload,
+    );
+
+    console.log("분석 결과:", response.data);
 
     // 5. 결과 처리
-    if (data && data.feedbackResult) {
+    if (response.data && response.data.feedbackResult) {
       // API 응답 구조에 맞춰 데이터 매핑
       // feedbackResult: { scriptCorrections: [], overallComment: "" }
-      
-      const result = data.feedbackResult;
-      
+
+      const result = response.data.feedbackResult;
+
       // 문장 피드백 매핑
       feedbackData.value = (result.scriptCorrections || []).map((item) => ({
         original: item.originalSegment,
@@ -292,7 +298,7 @@ const analyze = async () => {
       currentPage.value = 0;
 
       // 부모 컴포넌트로 알림
-      emit('answer-submitted', data);
+      emit("answer-submitted", response.data);
     } else {
       throw new Error("분석 결과 형식이 올바르지 않습니다.");
     }

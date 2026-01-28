@@ -1,45 +1,28 @@
 <script setup>
-import { inject, computed } from 'vue'
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
-const authStore = useAuthStore()
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 
-// 전역 다크모드 상태 및 토글 함수 주입
-const isDarkMode = inject('isDarkMode', null)
-const toggleDarkMode = inject('toggleDarkMode', null)
+// 1. 로그인 여부 판단 (authStore의 user 상태를 실시간 감시)
+const isLoggedIn = computed(() => !!authStore.user)
 
-// 로그인 여부 (Auth Store)
-const isAuthenticated = computed(() => authStore.isAuthenticated)
-const userProfile = computed(() => authStore.user || {})
-
-// 프로필 이미지 표시 계산
-const profileDisplay = computed(() => {
-  if (userProfile.value.profileImage) {
-    return { type: 'image', value: userProfile.value.profileImage }
-  }
-  return { 
-    type: 'initial', 
-    value: userProfile.value.nickname?.[0]?.toUpperCase() || 'U'
-  }
+// 2. 프로필 표시 데이터 (유저 닉네임의 첫 글자)
+const profileInitial = computed(() => {
+  return authStore.user?.nickname?.[0]?.toUpperCase() || 'U'
 })
-
-// 다크모드 토글 핸들러
-const handleDarkModeToggle = () => {
-  if (toggleDarkMode) {
-    toggleDarkMode()
-  }
-}
 
 // 네비게이션 메뉴
 const navItems = [
   { path: '/exam', label: '실전 모의고사', icon: 'assignment' },
-  { path: '/practice', label: '유형별 연습', icon: 'category' },
+  { path: '/practice', label: '유형별 연습', icon: 'category' }
+  // 피드백 리포트는 추후 경로 확정 시 추가
 ]
 
-// 로그아웃 처리
+// 3. 로그아웃 처리
 const handleLogout = () => {
   if (confirm('로그아웃 하시겠습니까?')) {
     console.log('[Navbar] Initiating logout...')
@@ -47,7 +30,7 @@ const handleLogout = () => {
   }
 }
 
-// 현재 활성 메뉴 표시를 위한 함수
+// 4. 현재 활성 메뉴 표시를 위한 함수
 const isActive = (path) => {
   if (path === '/') return route.path === '/'
   return route.path.startsWith(path)
@@ -64,7 +47,7 @@ const isActive = (path) => {
       </router-link>
 
       <!-- 네비게이션 메뉴 (로그인 시에만 노출) -->
-      <nav v-if="isAuthenticated" class="nav-menu">
+      <nav v-if="isLoggedIn" class="nav-menu">
         <router-link
           v-for="item in navItems"
           :key="item.path"
@@ -81,32 +64,26 @@ const isActive = (path) => {
 
       <!-- 우측 컨트롤 -->
       <div class="nav-controls">
-        <!-- 로그인 상태에 따른 UI -->
-        <template v-if="isAuthenticated">
+        <!-- 로그인 상태일 때 -->
+        <template v-if="isLoggedIn">
           <!-- 프로필 - 마이페이지로 이동 -->
           <router-link to="/mypage" class="user-profile" :class="{ active: isActive('/mypage') }">
             <div class="profile-avatar">
-              <img 
-                v-if="profileDisplay.type === 'image'" 
-                :src="profileDisplay.value" 
-                :alt="userProfile.nickname"
-              />
-              <span v-else class="profile-initial">{{ profileDisplay.value }}</span>
+              <span class="profile-initial">{{ profileInitial }}</span>
             </div>
-            <span class="profile-name">{{ userProfile.nickname || userProfile.name }}님</span>
+            <span class="profile-name">{{ authStore.user?.nickname }}님</span>
           </router-link>
-          
+
           <!-- 로그아웃 버튼 -->
-          <button @click="handleLogout" class="logout-btn" title="로그아웃">
+          <button class="logout-btn" @click="handleLogout" title="로그아웃">
             <span class="material-icons-outlined">logout</span>
           </button>
         </template>
-        
-        <template v-else>
-           <router-link to="/login" class="login-btn">
-             로그인
-           </router-link>
-        </template>
+
+        <!-- 로그인 안 했을 때 -->
+        <router-link v-else to="/login" class="login-btn">
+          로그인
+        </router-link>
       </div>
     </div>
   </header>
@@ -256,23 +233,5 @@ const isActive = (path) => {
   font-size: 14px;
   color: #64748b;
   font-weight: 500;
-}
-
-.login-btn {
-  padding: 8px 20px;
-  background: #FFD700;
-  color: #000;
-  border-radius: 20px;
-  font-weight: 700;
-  text-decoration: none;
-  font-size: 14px;
-  transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(255, 215, 0, 0.2);
-}
-
-.login-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
-  background: #ffdb1a;
 }
 </style>

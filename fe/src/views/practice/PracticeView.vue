@@ -2,7 +2,8 @@
 import { ref, computed, inject, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import SurveySelectModal from '@/components/common/SurveySelectModal.vue'
-import api from '@/utils/api'
+import { Surveys } from '@/api/Surveys'
+import { useSurveyStore } from '@/stores/survey'
 
 const router = useRouter()
 const route = useRoute()
@@ -90,18 +91,16 @@ const surveyData = ref({
 // ERD/API 참고용 데이터 로드 로직
 const fetchExistingSurveys = async () => {
   try {
-    const response = await api.get('/surveys');
-    if (response.ok) {
-      const data = await response.json();
-      // data.surveys structure from SurveyListResponse
-      existingSurveys.value = data.surveys.map(s => ({
-        surveyId: s.surveyId,
-        createdAt: s.createdAt,
-        level: s.level,
-        occupation: s.occupationAnswerId, // Depending on backend mapping
-        topics: s.topicList
-      }));
-    }
+    const surveysApi = new Surveys();
+    const response = await surveysApi.getSurveyList();
+    console.log('[PracticeView] Raw Survey List Response:', response.data);
+    
+    // 백엔드 응답 구조: { surveySummaryResponses: [...] } 또는 직접 배열
+    let surveyList = response.data?.surveySummaryResponses || (Array.isArray(response.data) ? response.data : []);
+    
+    // 로컬 저장소 및 스토어에서 삭제된 ID 필터링
+    existingSurveys.value = surveyStore.filterSurveys(surveyList);
+    console.log('[PracticeView] Parsed Survey List (Filtered):', existingSurveys.value);
   } catch (error) {
     console.error("설문 목록 로드 실패", error);
   }
@@ -110,10 +109,9 @@ const fetchExistingSurveys = async () => {
 // 특정 설문 상세 조회
 const fetchSurveyDetails = async (surveyId) => {
   try {
-    const response = await api.get(`/surveys/${surveyId}`);
-    if (!response.ok) throw new Error('설문 상세 조회 실패');
-    
-    const data = await response.json();
+    const surveysApi = new Surveys();
+    const response = await surveysApi.getSurveyById(surveyId);
+    const data = response.data;
     
     // 카테고리 매핑 (주관적 정의 혹은 DB 코드 연동)
     const categoryNames = {
@@ -124,37 +122,56 @@ const fetchSurveyDetails = async (surveyId) => {
       4: '휴가/출장'
     };
 
-    // 2. Background Survey 항목을 토픽으로 추가
-    if (data.occupationAnswerId) {
-      combinedTopics.unshift({
-        topicId: -1,
-        name: `직업 ID: ${data.occupationAnswerId}`,
-        type: 'background'
+    let groups = {
+      0: { name: categoryNames[0], topics: [] },
+      1: { name: categoryNames[1], topics: [] },
+      2: { name: categoryNames[2], topics: [] },
+      3: { name: categoryNames[3], topics: [] },
+      4: { name: categoryNames[4], topics: [] }
+    };
+
+    // 1. 기본 토픽 (selectedTopics) 및 중복 제거
+    (data.selectedTopics || []).forEach(t => {
+      const catId = t.categoryId || 1; // 기본값 여가
+      
+      // 배경 정보와 겹칠 수 있는 항목 제외 (단순 문자열 매칭 등)
+      const lowerName = t.topicName.toLowerCase();
+      if (lowerName.includes('직장인') || lowerName.includes('학생') || lowerName.includes('거주')) {
+        return;
+      }
+
+      if (groups[catId]) {
+        groups[catId].topics.push({
+          topicId: t.topicId,
+          name: t.topicName
+        });
+      }
+    });
+
+    // 2. Background 정보 가공 (배경 정보 섹션으로 강제 할당)
+    if (data.occupation) {
+      groups[0].topics.push({ topicId: -1, name: `직업: ${data.occupation}`, type: 'background' });
+    }
+    if (data.residence) {
+      groups[0].topics.push({ topicId: -2, name: `거주: ${data.residence}`, type: 'background' });
+    }
+    if (data.student !== undefined) {
+      groups[0].topics.push({ 
+        topicId: -3, 
+        name: data.student ? "학생 신분" : "직장인/비학생", 
+        type: 'background' 
       });
     }
 
-    if (data.residenceAnswerId) {
-      combinedTopics.unshift({
-        topicId: -2,
-        name: `거주지 ID: ${data.residenceAnswerId}`,
-        type: 'background'
-      });
-    }
-
-    if (data.student) {
-       combinedTopics.unshift({
-        topicId: -3,
-        name: "학생",
-        type: 'background'
-      });
-    }
+    // 빈 그룹 제거
+    const finalGroups = Object.values(groups).filter(g => g.topics.length > 0);
 
     surveyData.value = {
-      topics: combinedTopics,
-      occupation: data.occupationAnswerId,
+      topicGroups: finalGroups,
+      occupation: data.occupation,
       hasJob: data.hasJob,
       isStudent: data.student,
-      residence: data.residenceAnswerId
+      residence: data.residence
     };
     
     selectedTopic.value = null; 

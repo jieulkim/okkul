@@ -29,7 +29,7 @@ services:
     networks:
       - server-tools_default
 
-ai-service:
+  ai-service:
     image: ai:${TAG}
     container_name: okkul-ai-${TAG}
     restart: always

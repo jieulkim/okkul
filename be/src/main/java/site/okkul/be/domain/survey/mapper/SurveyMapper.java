@@ -37,7 +37,7 @@ public class SurveyMapper {
 
         // 2. 응답에 따른 토픽 ID를 비즈니스 규칙에 따라 추가합니다.
         // 규칙 1: 직업 유무 및 관리직 여부
-        if (request.getHasJob()) {
+        if (request.getHasJob() != null &&request.getHasJob()) {
             if (request.getManager()) {
                 allTopicIds.add(501L);  // hasJob && isManager
             } else { // isManager가 false 또는 null인 경우

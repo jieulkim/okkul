@@ -17,11 +17,11 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import site.okkul.be.domain.exam.docs.ExamControllerDocs;
-import site.okkul.be.domain.exam.dto.ExamResultResponse;
-import site.okkul.be.domain.exam.dto.ExamStartRequest;
-import site.okkul.be.domain.exam.dto.ExamStartResponse;
-import site.okkul.be.domain.exam.dto.ExamStatusResponse;
-import site.okkul.be.domain.exam.dto.QuestionResponse;
+import site.okkul.be.domain.exam.dto.response.ExamResultResponse;
+import site.okkul.be.domain.exam.dto.request.ExamStartRequest;
+import site.okkul.be.domain.exam.dto.response.ExamStartResponse;
+import site.okkul.be.domain.exam.dto.response.ExamStatusResponse;
+import site.okkul.be.domain.exam.dto.response.QuestionResponse;
 import site.okkul.be.domain.exam.service.ExamService;
 
 @RestController
@@ -49,7 +49,7 @@ public class ExamController implements ExamControllerDocs {
 	}
 
 	/**
-	 * 7번 이후 난이도 조정 확정 후 8번~마지막 문항 생성/반환
+	 * 7번 이후 난이도 조정 확정
 	 */
 	@Override
 	@PatchMapping("/{examId}/adjust-level")
@@ -59,12 +59,38 @@ public class ExamController implements ExamControllerDocs {
 			@AuthenticationPrincipal UserDetails user
 	) {
 		return ResponseEntity.ok(
-				examService.getRemainingQuestions(
-						examId,
-						adjustedDifficulty
-				)
+				// TODO: 레벨 수정하기
+				null
 		);
 	}
+
+	/**
+	 * 시험정보 가져오기
+	 * @param   examId 시험번호
+	 */
+	@GetMapping("/{examId}")
+	public ResponseEntity<List<QuestionResponse>> getExamInfo(
+			@PathVariable Long examId,
+			@AuthenticationPrincipal UserDetails user
+	) {
+		return ResponseEntity.ok(
+				null
+		);
+	}
+
+	/**
+	 * 문제 가져오기
+	 */
+	@GetMapping("/{examId}/questions")
+	public ResponseEntity<List<QuestionResponse>> getQuestions(
+			@PathVariable Long examId,
+			@AuthenticationPrincipal UserDetails user
+	) {
+		return ResponseEntity.ok(
+				null
+		);
+	}
+
 
 	/**
 	 * 음성 답변 제출

@@ -19,6 +19,7 @@ import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.List;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -78,11 +79,11 @@ public class ExamAnswer {
 	 * 답변 점수 모음
 	 */
 	@Embedded
-	ExamAnswerScore answerScores;
+	private ExamAnswerScore answerScores;
 
 	@OneToMany(mappedBy = "examAnswer", cascade = CascadeType.ALL, orphanRemoval = true)
 	@JsonManagedReference
-	List<ExamSentenceFeedback> sentenceFeedbacks;
+	private List<ExamSentenceFeedback> sentenceFeedbacks;
 
 	/**
 	 * 응시 시작 시간

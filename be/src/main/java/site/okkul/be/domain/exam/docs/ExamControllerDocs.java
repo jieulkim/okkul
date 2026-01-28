@@ -15,11 +15,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
-import site.okkul.be.domain.exam.dto.ExamResultResponse;
-import site.okkul.be.domain.exam.dto.ExamStartRequest;
-import site.okkul.be.domain.exam.dto.ExamStartResponse;
-import site.okkul.be.domain.exam.dto.ExamStatusResponse;
-import site.okkul.be.domain.exam.dto.QuestionResponse;
+import site.okkul.be.domain.exam.dto.response.ExamResultResponse;
+import site.okkul.be.domain.exam.dto.request.ExamStartRequest;
+import site.okkul.be.domain.exam.dto.response.ExamStartResponse;
+import site.okkul.be.domain.exam.dto.response.ExamStatusResponse;
+import site.okkul.be.domain.exam.dto.response.QuestionResponse;
 import site.okkul.be.global.config.SwaggerConfig;
 
 @Tag(name = "Exam", description = "모의고사 응시 API (시험 진행 및 음성 제출)")

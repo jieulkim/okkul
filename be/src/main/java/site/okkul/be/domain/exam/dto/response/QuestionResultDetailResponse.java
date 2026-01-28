@@ -1,4 +1,4 @@
-package site.okkul.be.domain.exam.dto;
+package site.okkul.be.domain.exam.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;

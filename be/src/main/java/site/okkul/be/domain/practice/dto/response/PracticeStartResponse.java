@@ -3,10 +3,8 @@ package site.okkul.be.domain.practice.dto.response;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import site.okkul.be.domain.exam.dto.QuestionResponse;
 
 import java.time.Instant;
-import java.util.List;
 
 @Getter
 @AllArgsConstructor

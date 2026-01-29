@@ -5,9 +5,9 @@
   --primary-hover: #FFA500;
   
   /* 라이트모드 배경 */
-  --bg-primary: #fafafa;
-  --bg-secondary: #ffffff;
-  --bg-tertiary: #f8fafc;
+  --bg-primary: #FFD700;
+  --bg-secondary: #FFD700;
+  --bg-tertiary: #FFC700;
   
   /* 라이트모드 텍스트 */
   --text-primary: #1e293b;

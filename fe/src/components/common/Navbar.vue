@@ -201,7 +201,7 @@ const isActive = (path) => {
   align-items: center;
   justify-content: flex-end;
   gap: 16px;
-  margin-right: 32px;
+  margin-right: 16px;
 }
 
 .nav-link {

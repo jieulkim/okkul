@@ -110,7 +110,18 @@ const goNext = async () => {
       console.log("[SurveyLevelView] Final Data to Submit:", finalSurveyData);
 
       // 3. API 호출 (설문 생성)
-      const response = await surveysApi.createSurvey(finalSurveyData);
+      // Mock Mode Check
+      let response;
+      if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
+        console.log("[SurveyLevelView] Mock Mode: Skipping API call");
+        response = {
+          data: {
+            surveyId: 999
+          }
+        };
+      } else {
+        response = await surveysApi.createSurvey(finalSurveyData);
+      }
       console.log("[SurveyLevelView] API Response:", response);
       
       // response.data가 실제 응답 객체 (HTTPClient/Axios 기준)

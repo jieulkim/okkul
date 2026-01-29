@@ -1,6 +1,5 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth'
-import OkkulCharacter from '@/components/common/OkkulCharacter.vue'
 
 const authStore = useAuthStore()
 
@@ -14,7 +13,7 @@ const handleLogin = () => {
     <div class="login-card">
       <div class="logo-section">
         <div class="okkul-wrapper">
-          <OkkulCharacter size="normal" :wave="true" />
+          <img src="/okkul.svg" alt="Okkul" class="okkul-img" />
         </div>
         <h1>오꿀</h1>
         <p>오늘의 꿀같은 오픽 점수, 오꿀과 함께 만드세요!</p>

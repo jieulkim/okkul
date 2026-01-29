@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, inject, onMounted, watch } from 'vue'
-import OkkulCharacter from '@/components/common/OkkulCharacter.vue'
+import { useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
 
@@ -118,7 +118,7 @@ const getStatusColor = (status) => {
             <div class="welcome-header">
               <h1 v-if="authStore.user?.nickname">{{ authStore.user.nickname }}님, 오늘도 달콤한 성과를 만들어요!</h1>
               <h1 v-else>오늘도 달콤한 성과를 만들어요!</h1>
-              <OkkulCharacter size="mini" :wave="true" />
+              <img src="/okkul.svg" alt="Okkul" class="okkul-img mini" />
             </div>
             <p class="subtitle">오꿀쌤과 함께 목표 등급 달성까지 달려봐요!</p>
             
@@ -285,7 +285,7 @@ const getStatusColor = (status) => {
               <span class="highlight-text">오꿀쌤</span>과 함께 달성하세요!
             </h1>
             <div class="okkul-wrapper">
-              <OkkulCharacter size="normal" :wave="true" />
+              <img src="/okkul.svg" alt="Okkul" class="okkul-img" style="width: 120px; height: 120px;" />
             </div>
           </div>
           

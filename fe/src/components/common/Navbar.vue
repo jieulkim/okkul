@@ -1,8 +1,7 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import OkkulCharacter from '@/components/common/OkkulCharacter.vue'
 
 const route = useRoute()
 const authStore = useAuthStore()
@@ -39,6 +38,10 @@ const navItems = [
   { path: '/practice', label: '유형별 연습', icon: 'category' }
 ]
 
+// 다크모드
+const isDarkMode = inject('isDarkMode')
+const toggleDarkMode = inject('toggleDarkMode')
+
 // 로그아웃
 const handleLogout = () => {
   if (confirm('로그아웃 하시겠습니까?')) {
@@ -59,10 +62,9 @@ const isActive = (path) => {
     <div class="navbar-content">
       <!-- 로고 -->
       <router-link to="/" class="logo">
-        <div class="logo-character">
-          <OkkulCharacter size="mini" />
-        </div>
-        <span class="logo-text">오꿀</span>
+        <span class="logo-text-wrapper">
+          <span class="logo-text">오꿀</span>
+        </span>
       </router-link>
 
       <!-- 네비게이션 메뉴 -->
@@ -92,7 +94,6 @@ const isActive = (path) => {
                 :src="profileImageUrl" 
                 alt="프로필"
                 class="profile-image"
-                @error="(e) => e.target.style.display = 'none'"
               />
               <img 
                 v-else 
@@ -103,6 +104,11 @@ const isActive = (path) => {
             </div>
             <span class="profile-name">{{ authStore.user?.nickname }}님</span>
           </router-link>
+
+          <!-- 다크모드 토글 -->
+          <button class="theme-toggle" @click="toggleDarkMode" title="테마 변경">
+            <span class="material-icons-outlined">{{ isDarkMode ? 'light_mode' : 'dark_mode' }}</span>
+          </button>
 
           <!-- 로그아웃 -->
           <button class="logout-btn" @click="handleLogout" title="로그아웃">
@@ -142,7 +148,7 @@ const isActive = (path) => {
   display: flex;
   align-items: center;
   height: 64px;
-  gap: 1.5rem;
+  gap: 1.2rem;
 }
 
 .logo {
@@ -152,38 +158,50 @@ const isActive = (path) => {
   text-decoration: none;
   transition: transform 0.2s;
   position: relative;
-  z-index: 10; /* 로고를 다른 요소 위에 표시 */
+  z-index: 10;
 }
 
 .logo:hover {
-  transform: scale(1.05);
+  transform: scale(1.02);
 }
 
-.logo-character {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+.logo-text-wrapper {
+  background: #000000;
+  padding: 8px 16px;
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.logo:hover .logo-text-wrapper {
+  background: #1a1a1a;
 }
 
 .logo-text {
-  font-size: 1.5rem; /* 살짝 축소하여 로고와 균형 유지 */
+  font-size: 1.5rem;
   font-weight: 900;
   color: #FFD700;
-  flex-shrink: 0; /* 찌그러짐 방지 */
+  flex-shrink: 0;
+}
+
+.dark-mode .logo-text-wrapper {
+  background: #FFD700;
+}
+
+.dark-mode .logo:hover .logo-text-wrapper {
+  background: #FFC700;
 }
 
 .dark-mode .logo-text {
-  color: #FFD700;
+  color: #000000;
 }
 
 .nav-menu {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-right: 32px;
 }
 
 .nav-link {
@@ -195,7 +213,7 @@ const isActive = (path) => {
   text-decoration: none;
   color: #6b7280;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   transition: all 0.2s;
   position: relative;
 }
@@ -228,7 +246,7 @@ const isActive = (path) => {
 
 .guest-msg {
   color: #6b7280;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 600;
 }
 
@@ -341,6 +359,35 @@ const isActive = (path) => {
 .dark-mode .logout-btn:hover {
   background: rgba(220, 38, 38, 0.2);
   color: #ef4444;
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: #f9fafb;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.theme-toggle:hover {
+  background: #f3f4f6;
+  color: #FFD700;
+}
+
+.dark-mode .theme-toggle {
+  background: #334155;
+  color: #94a3b8;
+}
+
+.dark-mode .theme-toggle:hover {
+  background: #475569;
+  color: #FFD700;
 }
 
 .login-btn {

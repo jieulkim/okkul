@@ -3,7 +3,6 @@ import { ref, computed, onUnmounted, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { practicesApi, surveysApi } from "@/api";
 import { useAuthStore } from "@/stores/auth";
-import OkkulCharacter from "@/components/common/OkkulCharacter.vue";
 
 const route = useRoute();
 const authStore = useAuthStore();
@@ -612,7 +611,7 @@ onUnmounted(() => {
           <h3 class="result-title">오꿀쌤 피드백</h3>
 
           <div class="okkul-left-align">
-            <OkkulCharacter size="normal" :wave="selectedSentenceIndex !== null" />
+            <img src="/okkul.svg" alt="Okkul" style="width: 100px; height: 100px;" />
           </div>
 
           <div v-if="currentTab === 'sentence'">

@@ -3,7 +3,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usersApi } from '@/api'
-import OkkulCharacter from '@/components/common/OkkulCharacter.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -17,7 +16,7 @@ const hasProfileImage = computed(() => {
 // 프로필 이미지 URL
 const profileImageUrl = computed(() => {
   const userImage = authStore.user?.profileImageUrl
-  if (!userImage || typeof userImage === 'string' || userImage.trim() === '') {
+  if (!userImage || typeof userImage !== 'string' || userImage.trim() === '') {
     return ''
   }
   

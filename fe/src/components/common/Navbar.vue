@@ -1,28 +1,32 @@
 <script setup>
 import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import OkkulCharacter from '@/components/common/OkkulCharacter.vue'
 
 const route = useRoute()
-const router = useRouter()
 const authStore = useAuthStore()
 
 // 로그인 여부
 const isLoggedIn = computed(() => !!authStore.user)
 
-// 프로필 이미지 URL (없거나 빈 문자열이면 기본 오꿀이 이미지)
+// 프로필 이미지가 있는지 확인
+const hasProfileImage = computed(() => {
+  const userImage = authStore.user?.profileImageUrl
+  return userImage && typeof userImage === 'string' && userImage.trim() !== ''
+})
+
+// 프로필 이미지 URL
 const profileImageUrl = computed(() => {
   const userImage = authStore.user?.profileImageUrl
   if (!userImage || typeof userImage !== 'string' || userImage.trim() === '') {
-    return '/default-profile.png'
+    return ''
   }
   
-  // 절대 경로거나 base64 데이터인 경우 그대로 반환
   if (userImage.startsWith('http') || userImage.startsWith('data:')) {
     return userImage
   }
   
-  // 상대 경로인 경우 API 베이스 URL 결합
   const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
   const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
   const cleanPath = userImage.startsWith('/') ? userImage : `/${userImage}`
@@ -55,7 +59,9 @@ const isActive = (path) => {
     <div class="navbar-content">
       <!-- 로고 -->
       <router-link to="/" class="logo">
-        <span class="logo-icon">🍯</span>
+        <div class="logo-character">
+          <OkkulCharacter size="mini" />
+        </div>
         <span class="logo-text">오꿀</span>
       </router-link>
 
@@ -72,7 +78,7 @@ const isActive = (path) => {
         </router-link>
       </nav>
       <div v-else class="nav-menu">
-        <span class="guest-msg">로그인 후 AI 분석과 모의고사를 이용해보세요! 🍯</span>
+        <span class="guest-msg">로그인 후 AI 분석과 모의고사를 이용해보세요!</span>
       </div>
 
       <!-- 우측 컨트롤 -->
@@ -82,10 +88,17 @@ const isActive = (path) => {
           <router-link to="/mypage" class="user-profile" :class="{ active: isActive('/mypage') }">
             <div class="profile-avatar">
               <img 
+                v-if="hasProfileImage"
                 :src="profileImageUrl" 
                 alt="프로필"
                 class="profile-image"
-                @error="(e) => e.target.src = '/default-profile.png'"
+                @error="(e) => e.target.style.display = 'none'"
+              />
+              <img 
+                v-else 
+                src="/default-profile.png" 
+                alt="기본 프로필"
+                class="profile-image fallback"
               />
             </div>
             <span class="profile-name">{{ authStore.user?.nickname }}님</span>
@@ -113,58 +126,71 @@ const isActive = (path) => {
   z-index: 1000;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 2px solid #e5e7eb;
   transition: all 0.3s ease;
 }
 
+.dark-mode .main-navbar {
+  background: rgba(15, 23, 42, 0.95);
+  border-bottom-color: #334155;
+}
+
 .navbar-content {
-  max-width: 1440px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0 64px;
   display: flex;
   align-items: center;
-  height: 70px;
-  gap: 2rem;
+  height: 64px;
+  gap: 1.5rem;
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 12px;
   text-decoration: none;
-  font-weight: 800;
-  font-size: 1.5rem;
-  color: #1f2937;
   transition: transform 0.2s;
+  position: relative;
+  z-index: 10; /* 로고를 다른 요소 위에 표시 */
 }
 
 .logo:hover {
   transform: scale(1.05);
 }
 
-.logo-icon {
-  font-size: 2rem;
+.logo-character {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .logo-text {
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 1.5rem; /* 살짝 축소하여 로고와 균형 유지 */
+  font-weight: 900;
+  color: #FFD700;
+  flex-shrink: 0; /* 찌그러짐 방지 */
+}
+
+.dark-mode .logo-text {
+  color: #FFD700;
 }
 
 .nav-menu {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.25rem;
+  gap: 8px;
+  padding: 12px 20px;
   border-radius: 12px;
   text-decoration: none;
   color: #6b7280;
@@ -179,20 +205,21 @@ const isActive = (path) => {
   color: #1f2937;
 }
 
+.dark-mode .nav-link:hover {
+  background: #1e293b;
+  color: #f1f5f9;
+}
+
 .nav-link.active {
   background: linear-gradient(135deg, #FFF9E6 0%, #FFE4B3 100%);
   color: #92400e;
+  border: 2px solid #FFD700;
 }
 
-.nav-link.active::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 1.25rem;
-  right: 1.25rem;
-  height: 3px;
-  background: linear-gradient(90deg, #FFD700, #FFA500);
-  border-radius: 2px 2px 0 0;
+.dark-mode .nav-link.active {
+  background: rgba(255, 215, 0, 0.2);
+  color: #ffd700;
+  border-color: rgba(255, 215, 0, 0.3);
 }
 
 .nav-icon {
@@ -202,20 +229,24 @@ const isActive = (path) => {
 .guest-msg {
   color: #6b7280;
   font-size: 0.95rem;
-  font-weight: 500;
+  font-weight: 600;
+}
+
+.dark-mode .guest-msg {
+  color: #94a3b8;
 }
 
 .nav-controls {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 12px;
 }
 
 .user-profile {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 1rem;
+  gap: 12px;
+  padding: 6px 12px;
   border-radius: 12px;
   text-decoration: none;
   color: #374151;
@@ -229,25 +260,54 @@ const isActive = (path) => {
   border-color: #FFD700;
 }
 
+.dark-mode .user-profile {
+  color: #f1f5f9;
+}
+
+.dark-mode .user-profile:hover {
+  background: #1e293b;
+  border-color: #FFD700;
+}
+
 .user-profile.active {
   background: linear-gradient(135deg, #FFF9E6 0%, #FFE4B3 100%);
   border-color: #FFD700;
 }
 
+.dark-mode .user-profile.active {
+  background: rgba(255, 215, 0, 0.2);
+  border-color: rgba(255, 215, 0, 0.3);
+}
+
 .profile-avatar {
-  width: 40px;
-  height: 40px;
+  width: 36px; /* 크기 축소 */
+  height: 36px;
   border-radius: 50%;
   overflow: hidden;
   border: 2px solid #FFD700;
-  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+  box-shadow: 0 2px 6px rgba(255, 215, 0, 0.2);
   background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0; /* 찌그러짐 방지 */
+}
+
+.dark-mode .profile-avatar {
+  background: #1e293b;
 }
 
 .profile-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.profile-image.fallback {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  opacity: 0.8;
 }
 
 .profile-name {
@@ -258,8 +318,8 @@ const isActive = (path) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border-radius: 10px;
   border: none;
   background: #f9fafb;
@@ -273,14 +333,24 @@ const isActive = (path) => {
   color: #dc2626;
 }
 
+.dark-mode .logout-btn {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+.dark-mode .logout-btn:hover {
+  background: rgba(220, 38, 38, 0.2);
+  color: #ef4444;
+}
+
 .login-btn {
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-  color: #92400e;
+  padding: 8px 16px;
+  background: #FFD700;
+  color: #000;
   text-decoration: none;
   border-radius: 12px;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   transition: all 0.2s;
   box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
 }
@@ -288,11 +358,23 @@ const isActive = (path) => {
 .login-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+  background: #FFA500;
+}
+
+.dark-mode .login-btn {
+  background: #FFD700;
+  color: #000;
+}
+
+@media (max-width: 1024px) {
+  .navbar-content {
+    padding: 0 32px;
+  }
 }
 
 @media (max-width: 768px) {
   .navbar-content {
-    padding: 0 1rem;
+    padding: 0 24px;
     gap: 1rem;
   }
 
@@ -306,6 +388,15 @@ const isActive = (path) => {
 
   .guest-msg {
     font-size: 0.85rem;
+  }
+
+  .logo-text {
+    font-size: 1.5rem;
+  }
+  
+  .logo-character {
+    width: 44px;
+    height: 44px;
   }
 }
 </style>

@@ -161,7 +161,7 @@ const showGuide = ref(false);
 </script>
 
 <template>
-  <div class="assessment-page" :class="{ 'dark-mode': isDarkMode }">
+  <div class="page-container">
     <header class="assessment-header">
       <div class="info-section">
         <button @click="showGuide = true" class="info-btn">
@@ -207,7 +207,7 @@ const showGuide = ref(false);
       </div>
     </header>
 
-    <main class="assessment-main">
+    <main class="page-content">
       <div class="levels-container">
         <label
           v-for="level in levels"
@@ -285,17 +285,27 @@ const showGuide = ref(false);
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap");
 @import url("https://fonts.googleapis.com/icon?family=Material+Icons");
 
-.assessment-page {
+.page-container {
   min-height: 100vh;
-  padding: 40px;
-  background: #ffffff;
-  color: #1e293b;
-  transition: all 0.3s ease;
+  background: var(--bg-primary);
 }
 
-.dark-mode .assessment-page {
-  background: #0f172a;
-  color: #f1f5f9;
+.page-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 64px;
+}
+
+@media (max-width: 1024px) {
+  .page-content {
+    padding: 24px 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-content {
+    padding: 16px 24px;
+  }
 }
 
 .assessment-header {
@@ -444,12 +454,12 @@ const showGuide = ref(false);
   display: flex;
   align-items: flex-start;
   gap: 16px;
-  padding: 16px;
-  border-radius: 12px;
-  border: 2px solid transparent;
-  background: #f8f9fa;
+  padding: 24px;
+  border-radius: 24px;
+  border: 2px solid var(--border-primary);
+  background: var(--bg-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s ease;
 }
 
 .dark-mode .level-option {

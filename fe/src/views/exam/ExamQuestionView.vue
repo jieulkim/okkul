@@ -223,30 +223,26 @@ const goNext = () => {
 };
 
 // 난이도 재조정
-const setRelevel = async (choice) => {
-  const difficultyMap = {
-    easy: -1,
-    same: 0,
-    hard: 1
-  };
-  
-  adjustedDifficulty.value = difficultyMap[choice];
-  showRelevelModal.value = false;
-  
+const setRelevel = async (difficulty) => {
   try {
-
     const response = await examApi.getRemainingQuestions(examId.value, {
-      adjustedDifficulty: adjustedDifficulty.value
+      adjustedDifficulty: difficulty
     });
     
-    // 나머지 문제 추가
-    questions.value = [...questions.value, ...response.data.questions];
+    // 데이터 구조 확인
+    console.log("Remaining Questions Raw Data:", response.data);
+
+    // response.data가 바로 배열이라면:
+    const newQuestions = Array.isArray(response.data) ? response.data : response.data.questions;
+    
+    if (!newQuestions) throw new Error("문항 데이터를 찾을 수 없습니다.");
+
+    questions.value = [...questions.value, ...newQuestions];
     currentQuestionIndex.value++;
     resetRecordingState();
     
   } catch (error) {
-    console.error('문제 로드 실패:', error);
-    alert('문제를 불러오는데 실패했습니다.');
+    console.error("문제 로드 실패:", error);
   }
 };
 
@@ -322,7 +318,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="exam-question-page" :class="{ 'dark-mode': isDarkMode }">
+  <div class="page-container">
     <!-- 로딩 화면 -->
     <div v-if="isLoading" class="loading-screen">
       <div class="loading-content">
@@ -364,7 +360,7 @@ onUnmounted(() => {
     </div>
 
     <!-- 메인 콘텐츠 -->
-    <div class="main-content">
+    <main class="page-content">
       <div class="content-wrapper">
         <!-- 질문 섹션 -->
         <div class="question-section">
@@ -437,11 +433,11 @@ onUnmounted(() => {
           </div>
         </div>
       </div>
-    </div>
+    </main>
 
     <!-- 난이도 재조정 모달 -->
     <div v-if="showRelevelModal" class="modal-overlay">
-      <div class="modal-card" :class="{ 'dark-mode-card': isDarkMode }">
+      <div class="modal-card">
         <div class="modal-header">
           <h3>난이도 재조정</h3>
           <p class="subtitle">전반부 7문제를 완료하셨습니다.<br>남은 문제의 난이도를 선택해주세요.</p>
@@ -470,10 +466,27 @@ onUnmounted(() => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 
-.exam-question-page {
+.page-container {
   min-height: 100vh;
-  background: #f8fafc;
-  font-family: 'Noto Sans KR', sans-serif;
+  background: var(--bg-primary);
+}
+
+.page-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 64px;
+}
+
+@media (max-width: 1024px) {
+  .page-content {
+    padding: 24px 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-content {
+    padding: 16px 24px;
+  }
 }
 
 /* 로딩 화면 */
@@ -601,9 +614,7 @@ onUnmounted(() => {
 }
 
 /* 메인 콘텐츠 */
-.main-content {
-  padding: 40px 20px;
-}
+
 
 .content-wrapper {
   max-width: 1200px;
@@ -621,11 +632,10 @@ onUnmounted(() => {
 }
 
 .question-card {
-  background: white;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-primary);
   border-radius: 24px;
   padding: 40px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  border: 2px solid #e2e8f0;
 }
 
 .question-header h2 {
@@ -674,11 +684,10 @@ onUnmounted(() => {
 }
 
 .recording-card {
-  background: white;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-primary);
   border-radius: 24px;
   padding: 40px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  border: 2px solid #e2e8f0;
   display: flex;
   flex-direction: column;
   gap: 30px;

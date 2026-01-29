@@ -73,24 +73,4 @@ provide('authStore', authStore)
 </template>
 
 <style>
-:root {
-  --bg-primary: #ffffff;
-  --text-primary: #1e293b;
-}
-
-/* documentElement(html) 또는 body에 적용될 클래스 */
-.dark-mode {
-  --bg-primary: #1e293b;
-  --text-primary: #f1f5f9;
-  background-color: #0f172a !important;
-}
-
-body {
-  margin: 0;
-  padding: 0;
-  font-family: 'Noto Sans KR', sans-serif;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  transition: background 0.3s ease, color 0.3s ease;
-}
 </style>

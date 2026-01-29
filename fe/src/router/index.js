@@ -12,6 +12,7 @@ import LoginView from '../views/auth/LoginView.vue'
 import OAuth2Redirect from '../views/auth/OAuth2Redirect.vue'
 import ExamFeedbackView from '../views/feedback/ExamFeedbackView.vue'
 import PracticeFeedbackView from '../views/feedback/PracticeFeedbackView.vue'
+import FeedbackListView from '../views/feedback/FeedbackListView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -80,6 +81,11 @@ const router = createRouter({
       path: '/exam/feedback',
       name: 'exam-feedback',
       component: ExamFeedbackView
+    },
+    {
+      path: '/feedback',
+      name: 'feedback-list',
+      component: FeedbackListView
     }
 
   ]

@@ -105,4 +105,8 @@ onMounted(async () => {
   0%, 100% { transform: translateY(0) rotate(45deg) scale(1); }
   50% { transform: translateY(15px) rotate(45deg) scale(1.1); }
 }
+
+.dark-mode .honey-drop {
+  border: 1px solid #FFFFFF;
+}
 </style>

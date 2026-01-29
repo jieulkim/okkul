@@ -237,21 +237,21 @@ onMounted(async () => {
   align-items: center;
   gap: 12px;
   padding: 20px 48px;
-  background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
-  color: #1e293b;
-  border: none;
-  border-radius: 16px;
+  background: var(--primary-color);
+  color: #000000;
+  border: var(--border-primary);
+  border-radius: var(--border-radius);
   font-size: 20px;
   font-weight: 900;
   cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 8px 20px rgba(255, 215, 0, 0.3);
+  transition: all 0.2s;
+  box-shadow: var(--shadow-md);
   margin-bottom: 60px;
 }
 
 .start-exam-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 30px rgba(255, 215, 0, 0.4);
+  transform: translate(-0.05em, -0.05em);
+  box-shadow: var(--shadow-lg);
 }
 
 .start-exam-btn .btn-icon {
@@ -267,18 +267,18 @@ onMounted(async () => {
 
 .feature-card {
   background: var(--bg-secondary);
-  border: 2px solid var(--border-primary);
-  border-radius: 24px;
+  border: var(--border-primary);
+  border-radius: var(--border-radius);
   padding: 32px 24px;
   text-align: center;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
 }
 
 .feature-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--primary-color);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  transform: translate(-0.05em, -0.05em);
+  box-shadow: var(--shadow-md);
 }
 
 .feature-icon {
@@ -288,14 +288,14 @@ onMounted(async () => {
 
 .feature-card h3 {
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 900;
   margin-bottom: 8px;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .feature-card p {
   font-size: 14px;
-  color: #64748b;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
@@ -311,11 +311,12 @@ onMounted(async () => {
 }
 
 .modal-card {
-  background: white;
-  border-radius: 24px;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
   max-width: 500px;
   width: 90%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: var(--border-primary);
+  box-shadow: var(--shadow-lg);
 }
 
 .resume-modal .modal-header {
@@ -325,16 +326,17 @@ onMounted(async () => {
 
 .modal-header h3 {
   font-size: 24px;
-  font-weight: 700;
+  font-weight: 900;
   margin-bottom: 8px;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .resume-info {
   padding: 24px 32px;
-  background: #f8fafc;
+  background: var(--bg-tertiary);
   margin: 0 32px 24px;
-  border-radius: 12px;
+  border-radius: var(--border-radius);
+  border: var(--border-thin);
 }
 
 .info-row {
@@ -355,7 +357,7 @@ onMounted(async () => {
 
 .value {
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .modal-footer {
@@ -376,13 +378,15 @@ button {
 }
 
 .primary-btn {
-  background: #ffd700;
-  color: #1e293b;
+  background: var(--primary-color);
+  color: #000000;
+  border: var(--border-secondary);
+  font-weight: 900;
 }
 
 .primary-btn:hover {
-  background: #ffc800;
-  transform: translateY(-2px);
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-sm);
 }
 
 .secondary-btn {
@@ -406,46 +410,22 @@ button {
 }
 
 .dark-mode {
-  background: #0f172a;
+  background: var(--bg-primary);
   color: #f1f5f9;
 }
 
 .dark-mode .feature-card {
-  background: #1e293b;
-  border-color: #334155;
-}
-
-.dark-mode .feature-card h3 {
-  color: #f1f5f9;
-}
-
-.dark-mode .feature-card p {
-  color: #94a3b8;
-}
-
-.dark-mode .start-exam-btn {
-  color: #0f172a;
+  background: var(--bg-secondary);
+  border-color: #FFFFFF;
 }
 
 .dark-mode-card {
-  background: #1e293b;
-  color: #f1f5f9;
-}
-
-.dark-mode-card .modal-header h3 {
-  color: #f1f5f9;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: #FFFFFF;
 }
 
 .dark-mode-card .resume-info {
-  background: #0f172a;
-}
-
-.dark-mode-card .value {
-  color: #f1f5f9;
-}
-
-.dark-mode-btn {
-  background: #334155;
-  color: #f1f5f9;
+  background: var(--bg-tertiary);
 }
 </style>

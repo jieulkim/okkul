@@ -110,7 +110,18 @@ const goNext = async () => {
       console.log("[SurveyLevelView] Final Data to Submit:", finalSurveyData);
 
       // 3. API 호출 (설문 생성)
-      const response = await surveysApi.createSurvey(finalSurveyData);
+      // Mock Mode Check
+      let response;
+      if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
+        console.log("[SurveyLevelView] Mock Mode: Skipping API call");
+        response = {
+          data: {
+            surveyId: 999
+          }
+        };
+      } else {
+        response = await surveysApi.createSurvey(finalSurveyData);
+      }
       console.log("[SurveyLevelView] API Response:", response);
       
       // response.data가 실제 응답 객체 (HTTPClient/Axios 기준)
@@ -351,11 +362,12 @@ const showGuide = ref(false);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #eee;
-  color: #94a3b8;
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
   font-size: 12px;
   clip-path: polygon(0% 0%, 90% 0%, 100% 50%, 90% 100%, 0% 100%, 10% 50%);
   margin-right: -2px;
+  border: var(--border-thin);
 }
 
 .step:first-child {
@@ -366,9 +378,9 @@ const showGuide = ref(false);
 }
 
 .step.active {
-  background: #ffd700 !important;
-  color: #1e293b !important;
-  font-weight: bold;
+  background: var(--primary-color) !important;
+  color: #000000 !important;
+  font-weight: 900;
 }
 
 .step.completed {
@@ -377,14 +389,14 @@ const showGuide = ref(false);
 }
 
 .dark-mode .step {
-  background: #1e293b;
+  background: var(--bg-tertiary);
 }
 .dark-mode .step.active {
-  background: #ffd700 !important;
-  color: #0f172a !important;
+  background: var(--primary-color) !important;
+  color: #000000 !important;
 }
 .dark-mode .step.completed {
-  background: #334155;
+  background: var(--bg-secondary);
 }
 
 .step-content {
@@ -411,7 +423,7 @@ const showGuide = ref(false);
   padding-bottom: 16px;
   border-bottom: 1px solid #e2e8f0;
   margin-bottom: 16px;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .dark-mode .page-title {
@@ -455,30 +467,33 @@ const showGuide = ref(false);
   align-items: flex-start;
   gap: 16px;
   padding: 24px;
-  border-radius: 24px;
-  border: 2px solid var(--border-primary);
+  border-radius: var(--border-radius);
+  border: var(--border-primary);
   background: var(--bg-secondary);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .dark-mode .level-option {
-  background: #1e293b;
-  border-color: #334155;
+  background: var(--bg-secondary);
+  border-color: #FFFFFF;
 }
 
 .level-option:hover {
-  border-color: rgba(255, 215, 0, 0.3);
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
 }
 
 .level-option.selected {
-  border-color: #ffd700;
-  background: #fffef0;
+  background: var(--primary-color);
+  border-color: #000000;
+  box-shadow: var(--shadow-md);
 }
 
 .dark-mode .level-option.selected {
-  background: #422006;
-  border-color: #ffd700;
+  background: var(--primary-color);
+  border-color: #FFFFFF;
 }
 
 .radio-section {
@@ -490,7 +505,7 @@ const showGuide = ref(false);
 .level-radio {
   width: 20px;
   height: 20px;
-  accent-color: #ffd700;
+  accent-color: #000000;
   cursor: pointer;
 }
 
@@ -552,7 +567,7 @@ const showGuide = ref(false);
 
 .level-description {
   flex: 1;
-  color: #1e293b;
+  color: var(--text-primary);
   line-height: 1.6;
   font-size: 15px;
   margin: 0;
@@ -571,34 +586,35 @@ const showGuide = ref(false);
   display: flex;
   justify-content: space-between;
   padding: 20px 40px;
-  background: white;
-  border-top: 1px solid #e2e8f0;
+  background: var(--bg-secondary);
+  border-top: var(--border-primary);
   z-index: 100;
 }
 
 .dark-mode .assessment-footer {
-  background: #0f172a;
-  border-top-color: #374155;
+  background: var(--bg-secondary);
+  border-top-color: #FFFFFF;
 }
 
 .nav-btn {
   padding: 12px 30px;
-  border-radius: 12px;
-  border: none;
-  font-weight: bold;
+  border-radius: var(--border-radius);
+  border: var(--border-secondary);
+  font-weight: 900;
   cursor: pointer;
   transition: all 0.2s;
   font-size: 15px;
+  box-shadow: var(--shadow-sm);
 }
 
 .back-btn {
-  background: #f1f5f9;
-  color: #64748b;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
 }
 
 .dark-mode .back-btn {
-  background: #1e293b;
-  color: #94a3b8;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .back-btn:hover {
@@ -609,13 +625,13 @@ const showGuide = ref(false);
 }
 
 .next-btn {
-  background: #ffd700;
-  color: #1e293b;
-  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+  background: var(--primary-color);
+  color: #000000;
 }
 
 .next-btn:hover:not(:disabled) {
-  background: #e6c200;
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
 }
 
 .next-btn:disabled,
@@ -661,7 +677,7 @@ const showGuide = ref(false);
 }
 
 .dark-mode .modal-card {
-  background: #1e293b;
+  background: var(--bg-secondary);
 }
 
 .modal-header {
@@ -677,7 +693,7 @@ const showGuide = ref(false);
   font-size: 18px;
   font-weight: 700;
   margin: 0;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .dark-mode .modal-header h3 {

@@ -10,8 +10,10 @@ const userProfile = inject('userProfile')
 // 다크모드 상태
 const isDarkMode = inject('isDarkMode', ref(false))
 
-const authStore = useAuthStore()
-const isLoggedIn = computed(() => !!authStore.user)
+const authStore = inject('authStore')
+import { useSurveyStore } from '@/stores/survey'
+const surveyStore = useSurveyStore()
+const isLoggedIn = computed(() => !!authStore?.user)
 
 // 다크모드 변경 감지
 watch(isDarkMode, (newVal) => {
@@ -123,7 +125,27 @@ const getStatusColor = (status) => {
             <p class="subtitle">오꿀쌤과 함께 목표 등급 달성까지 달려봐요!</p>
             
             <div class="action-buttons">
-              <router-link to="/exam" class="btn-primary">
+              <!-- Mock Mode: 설문 데이터 있으면 바로 레벨 선택으로 -->
+              <a 
+                v-if="surveyStore && surveyStore.surveyData" 
+                href="#"
+                @click.prevent="$router.push('/survey/level?from=exam')" 
+                class="btn-primary" 
+                style="z-index: 10;"
+              >
+                <span class="material-icons-outlined btn-icon">play_circle_filled</span>
+                <div class="btn-text">
+                  <span class="title">실전 모의고사 시작 (설문 완료됨)</span>
+                  <span class="sub">15문항, 바로 난이도 선택으로</span>
+                </div>
+              </a>
+              
+              <router-link 
+                v-else
+                to="/survey?from=exam" 
+                class="btn-primary" 
+                style="z-index: 10;"
+              >
                 <span class="material-icons-outlined btn-icon">play_circle_filled</span>
                 <div class="btn-text">
                   <span class="title">실전 모의고사 시작</span>

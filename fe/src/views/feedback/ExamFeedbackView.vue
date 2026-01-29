@@ -25,8 +25,46 @@ const loadExamResult = async () => {
       return;
     }
     
-    const response = await examApi.getExamResult(examId);
-    examResult.value = response.data;
+    // Mock Mode Check
+    let response;
+    if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
+        const mockQuestions = Array.from({ length: 15 }, (_, i) => ({
+            questionOrder: i + 1,
+            questionText: `[Mock] Feedback Question ${i + 1}`,
+            sttScript: "This is a mock answer script provided for testing purposes.",
+            enhancedScript: "This is a mock answer script provided for testing purposes.",
+            grammar: { score: 85, feedback: "Good grammar." },
+            vocabulary: { score: 80, feedback: "Good vocabulary." },
+            logic: { score: 75, feedback: "Logical flow is clear." },
+            fluency: { score: 90, feedback: "Very fluent." },
+            relevance: { score: 88, feedback: "Relevant answer." }
+        }));
+
+        response = {
+            data: {
+                createdAt: new Date().toISOString(),
+                summary: {
+                    grade: 'IM2',
+                    totalScore: 85,
+                    categoryScores: {
+                        grammar: 85,
+                        vocabulary: 80,
+                        logic: 75,
+                        fluency: 90,
+                        relevance: 88
+                    },
+                    comment: "This is a mock summary comment. Use this to verify the UI layout and components.",
+                    strengths: "Mock strength: Good delivery.",
+                    weakness: "Mock weakness: Needs more complex sentence structures."
+                },
+                questionResults: mockQuestions
+            }
+        };
+        examResult.value = response.data;
+    } else {
+        const response = await examApi.getExamResult(examId);
+        examResult.value = response.data;
+    }
     
   } catch (error) {
     console.error('시험 결과 로드 실패:', error);

@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "dev:dev": "vite --mode development",
+    "dev:mock": "vite --mode mock",
     "dev:cicd": "vite --mode production",
     "build": "vite build",
     "preview": "vite preview",

@@ -55,10 +55,33 @@ const startExam = async () => {
       return
     }
     
-    const response = await examApi.startExam({
-      examSetId: 1,
-      surveyId: surveyId
-    })
+    let response;
+    // Mock Mode
+    if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
+        const mockQuestions = Array.from({ length: 7 }, (_, i) => ({
+            id: 100 + i,
+            answerId: 500 + i,
+            order: i + 1,
+            questionText: `[Mock] Question ${i + 1}`,
+            audioUrl: null,
+            type: 'SPEAKING',
+            preparationTime: 10,
+            speakingTime: 30
+        }));
+
+        response = {
+            data: {
+                examId: 999,
+                questions: mockQuestions,
+                totalQuestions: 15
+            }
+        };
+    } else {
+        response = await examApi.startExam({
+            examSetId: 1,
+            surveyId: surveyId
+        })
+    }
     
     const { examId, questions, totalQuestions } = response.data
     

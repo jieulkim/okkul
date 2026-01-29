@@ -10,16 +10,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-app = FastAPI(title="오픽꿀잼 AI 분석 서버 (Gemini 통합 버전)")
+app = FastAPI(title="오픽꿀잼 AI 분석 서버 (Sequential Gemini 버전)")
 
 GMS_KEY = os.environ.get("GMS_KEY")
-# Gemini 전용 URL
 GEMINI_URL = "https://gms.ssafy.io/gmsapi/generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent"
 
 # --- Pydantic 모델 정의 ---
 class AnalysisRequest(BaseModel):
     question_text: str
     user_answer: str
+    user_korean_script: str  # 한국어 의도 입력 필드 추가
 
 class SentenceFeedback(BaseModel):
     target_sentence: str
@@ -35,23 +35,30 @@ class CombinedResponse(BaseModel):
     fluency_feedback: str
     sentence_details: List[SentenceFeedback]
 
-# --- 에이전트 함수 (Gemini 통합) ---
+# --- 에이전트 함수 ---
 
 async def analyze_sentences_gemini(text: str):
-    """Gemini-2.5-flash-lite를 활용한 문장 단위 교정"""
+    """1단계: 문장 단위 교정 및 필러(Filler) 주입"""
     start_time = time.perf_counter()
     headers = {"Content-Type": "application/json", "x-goog-api-key": GMS_KEY}
     
     prompt = f"""
-    당신은 오픽 문장 교정 전문가입니다. 아래 사용자 답변을 분석하여 반드시 지정된 JSON 형식을 지켜 '핵심만' 응답하세요.
-    응답 형식:
+    당신은 오픽 문장 교정 전문가입니다. 아래 사용자 답변을 분석하여 AL 등급에 맞게 교정하세요.
+    
+    [교정 가이드라인]
+    1. 문법 오류 수정은 기본입니다.
+    2. 문장 사이에 자연스러운 Filler(you know, I mean, I gotta say, What I'm trying to say is, Well, actually I've never thought about it...) 등을 필요하다면 추가하세요.
+    3. 구어체 형태로, 감정 표현을 더욱 풍부하게 만들어주세요. (numerous, incredibly, crystal clear, stunning, go-to, laid back, relaxing, striking, challenging, various, truly, tasty 등 사용)
+    4. 롤플레이나 과거와 현재를 비교할 땐 완료 시제를 사용하세요.
+
+    응답 형식 (JSON):
     {{
       "sentences": [
         {{
           "target_sentence": "원래 문장 전체",
-          "target_text": "오류 구간",
-          "improved_text": "교정 구간",
-          "feedback": "이유(100자 이내)",
+          "target_text": "오류/개선 구간",
+          "improved_text": "교정된 문장 전체",
+          "feedback": "교정 이유 및 AL 팁 (100자 이내)",
           "sentence_order": 1
         }}
       ]
@@ -68,52 +75,74 @@ async def analyze_sentences_gemini(text: str):
         response = await client.post(GEMINI_URL, headers=headers, json=payload, timeout=30.0)
         res_json = response.json()
     
-    duration = time.perf_counter() - start_time
-    usage = res_json.get('usageMetadata', {})
-    in_tokens = usage.get('promptTokenCount', 0)
-    out_tokens = usage.get('candidatesTokenCount', 0)
-    
-    print(f"\n📊 [Gemini Flash - 문장교정 Log]")
-    print(f"⏱️ 소요 시간: {duration:.2f}s | 🎫 토큰: {in_tokens}/{out_tokens}")
-    
     content_text = res_json['candidates'][0]['content']['parts'][0]['text']
-    return json.loads(content_text).get("sentences", [])
+    sentences = json.loads(content_text).get("sentences", [])
+    
+    print(f"📊 [Step 1] 문장 교정 완료 ({time.perf_counter() - start_time:.2f}s)")
+    return sentences
 
-async def analyze_overall_gemini(question: str, answer: str):
-    """Gemini-2.5-flash-lite를 활용한 종합 피드백"""
+async def analyze_overall_gemini(question: str, user_answer: str, corrected_text: str, user_korean_script: str):
+    """2단계: 교정본으로 모범 답안을 생성하되, 한국어 스크립트 대조 및 원본 기준 평가 수행"""
     start_time = time.perf_counter()
     headers = {"Content-Type": "application/json", "x-goog-api-key": GMS_KEY}
     
     prompt = f"""
-    당신은 오픽(OPIc) 채점관입니다. 아래 규칙을 엄격히 지켜 JSON으로 응답하세요.
+    당신은 오픽(OPIc) AL 전문 채점관입니다. 
+    아래 제공된 [원본 답변] 및 [한국어 의도]를 분석하여 피드백하고, [교정된 문장들]을 활용해 최종 학습용 모범 답안을 만드세요.
 
-    규칙:
-    1. improved_answer: 사용자의 답변을 토대로 AL 등급 수준의 '영어' 모범 답안을 작성하세요. (절대 한국어 금지)
-    2. relevance_feedback: 질문 적합성을 '한국어'로 평가하세요.
-    3. logic_feedback: 논리 전개를 '한국어'로 평가하세요.
-    4. fluency_feedback: 유창성을 '한국어'로 평가하세요.
+    [입력 데이터]
+    - 질문: {question}
+    - 한국어 의도(사용자가 말하고 싶었던 내용): {user_korean_script}
+    - 원본 답변(사용자 실제 발화): {user_answer}
+    - 교정된 문장들(1단계 결과물): {corrected_text}
 
-    질문: {question}
-    사용자 답변: {answer}
+    [작성 규칙 - 반드시 JSON 포맷으로 응답하세요]
+    1. improved_answer: [교정된 문장들]의 내용을 유지하며, 전체 흐름이 자연스럽도록 연결 어구만 추가하여 완성하세요.
+       - 서두에 확실한 Main Point(MP)가 드러나야 합니다.
+       - 한국어 의도에는 있으나 영어 답변에서 누락된 핵심 내용이 있다면 자연스럽게 포함시켜 완성하세요.
+       - COMBO 문제거나, 이전에 말한 내용이 언급될 땐 "As I told you before"와 같은 연결 고리를 넣으세요.
+       - 그 외에 문장 연결 간에 필요한 필러를 문맥상 적절히 사용하세요. (I think that's all I can say about me, That's all I wanted to say, What I'm trying to say, To put detail~ , At the end of the day, Or something, Obviously, Currently, basically, You see, I mean, In fact, what else- , What I really love about is that, The reason why, what am I trying to say, anyway, I gotta tell you, Wow... It's quite a tough question, That's tricky, That is a reason why)
+       - 앞 뒤 문장의 맥락이 달라질 땐 By the way 등의 접속사를 적절하게 사용하세요. 
+
+    2. relevance_feedback: [원본 답변]이 질문의 의도에 부합하는지 한국어로 평가하세요. 
+       (교정본이 아닌, 사용자가 처음에 말한 내용이 질문에 맞는지 확인해야 합니다.)
+
+    3. logic_feedback: [원본 답변]의 논리 전개를 한국어로 평가하세요. 
+       - '주제에 대한 답변 + 당시의 감정 + 이유'의 구조가 아니라면, 그렇게 고치는게 좋다고 조언하세요.
+       - 부족하다면 위 구조를 참고하라는 가이드를 포함하세요.
+
+    4. fluency_feedback: [원본 답변]의 발화량과 유창성을 한국어로 평가하세요.
+       - [한국어 의도]와 비교했을 때 영어 답변에서 빠진 부분이나 왜곡된 내용이 있는지 대조 분석을 포함하세요.
+       - [한국어 의도]의 분량에 비해 영어 답변이 현저히 짧다면 유창성 부족을 지목하세요.
+       - 2문장 이하: 심각한 지적, 4문장 이하: 보강 조언, 5문장 이상: 칭찬.
+       - 표현의 다양성은 지나치게 엄격하지 않게, 격려 위주로 작성하세요. 너무 단조롭다면 그때만 지적하세요.
+    
+    주의: relevance_feedback, logic_feedback, fluency_feedback은 절대로 [교정된 문장들] 기준이 아닌, [원본 답변]의 수준을 바탕으로 작성해야 합니다. fluency_feedback 항목은 [원본 답변]과 [한국어 의도] 사이의 간극도 체크하세요.
     """
     
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"response_mime_type": "application/json"}
+        "generationConfig": {
+            "response_mime_type": "application/json",
+            "response_schema": {
+                "type": "object",
+                "properties": {
+                    "improved_answer": {"type": "string"},
+                    "relevance_feedback": {"type": "string"},
+                    "logic_feedback": {"type": "string"},
+                    "fluency_feedback": {"type": "string"}
+                },
+                "required": ["improved_answer", "relevance_feedback", "logic_feedback", "fluency_feedback"]
+            }
+        }
     }
 
     async with httpx.AsyncClient() as client:
         response = await client.post(GEMINI_URL, headers=headers, json=payload, timeout=30.0)
         res_json = response.json()
     
-    duration = time.perf_counter() - start_time
-    usage = res_json.get('usageMetadata', {})
-    
-    print(f"\n📊 [Gemini Flash - 종합피드백 Log]")
-    print(f"⏱️ 소요 시간: {duration:.2f}s | 🎫 토큰: {usage.get('promptTokenCount')}/{usage.get('candidatesTokenCount')}")
-    
-    content_text = res_json['candidates'][0]['content']['parts'][0]['text']
-    return json.loads(content_text)
+    print(f"📊 [Step 2] 원본 및 의도 대조 종합 피드백 완료 ({time.perf_counter() - start_time:.2f}s)")
+    return json.loads(res_json['candidates'][0]['content']['parts'][0]['text'])
 
 # --- API 엔드포인트 ---
 
@@ -121,15 +150,25 @@ async def analyze_overall_gemini(question: str, answer: str):
 async def analyze_voice_text(request: AnalysisRequest):
     total_start = time.perf_counter()
     try:
-        # 병렬 실행 (두 노드 모두 Gemini 사용)
-        sentence_task = analyze_sentences_gemini(request.user_answer)
-        overall_task = analyze_overall_gemini(request.question_text, request.user_answer)
+        # 1. 문법 및 필러 교정
+        sentence_details = await analyze_sentences_gemini(request.user_answer)
         
-        sentence_res, overall_res = await asyncio.gather(sentence_task, overall_task)
+        # 교정된 문장들을 하나의 텍스트로 결합
+        corrected_text = " ".join([s['improved_text'] for s in sentence_details])
+        
+        # 2. 한국어 의도 대조 및 종합 피드백 생성 (순차 실행)
+        overall_res = await analyze_overall_gemini(
+            request.question_text, 
+            request.user_answer, 
+            corrected_text,
+            request.user_korean_script
+        )
         
         total_duration = time.perf_counter() - total_start
-        print(f"\n✨ [전체 분석 완료] 총 소요 시간: {total_duration:.2f}s")
+        print(f"✨ [전체 분석 완료] 총 소요 시간: {total_duration:.2f}s")
         
-        return {**overall_res, "sentence_details": sentence_res}
+        return {**overall_res, "sentence_details": sentence_details}
+        
     except Exception as e:
+        print(f"❌ Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

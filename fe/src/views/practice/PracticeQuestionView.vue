@@ -139,6 +139,20 @@ let recognition = null;
 let timerInterval = null;
 let audioRecorder = null;
 let audioChunks = [];
+const recordedBlob = ref(null);
+const recordedDuration = ref(0);
+const isAnalyzing = ref(false);
+
+// 오디오 지속 시간 측정 유틸리티
+const getDuration = (blob) => {
+  return new Promise((resolve) => {
+    const audio = new Audio();
+    audio.src = URL.createObjectURL(blob);
+    audio.addEventListener('loadedmetadata', () => {
+      resolve(audio.duration); // 초 단위
+    });
+  });
+};
 
 // 저장된 답변 불러오기
 watch(
@@ -193,22 +207,41 @@ const initRecognition = () => {
 const initAudioRecording = async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    audioRecorder = new MediaRecorder(stream);
+    
+    // 브라우저 호환성을 고려하되, 전송 시 mp3로 취급하기 위해 최적의 타입 선택
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+      ? 'audio/webm;codecs=opus' 
+      : 'audio/webm';
+      
+    audioRecorder = new MediaRecorder(stream, { mimeType });
     audioChunks = [];
 
     audioRecorder.ondataavailable = (event) => {
-      audioChunks.push(event.data);
+      if (event.data.size > 0) {
+        audioChunks.push(event.data);
+      }
     };
 
-    audioRecorder.onstop = () => {
-      const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-      // 여기서 audioBlob을 서버로 전송하여 저장
-      // Practice_answers 테이블의 english_record_url에 저장
+    audioRecorder.onstop = async () => {
+      // 녹음 중지 시 Blob 생성 및 저장
+      const blob = new Blob(audioChunks, { type: mimeType });
+      recordedBlob.value = blob;
+      
+      // 지속 시간 측정
+      const duration = await getDuration(blob);
+      recordedDuration.value = Math.round(duration);
+      
+      console.log("녹음 완료:", {
+        size: blob.size,
+        duration: recordedDuration.value,
+        type: blob.type
+      });
     };
 
     audioRecorder.start();
   } catch (e) {
     console.error("오디오 녹음 초기화 실패:", e);
+    alert("마이크 접근 권한이 필요합니다.");
   }
 };
 
@@ -225,6 +258,8 @@ const toggleRecording = async () => {
     initRecognition();
     await initAudioRecording();
 
+    recordedBlob.value = null;
+    recordedDuration.value = 0;
     sttResult.value = "";
     recordingTime.value = 0;
 
@@ -256,14 +291,16 @@ const overallFeedback = ref("");
 
 // API 호출: 답변 분석 요청
 const analyze = async () => {
-  if (!currentQuestion.value) return;
+  if (!currentQuestion.value || !recordedBlob.value) {
+    return alert("먼저 답변을 녹음해주세요.");
+  }
 
   try {
+    isAnalyzing.value = true;
 
-    // 1. Audio Blob 생성
-    const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-    const audioFile = new File([audioBlob], "recording.wav", {
-      type: "audio/wav",
+    // 1. Audio Blob으로부터 mp3 파일 객체 생성
+    const audioFile = new File([recordedBlob.value], "recording.mp3", {
+      type: "audio/mpeg",
     });
 
     // 2. JSON 데이터 준비
@@ -316,6 +353,8 @@ const analyze = async () => {
   } catch (error) {
     console.error("분석 요청 실패:", error);
     alert("분석에 실패했습니다. 다시 시도해주세요.");
+  } finally {
+    isAnalyzing.value = false;
   }
 };
 
@@ -539,7 +578,16 @@ onUnmounted(() => {
 
         <!-- AI 분석 버튼 -->
         <div class="analyze-btn-wrapper">
-          <button class="analyze-btn" @click="analyze">AI 분석하기</button>
+          <div v-if="recordedDuration > 0 && !isRecording" class="recording-status">
+            <span>녹음 완료 ({{ Math.floor(recordedDuration / 60) }}:{{ (recordedDuration % 60).toString().padStart(2, '0') }})</span>
+          </div>
+          <button 
+            class="analyze-btn" 
+            @click="analyze" 
+            :disabled="isAnalyzing || !recordedBlob || isRecording"
+          >
+            {{ isAnalyzing ? '분석 중...' : 'AI 분석하기' }}
+          </button>
         </div>
       </section>
 
@@ -989,11 +1037,32 @@ textarea {
   color: var(--text-primary);
 }
 
-/* AI 분석 버튼 */
 .analyze-btn-wrapper {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
   margin-top: 10px;
+}
+.recording-status {
+  background: var(--bg-tertiary);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #10b981;
+  border: 1px solid #10b981;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.recording-status::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+  border-radius: 50%;
 }
 .analyze-btn {
   width: 180px;

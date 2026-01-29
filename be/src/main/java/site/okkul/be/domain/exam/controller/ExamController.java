@@ -7,17 +7,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 import site.okkul.be.domain.exam.docs.ExamControllerDocs;
 import site.okkul.be.domain.exam.dto.request.ExamCreateRequest;
+import site.okkul.be.domain.exam.dto.request.ExamQuestionAnswerRequest;
 import site.okkul.be.domain.exam.dto.response.ExamDetailResponse;
 import site.okkul.be.domain.exam.dto.response.ExamResultResponse;
 import site.okkul.be.domain.exam.service.ExamService;
@@ -33,11 +33,7 @@ public class ExamController implements ExamControllerDocs {
 	private final ExamService examService;
 
 	/**
-	 * 시험 생성
-	 *
-	 * @param user    생성하려는 유저
-	 * @param request 요청 Body
-	 * @return 생성된 모의시험 정보
+	 * {@inheritDoc}
 	 */
 	@Override
 	@PostMapping
@@ -59,11 +55,28 @@ public class ExamController implements ExamControllerDocs {
 	}
 
 	/**
-	 * 7번 이후 난이도 조정 확정
+	 * {@inheritDoc}
+	 */
+	@Override
+	@GetMapping("/{examId}")
+	public ResponseEntity<ExamDetailResponse> getExamInfo(
+			@PathVariable Long examId,
+			@AuthenticationPrincipal UserDetails user
+	) {
+		return ResponseEntity.ok(
+				examService.getExamInfoDetails(
+						Long.parseLong(user.getUsername()),
+						examId
+				)
+		);
+	}
+
+	/**
+	 * {@inheritDoc}
 	 */
 	@Override
 	@PatchMapping("/{examId}/adjust-level")
-	public ResponseEntity<ExamDetailResponse> getRemainingQuestions(
+	public ResponseEntity<ExamDetailResponse> updateAdjustedDifficulty(
 			@PathVariable Long examId,
 			@RequestParam Integer adjustedDifficulty,
 			@AuthenticationPrincipal UserDetails user
@@ -80,47 +93,27 @@ public class ExamController implements ExamControllerDocs {
 		);
 	}
 
-	/**
-	 * 시험정보 가져오기
-	 *
-	 * @param examId 시험번호
-	 */
-	@Override
-	@GetMapping("/{examId}")
-	public ResponseEntity<ExamDetailResponse> getExamInfo(
-			@PathVariable Long examId,
-			@AuthenticationPrincipal UserDetails user
-	) {
-		return ResponseEntity.ok(
-				examService.getExamInfo(
-						Long.parseLong(user.getUsername()),
-						examId
-				)
-		);
-	}
-
 
 	/**
-	 * 음성 답변 제출
-	 * - examId + answerId 검증은 service 내부에서 이미 수행(추가로 해도 됨)
+	 * {@inheritDoc}
 	 */
 	@Override
 	@PostMapping(
-			value = "/{examId}/answers/{answerId}",
+			value = "/{examId}/answers/{questionOrder}",
 			consumes = MediaType.MULTIPART_FORM_DATA_VALUE
 	)
 	public ResponseEntity<Void> submitAnswer(
 			@PathVariable Long examId,
-			@PathVariable Long answerId,
-			@RequestPart("file") MultipartFile file,
+			@PathVariable Integer questionOrder,
+			@ModelAttribute ExamQuestionAnswerRequest examQuestionAnswerRequest,
 			@AuthenticationPrincipal UserDetails user
 	) {
-		examService.submitAnswer(examId, answerId, file);
+		examService.submitAnswer(examId, questionOrder, examQuestionAnswerRequest, Long.parseLong(user.getUsername()));
 		return ResponseEntity.accepted().build();
 	}
 
 	/**
-	 * 시험 종료
+	 * {@inheritDoc}
 	 */
 	@Override
 	@PostMapping("/{examId}/complete")
@@ -132,18 +125,9 @@ public class ExamController implements ExamControllerDocs {
 		return ResponseEntity.ok().build();
 	}
 
-	// 아래 status/result는 아직 서비스가 더미라면 유지 가능
-	@Override
-	@GetMapping("/{examId}/status")
-	public ResponseEntity<ExamDetailResponse> getExamStatus(
-			@PathVariable Long examId,
-			@AuthenticationPrincipal UserDetails user
-	) {
-		// TODO: 실제 서비스 연동 전까지 더미 유지 가능
-		ExamDetailResponse dummy = null;
-		return ResponseEntity.ok(dummy);
-	}
-
+	/**
+	 * {@inheritDoc}
+	 */
 	@Override
 	@GetMapping("/{examId}/result")
 	public ResponseEntity<ExamResultResponse> getExamResult(

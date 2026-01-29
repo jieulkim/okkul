@@ -11,7 +11,6 @@
 //import org.springframework.security.test.context.support.WithMockUser;
 //import org.springframework.test.web.servlet.MockMvc;
 //import org.springframework.transaction.annotation.Transactional;
-//import site.okkul.be.domain.qustion.dto.QuestionTypeRequest;
 //
 //import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 //import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;

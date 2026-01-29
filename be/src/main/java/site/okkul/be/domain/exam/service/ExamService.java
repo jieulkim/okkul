@@ -1,9 +1,9 @@
 package site.okkul.be.domain.exam.service;
 
 import jakarta.persistence.EntityNotFoundException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -11,13 +11,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
+import site.okkul.be.domain.exam.dto.request.ExamQuestionAnswerRequest;
 import site.okkul.be.domain.exam.dto.response.ExamDetailResponse;
 import site.okkul.be.domain.exam.entity.Exam;
 import site.okkul.be.domain.exam.entity.ExamAnswer;
 import site.okkul.be.domain.exam.repository.ExamAnswerJpaRepository;
 import site.okkul.be.domain.exam.repository.ExamJpARepository;
-import site.okkul.be.domain.qustion.entity.Question;
 import site.okkul.be.domain.qustion.entity.QuestionSet;
 import site.okkul.be.domain.qustion.entity.QuestionType;
 import site.okkul.be.domain.qustion.repository.QuestionSetRepository;
@@ -25,6 +24,7 @@ import site.okkul.be.domain.survey.entity.Survey;
 import site.okkul.be.domain.survey.repository.SurveyJpaRepository;
 import site.okkul.be.domain.topic.entity.Topic;
 import site.okkul.be.domain.topic.repository.TopicRepository;
+import site.okkul.be.infra.storage.FileStorageService;
 
 /**
  * 모의고사 비지니스 로직 서비스
@@ -65,6 +65,11 @@ public class ExamService {
 	 */
 	private final TopicRepository topicRepository;
 
+	/**
+	 * 파일 스토리지 서비스
+	 */
+	private final FileStorageService fileStorageService;
+
 
 	/**
 	 * 1단계 문제 생성
@@ -88,7 +93,12 @@ public class ExamService {
 	}
 
 	@Transactional(readOnly = true)
-	public ExamDetailResponse getExamInfo(Long userId, Long examId) {
+	public ExamDetailResponse getExamInfoSummary(Long userId, Long examId) {
+		throw new RuntimeException("Not yet implemented");
+	}
+
+	@Transactional(readOnly = true)
+	public ExamDetailResponse getExamInfoDetails(Long userId, Long examId) {
 		Exam exam = examRepository.findByIdAndUserId(examId, userId).orElseThrow(
 				() -> new IllegalArgumentException("존재하지 않는 시험 세션입니다. ID: " + examId)
 		);
@@ -155,22 +165,16 @@ public class ExamService {
 
 		// 문제 가져오기
 		for (QuestionType questionType : questionTypes) {
-			Optional<QuestionSet> questionSet = questionSetRepository.findRandomByLevelAndTopic(
-					level,
-					topics.getFirst().getId(),
-					questionType
-			);
-			// 값이 비어있으면 다른거 가져와야함
-			if (questionSet.isEmpty()) {
-				for (Topic topic : topics) {
-					questionSet = questionSetRepository.findRandomByLevelAndTopic(
-							level,
-							topic.getId(),
-							questionType
-					);
-					if (questionSet.isPresent()) {
-						break;
-					}
+			Optional<QuestionSet> questionSet = Optional.empty();
+			Collections.shuffle(topics);
+			for (Topic topic : topics) {
+				questionSet = questionSetRepository.findRandomByLevelAndTopic(
+						level,
+						topic.getId(),
+						questionType
+				);
+				if (questionSet.isPresent()) {
+					break;
 				}
 			}
 
@@ -220,26 +224,25 @@ public class ExamService {
 	 * - answerId(=ExamAnswer PK)로 문항을 식별
 	 */
 	@Transactional
-	public void submitAnswer(Long examId, Long answerId, MultipartFile file) {
-		ExamAnswer answer = examAnswerRepository.findById(answerId).orElseThrow();
+	public void submitAnswer(Long examId, Integer questionOrder, ExamQuestionAnswerRequest examQuestionAnswerRequest, Long userId) {
 
-//        if (!Objects.equals(answer.getExamId(), examId)) {
-//            throw new IllegalArgumentException("examId와 answerId가 일치하지 않습니다.");
-//        }
+		Exam exam = examRepository.findByIdAndUserId(examId, userId).orElseThrow(
+				() -> new IllegalArgumentException("존재하지 않는 시험 세션입니다. ID: " + examId)
+		);
 
-//        try {
-//            String audioUrl = minioService.upload(file);
-//            answer.uploadVoiceFile(audioUrl);
-//
-//            answer.startStt();
-//            String script = sttService.convert(file);
-//
-//            answer.completeSttAndStartAnalysis(script);
-//            aiAnalysisService.analyzeAndSaveFeedback(answerId, script);
-//        } catch (Exception e) {
-//            answer.markAsFailed();
-//            throw new RuntimeException("답변 처리 중 오류가 발생했습니다.", e);
-//        }
+		String url = fileStorageService.upload(examQuestionAnswerRequest.file(), "exam/" + examId + "/answer/");
+
+
+		ExamAnswer examAnswer = ExamAnswer.builder()
+				.id(new ExamAnswer.ExamAnswerId(examId, questionOrder))
+				.audioUrl(url)
+				.exam(exam)
+				.sttScript(examQuestionAnswerRequest.sttText())
+				.createdAt(Instant.now())
+				.updatedAt(Instant.now())
+				.build();
+
+		examAnswerRepository.save(examAnswer);
 	}
 
 	@Transactional
@@ -247,50 +250,5 @@ public class ExamService {
 		Exam exam = examRepository.findById(examId)
 				.orElseThrow(() -> new EntityNotFoundException("시험 세션을 찾을 수 없습니다."));
 		exam.completeExam();
-	}
-
-
-	/**
-	 * INTRODUCTION 세트는 topic/level과 무관하게 랜덤 1개를 뽑음
-	 * - 세트 내부 질문은 order 오름차순 정렬 후 반환
-	 */
-	private List<Question> getIntroQuestions() {
-//		QuestionSet set = questionSetRepository.findRandomByTypeCode(INTRO)
-//				.orElseThrow(() -> new EntityNotFoundException("INTRODUCTION 세트가 없습니다."));
-//
-//		List<Question> questions = new ArrayList<>(set.getQuestions());
-//		questions.sort(Comparator.comparingInt(Question::getOrder));
-//		return questions;
-
-		return null;
-	}
-
-	/**
-	 * level + topicId + typeCode로 QuestionSet을 1개 랜덤 조회 후, 세트에 속한 질문을 반환
-	 * - 기대 문항 수(question_cnt) 및 실제 질문 수 검증
-	 * - 질문은 order 기준 정렬
-	 */
-	private List<Question> getQuestions(Integer level, Long topicId, QuestionType type) {
-		QuestionSet set = questionSetRepository.findRandomByLevelAndTopicIdAndTypeCode(level, topicId, type)
-				.orElseThrow(() -> new EntityNotFoundException(
-						String.format("조건에 맞는 세트가 없습니다. (Lv:%d, Topic:%d, Type:%s)", level, topicId, type)));
-
-		int expected = ExamLevelDesign.expectedCountByTypeCode(type);
-
-		// DB에 question_cnt를 관리한다면 검증(선택)
-		if (set.getQuestionCnt() == null || set.getQuestionCnt() != expected) {
-			throw new IllegalStateException("question_cnt 불일치 setId=" + set.getId()
-					+ " expected=" + expected + " actual=" + set.getQuestionCnt());
-		}
-
-		List<Question> questions = new ArrayList<>(set.getQuestions());
-		questions.sort(Comparator.comparingInt(Question::getOrder));
-
-		if (questions.size() != expected) {
-			throw new IllegalStateException("세트 문항 개수 불일치 setId=" + set.getId()
-					+ " expected=" + expected + " actual=" + questions.size());
-		}
-
-		return questions;
 	}
 }

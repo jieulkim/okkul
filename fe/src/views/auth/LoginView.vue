@@ -1,5 +1,6 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth'
+import OkkulCharacter from '@/components/common/OkkulCharacter.vue'
 
 const authStore = useAuthStore()
 
@@ -12,7 +13,9 @@ const handleLogin = () => {
   <div class="login-container">
     <div class="login-card">
       <div class="logo-section">
-        <span class="logo-icon">🍯</span>
+        <div class="okkul-wrapper">
+          <OkkulCharacter size="normal" :wave="true" />
+        </div>
         <h1>오꿀</h1>
         <p>오늘의 꿀같은 오픽 점수, 오꿀과 함께 만드세요!</p>
       </div>
@@ -37,18 +40,25 @@ const handleLogin = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-  padding: 20px;
+  background: var(--bg-primary);
+  padding: 24px;
 }
 
 .login-card {
-  background: white;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-primary);
   padding: 48px;
   border-radius: 32px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
   max-width: 440px;
   width: 100%;
   text-align: center;
+}
+
+.okkul-wrapper {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: center;
 }
 
 .logo-section .logo-icon {
@@ -60,12 +70,12 @@ const handleLogin = () => {
 .logo-section h1 {
   font-size: 36px;
   font-weight: 900;
-  color: #1e293b;
+  color: var(--text-primary);
   margin-bottom: 12px;
 }
 
 .logo-section p {
-  color: #64748b;
+  color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: 40px;
 }

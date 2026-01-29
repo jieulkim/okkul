@@ -1,14 +1,17 @@
 <script setup>
 import { ref, computed, inject, onMounted, watch } from 'vue'
+import OkkulCharacter from '@/components/common/OkkulCharacter.vue'
 
-// 사용자 프로필 데이터 (전역 상태 주입)
+import { useAuthStore } from '@/stores/auth'
+
+// 사용자 프로필 데이터
 const userProfile = inject('userProfile')
 
-// 다크모드 상태 주입
+// 다크모드 상태
 const isDarkMode = inject('isDarkMode', ref(false))
 
-const authStore = inject('authStore')
-const isLoggedIn = computed(() => !!authStore?.user)
+const authStore = useAuthStore()
+const isLoggedIn = computed(() => !!authStore.user)
 
 // 다크모드 변경 감지
 watch(isDarkMode, (newVal) => {
@@ -104,19 +107,23 @@ const getStatusColor = (status) => {
 </script>
 
 <template>
-  <div class="home-container">
-    <main class="main-content">
+  <div class="page-container">
+    <main class="page-content">
       <!-- 로그인 상태일 때 (대시보드) -->
       <div v-if="isLoggedIn" class="dashboard-grid">
         <!-- 왼쪽 컬럼 -->
         <div class="left-column">
           <!-- 웰컴 배너 -->
           <section class="welcome-banner">
-            <h1>{{ userProfile.nickname || '사용자' }}님, 오늘도 <span class="highlight">꿀</span>처럼 달콤한 성과를 만들어요! 🍯</h1>
-            <p class="subtitle">오꿀과 함께 목표 등급 달성까지 달려봐요!</p>
+            <div class="welcome-header">
+              <h1 v-if="authStore.user?.nickname">{{ authStore.user.nickname }}님, 오늘도 달콤한 성과를 만들어요!</h1>
+              <h1 v-else>오늘도 달콤한 성과를 만들어요!</h1>
+              <OkkulCharacter size="mini" :wave="true" />
+            </div>
+            <p class="subtitle">오꿀쌤과 함께 목표 등급 달성까지 달려봐요!</p>
             
             <div class="action-buttons">
-              <router-link to="/exam" class="btn-primary" style="z-index: 10;">
+              <router-link to="/exam" class="btn-primary">
                 <span class="material-icons-outlined btn-icon">play_circle_filled</span>
                 <div class="btn-text">
                   <span class="title">실전 모의고사 시작</span>
@@ -124,7 +131,7 @@ const getStatusColor = (status) => {
                 </div>
               </router-link>
               
-              <router-link to="/practice" class="btn-secondary" style="z-index: 10;">
+              <router-link to="/practice" class="btn-secondary">
                 <span class="material-icons-outlined btn-icon">category</span>
                 <div class="btn-text">
                   <span class="title">유형별 집중 연습</span>
@@ -134,7 +141,7 @@ const getStatusColor = (status) => {
             </div>
           </section>
 
-          <!-- 최근 성적 추이 (기존 코드 유지) ... -->
+          <!-- 최근 성적 추이 -->
           <section class="stats-card">
             <div class="card-header">
               <h3>최근 성적 추이</h3>
@@ -191,7 +198,7 @@ const getStatusColor = (status) => {
           </section>
         </div>
         
-        <!-- 오른쪽 컬럼 (기존 코드 유지) ... -->
+        <!-- 오른쪽 컬럼 -->
         <div class="right-column">
           <!-- 프로필 관리 카드 -->
           <section class="profile-card">
@@ -199,15 +206,19 @@ const getStatusColor = (status) => {
             
             <div class="profile-edit">
               <div class="profile-image-section" @click="triggerImageUpload">
-                <div class="profile-preview">
+                <div class="profile-avatar">
                   <img 
-                    v-if="userProfile.profileImage" 
-                    :src="userProfile.profileImage" 
-                    alt="프로필"
+                    v-if="authStore.user?.profileImageUrl" 
+                    :src="authStore.user.profileImageUrl" 
+                    alt="프로필" 
+                    class="avatar-img" 
                   />
-                  <span v-else class="profile-placeholder">
-                    {{ userProfile.nickname?.[0]?.toUpperCase() || 'U' }}
-                  </span>
+                  <img 
+                    v-else 
+                    src="/default-profile.png" 
+                    alt="기본 프로필" 
+                    class="avatar-img fallback" 
+                  />
                   <div class="upload-overlay">
                     <span class="material-icons-outlined">photo_camera</span>
                   </div>
@@ -224,12 +235,8 @@ const getStatusColor = (status) => {
               <div class="profile-info">
                 <div class="info-row">
                   <label>닉네임</label>
-                  <span>{{ userProfile.nickname }}</span>
+                  <span>{{ authStore.user?.nickname || '사용자' }}</span>
                 </div>
-                <!-- <div class="info-row">
-                  <label>이름</label>
-                  <span>{{ userProfile.name }}</span>
-                </div> -->
               </div>
             </div>
           </section>
@@ -267,22 +274,31 @@ const getStatusColor = (status) => {
         </div>
       </div>
 
-      <!-- 비로그인 상태일 때 (랜딩 페이지) -->
+      <!-- 비로그인 상태 -->
       <div v-else class="landing-hero">
         <div class="hero-content">
-          <span class="badge">AI기반 OPIc 트레이닝 서비스</span>
-          <h1 class="hero-title">
-            당신의 OPIc 목표,<br/>
-            <span class="highlight">오꿀</span>과 함께 달콤하게 달성하세요! 🍯
-          </h1>
+          <span class="badge">AI 기반 OPIc 트레이닝</span>
+          
+          <div class="hero-title-wrapper">
+            <h1 class="hero-title">
+              당신의 OPIc 목표,<br/>
+              <span class="highlight-text">오꿀쌤</span>과 함께 달성하세요!
+            </h1>
+            <div class="okkul-wrapper">
+              <OkkulCharacter size="normal" :wave="true" />
+            </div>
+          </div>
+          
           <p class="hero-desc">
             최신 AI 기술로 분석하는 내 영어 실력.<br/>
             실전 모의고사부터 취약 유형 집중 연습까지 한 번에.
           </p>
+          
           <div class="hero-actions">
             <router-link to="/login" class="hero-btn-primary">시작하기</router-link>
           </div>
         </div>
+        
         <div class="hero-features">
           <div class="feature-card">
             <div class="f-icon">🎯</div>
@@ -308,127 +324,326 @@ const getStatusColor = (status) => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Material+Icons+Outlined&display=swap');
 
-.home-container { 
+/* 컨테이너 및 레이아웃 */
+.page-container { 
   min-height: 100vh; 
-  background: linear-gradient(to bottom, #fafafa 0%, #f5f5f5 100%);
+  background: var(--bg-primary);
   transition: background 0.3s ease;
-  overflow: hidden;
 }
 
-.dark-mode .home-container {
-  background: linear-gradient(to bottom, #0f172a 0%, #1e293b 100%);
-}
-
-.landing-hero {
-  padding: 60px 0;
-  text-align: center;
-  max-width: 1000px;
+.page-content {
+  max-width: 1400px;
   margin: 0 auto;
+  padding: 32px 64px;
+}
+
+@media (max-width: 1024px) {
+  .page-content {
+    padding: 24px 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-content {
+    padding: 16px 24px;
+  }
+}
+
+/* 랜딩 페이지 */
+.landing-hero { 
+  padding: 80px 0; 
+  text-align: center;
 }
 
 .badge {
   display: inline-block;
-  padding: 6px 16px;
-  background: #fff7ed;
-  color: #ea580c;
+  padding: 8px 20px;
+  background: linear-gradient(135deg, #FFF9E6 0%, #FFE4B3 100%);
+  color: #92400e;
   border-radius: 50px;
   font-size: 14px;
   font-weight: 700;
+  margin-bottom: 32px;
+  border: 2px solid #FFD700;
+}
+
+.dark-mode .badge {
+  background: rgba(255, 215, 0, 0.2);
+  color: #ffd700;
+  border-color: rgba(255, 215, 0, 0.3);
+}
+
+.hero-title-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
   margin-bottom: 24px;
 }
 
 .hero-title {
-  font-size: 56px;
+  font-size: 3.5rem;
   font-weight: 900;
   color: #1e293b;
   line-height: 1.2;
-  margin-bottom: 24px;
+  margin: 0;
 }
 
 .dark-mode .hero-title {
   color: #f1f5f9;
 }
 
+.highlight-text {
+  color: #FFD700;
+  position: relative;
+  display: inline-block;
+}
+
+.okkul-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .hero-desc {
-  font-size: 20px;
+  font-size: 1.25rem;
   color: #64748b;
-  line-height: 1.6;
+  line-height: 1.8;
   margin-bottom: 48px;
+}
+
+.dark-mode .hero-desc {
+  color: #94a3b8;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 80px;
 }
 
 .hero-btn-primary {
   padding: 18px 48px;
   background: #FFD700;
   color: #000;
-  border-radius: 50px;
-  font-size: 20px;
-  font-weight: 800;
   text-decoration: none;
-  box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
-  transition: all 0.3s;
+  border-radius: 16px;
+  font-weight: 800;
+  font-size: 1.125rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(255, 215, 0, 0.3);
 }
 
 .hero-btn-primary:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 40px rgba(255, 215, 0, 0.5);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(255, 215, 0, 0.4);
+  background: #FFA500;
+}
+
+.dark-mode .hero-btn-primary {
+  background: #FFD700;
+  color: #000;
 }
 
 .hero-features {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-top: 100px;
+  gap: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .feature-card {
-  background: white;
-  padding: 40px;
+  padding: 40px 32px;
+  background: #fff;
   border-radius: 24px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-  transition: transform 0.3s;
+  text-align: center;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.feature-card:hover {
+  transform: translateY(-8px);
+  border-color: #FFD700;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
 }
 
 .dark-mode .feature-card {
   background: #1e293b;
+  border-color: #334155;
 }
 
-.feature-card:hover {
-  transform: translateY(-10px);
+.dark-mode .feature-card:hover {
+  border-color: #FFD700;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
 }
 
-.f-icon { font-size: 40px; margin-bottom: 20px; }
-.feature-card h3 { font-size: 20px; font-weight: 800; margin-bottom: 12px; }
-.feature-card p { font-size: 15px; color: #64748b; line-height: 1.5; }
-
-.main-content { 
-  max-width: 1400px; 
-  margin: 0 auto; 
-  padding: 40px 32px; 
+.f-icon {
+  font-size: 3rem;
+  margin-bottom: 20px;
 }
 
-.dashboard-grid { 
-  display: grid; 
-  grid-template-columns: 1fr 420px; 
-  gap: 28px; 
+.feature-card h3 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin-bottom: 12px;
 }
 
-@media (max-width: 1200px) {
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
+.dark-mode .feature-card h3 {
+  color: #f1f5f9;
 }
 
-section { 
-  background: white; 
-  border-radius: 20px; 
-  border: 1px solid #f1f5f9; 
-  padding: 28px; 
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  margin-bottom: 24px;
+.feature-card p {
+  font-size: 1rem;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.dark-mode .feature-card p {
+  color: #94a3b8;
+}
+
+/* 대시보드 */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 32px;
+}
+
+.left-column, .right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* 웰컴 배너 */
+.welcome-banner {
+  background: linear-gradient(135deg, #FFF9E6 0%, #FFE4B3 100%);
+  padding: 40px;
+  border-radius: 24px;
+  border: 2px solid #FFD700;
+}
+
+.dark-mode .welcome-banner {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 165, 0, 0.1) 100%);
+  border-color: rgba(255, 215, 0, 0.3);
+}
+
+.welcome-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.welcome-banner h1 {
+  font-size: 2rem;
+  font-weight: 900;
+  color: #1e293b;
+  margin: 0;
+}
+
+.dark-mode .welcome-banner h1 {
+  color: #f1f5f9;
+}
+
+.subtitle {
+  font-size: 1.125rem;
+  color: #64748b;
+  margin-bottom: 32px;
+}
+
+.dark-mode .subtitle {
+  color: #94a3b8;
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.btn-primary, .btn-secondary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  border-radius: 16px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary {
+  background: #FFD700;
+  color: #000;
+  box-shadow: 0 4px 16px rgba(255, 215, 0, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(255, 215, 0, 0.4);
+}
+
+.btn-secondary {
+  background: #fff;
+  color: #1e293b;
+  border: 2px solid #e2e8f0;
+}
+
+.btn-secondary:hover {
+  border-color: #FFD700;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.dark-mode .btn-secondary {
+  background: #1e293b;
+  color: #f1f5f9;
+  border-color: #334155;
+}
+
+.dark-mode .btn-secondary:hover {
+  border-color: #FFD700;
+}
+
+.btn-icon {
+  font-size: 2rem;
+  font-family: 'Material Icons Outlined';
+}
+
+.btn-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.btn-text .title {
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+.btn-text .sub {
+  font-size: 0.875rem;
+  opacity: 0.7;
+}
+
+/* 카드 공통 스타일 */
+.stats-card, .recent-activities, .profile-card, .ai-analysis-card {
+  background: #fff;
+  padding: 32px;
+  border-radius: 24px;
+  border: 2px solid #e2e8f0;
   transition: all 0.3s ease;
 }
 
-.dark-mode section {
+.dark-mode .stats-card,
+.dark-mode .recent-activities,
+.dark-mode .profile-card,
+.dark-mode .ai-analysis-card {
   background: #1e293b;
   border-color: #334155;
 }
@@ -441,7 +656,7 @@ section {
 }
 
 .card-header h3 {
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 800;
   color: #1e293b;
 }
@@ -451,181 +666,60 @@ section {
 }
 
 .header-meta {
-  font-size: 13px;
+  font-size: 0.875rem;
   color: #94a3b8;
 }
 
 .header-link {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: #FFD700;
-  font-weight: 600;
   text-decoration: none;
+  font-weight: 700;
 }
 
-.welcome-banner h1 { 
-  font-size: 32px; 
-  font-weight: 900; 
-  margin-bottom: 12px;
-  color: #0f172a;
-  line-height: 1.3;
+.header-link:hover {
+  text-decoration: underline;
 }
 
-.dark-mode .welcome-banner h1 {
-  color: #f1f5f9;
+/* 차트 영역 */
+.chart-area {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  height: 200px;
+  padding: 16px 0;
+  margin-bottom: 16px;
 }
 
-.highlight { 
-  color: #FFD700;
-  text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
-}
-
-.subtitle {
-  color: #64748b;
-  font-size: 15px;
-  margin-bottom: 32px;
-}
-
-.dark-mode .subtitle {
-  color: #94a3b8;
-}
-
-.action-buttons { 
-  display: grid; 
-  grid-template-columns: 1fr 1fr; 
-  gap: 16px; 
-}
-
-@media (max-width: 768px) {
-  .action-buttons {
-    grid-template-columns: 1fr;
-  }
-}
-
-.btn-primary, .btn-secondary {
-  display: flex; 
-  align-items: center; 
-  gap: 16px;
-  padding: 24px; 
-  border-radius: 16px; 
-  cursor: pointer; 
-  border: none; 
-  transition: all 0.2s;
-  text-decoration: none;
-  color: inherit;
-}
-
-.btn-primary { 
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-  box-shadow: 0 8px 24px rgba(255, 215, 0, 0.25);
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(255, 215, 0, 0.35);
-}
-
-.btn-secondary { 
-  background: white; 
-  border: 2px solid #FFD700;
-}
-
-.dark-mode .btn-secondary {
-  background: #2d3748;
-  border-color: #FFD700;
-}
-
-.btn-secondary:hover {
-  background: #fffef0;
-  transform: translateY(-2px);
-}
-
-.dark-mode .btn-secondary:hover {
-  background: #374151;
-}
-
-.btn-icon {
-  font-size: 32px;
-  color: #1e293b;
-  font-family: 'Material Icons Outlined';
-}
-
-.dark-mode .btn-secondary .btn-icon {
-  color: #FFD700;
-}
-
-.btn-text { 
-  text-align: left; 
-  display: flex; 
-  flex-direction: column;
-  gap: 4px;
-}
-
-.btn-text .title { 
-  font-weight: 800; 
-  font-size: 16px;
-  color: #0f172a;
-}
-
-.dark-mode .btn-secondary .btn-text .title {
-  color: #f1f5f9;
-}
-
-.btn-text .sub { 
-  font-size: 13px; 
-  color: #64748b;
-}
-
-.dark-mode .btn-secondary .btn-text .sub {
-  color: #94a3b8;
-}
-
-.chart-area { 
-  height: 200px; 
-  display: flex; 
-  align-items: flex-end; 
-  justify-content: space-between; 
-  padding: 0 20px;
-  gap: 12px;
-}
-
-.bar { 
+.bar {
   flex: 1;
-  background: #f1f5f9; 
-  border-radius: 8px 8px 0 0; 
+  max-width: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   position: relative;
+}
+
+.fill {
+  width: 100%;
+  background: linear-gradient(to top, #e2e8f0, #cbd5e1);
+  border-radius: 8px 8px 0 0;
   transition: all 0.3s ease;
 }
 
-.dark-mode .bar {
-  background: #334155;
-}
-
-.bar:hover {
-  transform: translateY(-4px);
-}
-
-.fill { 
-  position: absolute; 
-  bottom: 0; 
-  width: 100%; 
-  height: 100%; 
+.fill.active {
   background: linear-gradient(to top, #FFD700, #FFA500);
-  opacity: 0.4; 
-  border-radius: inherit;
-  transition: opacity 0.3s;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
 }
 
-.fill.active { 
-  opacity: 1;
-  box-shadow: 0 -4px 12px rgba(255, 215, 0, 0.4);
+.dark-mode .fill {
+  background: linear-gradient(to top, #334155, #475569);
 }
 
 .score-label {
   position: absolute;
   top: -24px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 12px;
+  font-size: 0.875rem;
   font-weight: 700;
   color: #64748b;
 }
@@ -634,15 +728,19 @@ section {
   color: #94a3b8;
 }
 
-.chart-labels { 
-  display: flex; 
-  justify-content: space-between; 
-  margin-top: 12px; 
-  color: #94a3b8; 
-  font-size: 13px;
+.fill.active + .score-label {
+  color: #FFD700;
+}
+
+.chart-labels {
+  display: flex;
+  justify-content: space-around;
+  font-size: 0.875rem;
+  color: #94a3b8;
   font-weight: 600;
 }
 
+/* 활동 목록 */
 .activity-list {
   display: flex;
   flex-direction: column;
@@ -654,18 +752,18 @@ section {
   gap: 16px;
   padding: 20px;
   background: #f8fafc;
-  border-radius: 12px;
-  transition: all 0.2s;
+  border-radius: 16px;
+  transition: all 0.3s ease;
   cursor: pointer;
-}
-
-.dark-mode .activity-item {
-  background: #0f172a;
 }
 
 .activity-item:hover {
   transform: translateX(4px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.dark-mode .activity-item {
+  background: #0f172a;
 }
 
 .dark-mode .activity-item:hover {
@@ -698,7 +796,7 @@ section {
 }
 
 .activity-header h4 {
-  font-size: 15px;
+  font-size: 1rem;
   font-weight: 700;
   color: #1e293b;
 }
@@ -708,12 +806,12 @@ section {
 }
 
 .activity-date {
-  font-size: 12px;
+  font-size: 0.875rem;
   color: #94a3b8;
 }
 
 .activity-detail {
-  font-size: 13px;
+  font-size: 0.875rem;
   color: #64748b;
   margin-bottom: 8px;
 }
@@ -728,7 +826,7 @@ section {
 }
 
 .score-badge, .word-badge {
-  font-size: 11px;
+  font-size: 0.75rem;
   padding: 4px 10px;
   border-radius: 6px;
   font-weight: 600;
@@ -754,6 +852,102 @@ section {
   color: #4ade80;
 }
 
+/* 프로필 카드 */
+.profile-edit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.profile-image-section {
+  cursor: pointer;
+  position: relative;
+}
+
+.profile-preview {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 4px solid #FFD700;
+  box-shadow: 0 8px 24px rgba(255, 215, 0, 0.3);
+  position: relative;
+}
+
+.dark-mode .profile-preview {
+  background: #1e293b;
+  border-color: #FFD700;
+}
+
+.profile-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.upload-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  border-radius: 50%;
+}
+
+.profile-image-section:hover .upload-overlay {
+  opacity: 1;
+}
+
+.upload-overlay .material-icons-outlined {
+  color: white;
+  font-size: 2rem;
+  font-family: 'Material Icons Outlined';
+}
+
+.profile-info {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.dark-mode .info-row {
+  background: #0f172a;
+}
+
+.info-row label {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.info-row span {
+  font-size: 0.875rem;
+  color: #1e293b;
+  font-weight: 700;
+}
+
+.dark-mode .info-row span {
+  color: #f1f5f9;
+}
+
+/* AI 등급 분석 */
 .grade-circle { 
   position: relative; 
   width: 200px; 
@@ -802,23 +996,20 @@ section {
 }
 
 .label {
-  font-size: 11px;
+  font-size: 0.75rem;
   color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
 .grade { 
-  font-size: 48px; 
+  font-size: 3rem; 
   font-weight: 900;
-  background: linear-gradient(135deg, #FFD700, #FFA500);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #FFD700;
 }
 
 .percent {
-  font-size: 13px;
+  font-size: 0.875rem;
   color: #64748b;
   font-weight: 600;
 }
@@ -845,13 +1036,13 @@ section {
 }
 
 .stat p {
-  font-size: 13px;
+  font-size: 0.875rem;
   color: #94a3b8;
   margin-bottom: 8px;
 }
 
 .stat strong {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 900;
   color: #1e293b;
 }
@@ -877,8 +1068,8 @@ section {
   width: 100%;
   padding: 12px;
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
   font-weight: 700;
   color: #1e293b;
   cursor: pointer;
@@ -897,101 +1088,41 @@ section {
   color: #000;
 }
 
-.profile-edit {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 24px;
+/* 반응형 */
+@media (max-width: 1024px) {
+  .main-content {
+    padding: 24px 32px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-features {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-title {
+    font-size: 2.5rem;
+  }
+
+  .hero-title-wrapper {
+    flex-direction: column;
+    gap: 24px;
+  }
 }
 
-.profile-image-section {
-  cursor: pointer;
-  position: relative;
-}
+@media (max-width: 768px) {
+  .main-content {
+    padding: 16px 24px;
+  }
 
-.profile-preview {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-  border: 4px solid #fff;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  position: relative;
-}
+  .action-buttons {
+    grid-template-columns: 1fr;
+  }
 
-.dark-mode .profile-preview {
-  border-color: #1e293b;
-}
-
-.profile-preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.profile-placeholder {
-  font-size: 48px;
-  font-weight: 900;
-  color: #000;
-}
-
-.upload-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.profile-image-section:hover .upload-overlay {
-  opacity: 1;
-}
-
-.upload-overlay .material-icons-outlined {
-  color: white;
-  font-size: 32px;
-  font-family: 'Material Icons Outlined';
-}
-
-.profile-info {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.info-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 12px;
-  background: #f8fafc;
-  border-radius: 8px;
-}
-
-.dark-mode .info-row {
-  background: #0f172a;
-}
-
-.info-row label {
-  font-size: 13px;
-  color: #94a3b8;
-  font-weight: 600;
-}
-
-.info-row span {
-  font-size: 14px;
-  color: #1e293b;
-  font-weight: 700;
-}
-
-.dark-mode .info-row span {
-  color: #f1f5f9;
+  .hero-title {
+    font-size: 2rem;
+  }
 }
 </style>

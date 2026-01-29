@@ -391,7 +391,7 @@ const showGuide = ref(false);
 </script>
 
 <template>
-  <div class="survey-page" :class="{ 'dark-mode': isDarkMode }">
+  <div class="page-container">
     <header class="survey-header">
       <div class="info-section">
         <button @click="showGuide = true" class="info-btn">
@@ -400,7 +400,7 @@ const showGuide = ref(false);
       </div>
     </header>
 
-    <main class="survey-main">
+    <main class="page-content">
       <div class="survey-container">
         <!-- Step Progress -->
         <nav class="step-progress">

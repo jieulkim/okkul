@@ -3,6 +3,7 @@ import { ref, computed, onUnmounted, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { practicesApi, surveysApi } from "@/api";
 import { useAuthStore } from "@/stores/auth";
+import OkkulCharacter from "@/components/common/OkkulCharacter.vue";
 
 const route = useRoute();
 const authStore = useAuthStore();
@@ -61,18 +62,30 @@ const currentTopic = ref(null); // 선택된 topic_id
 const isTopicExpanded = ref(false);
 const localTopics = ref([]); // Props or Mock topics
 
-// 표시할 주제 목록 (12개씩 페이징)
-const displayedTopics = computed(() => {
-  const source =
-    localTopics.value.length > 0 ? localTopics.value : props.availableTopics;
-  return isTopicExpanded.value ? source : source.slice(0, 12);
-});
-
 // 주제 선택 핸들러
 const selectTopic = (topicId) => {
   currentTopic.value = topicId;
   emit("topic-changed", topicId);
 };
+
+// 표시할 주제 목록 (선택된 주제를 맨 앞으로, 12개씩 페이징)
+const displayedTopics = computed(() => {
+  const source =
+    localTopics.value.length > 0 ? localTopics.value : props.availableTopics;
+  
+  // 전체 목록 복사
+  let sorted = [...source];
+  
+  if (currentTopic.value) {
+    const index = sorted.findIndex(t => (t.topic_id || t.topicId) === currentTopic.value);
+    if (index > -1) {
+      const selected = sorted.splice(index, 1)[0];
+      sorted.unshift(selected);
+    }
+  }
+
+  return isTopicExpanded.value ? sorted : sorted.slice(0, 12);
+});
 
 // ============================================
 // 2. 질문 관리 (question_bank 테이블 기반)
@@ -441,8 +454,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="practice-container">
-    <!-- 주제 선택 (Topic 테이블 기반) -->
+  <div class="page-container">
     <nav class="topic-section">
       <div class="topic-grid" :class="{ expanded: isTopicExpanded }">
         <button
@@ -459,7 +471,8 @@ onUnmounted(() => {
       </button>
     </nav>
 
-    <div class="main-grid">
+    <main class="page-content">
+      <div class="main-grid">
       <section class="input-area">
         <!-- 질문 표시 (question_bank 테이블 기반) -->
         <div class="question-container" v-if="currentQuestion">
@@ -548,21 +561,10 @@ onUnmounted(() => {
         </div>
 
         <div class="feedback-card">
-          <h3 class="result-title">오꿀 피드백</h3>
+          <h3 class="result-title">오꿀쌤 피드백</h3>
 
           <div class="okkul-left-align">
-            <div
-              class="okkul-mini-container"
-              :class="{ 'jump-anim': selectedSentenceIndex !== null }"
-            >
-              <div class="platypus-body">
-                <div class="platypus-hat"></div>
-                <div class="platypus-eye left"></div>
-                <div class="platypus-eye right"></div>
-                <div class="platypus-bill"></div>
-                <div class="platypus-arm-right wave"></div>
-              </div>
-            </div>
+            <OkkulCharacter size="normal" :wave="selectedSentenceIndex !== null" />
           </div>
 
           <div v-if="currentTab === 'sentence'">
@@ -627,15 +629,33 @@ onUnmounted(() => {
           </div>
         </div>
       </section>
-    </div>
+      </div>
+    </main>
   </div>
 </template>
 
 <style scoped>
-.practice-container {
-  max-width: 1000px;
-  margin: 40px auto;
-  padding: 0 20px;
+.page-container {
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+.page-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 64px;
+}
+
+@media (max-width: 1024px) {
+  .page-content {
+    padding: 24px 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-content {
+    padding: 16px 24px;
+  }
 }
 
 /* 질문 영역 스타일 */
@@ -712,13 +732,13 @@ onUnmounted(() => {
 
 .tab-btn {
   width: 100%;
-  height: 43px;
-  padding: 0 8px;
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
-  background: #fff;
+  height: 48px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 2px solid var(--border-primary);
+  background: var(--bg-secondary);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
@@ -726,14 +746,14 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-sizing: border-box;
-  color: #64748b;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
 }
 .tab-btn.active {
-  background: #ffd700;
-  border-color: #000;
-  box-shadow: 2px 2px 0 #000;
-  color: #000;
+  background: #fff9e6;
+  border-color: #d97706;
+  color: #d97706;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.2);
 }
 .expand-btn {
   display: block;
@@ -753,11 +773,10 @@ onUnmounted(() => {
   gap: 30px;
 }
 .card {
-  background: #fff;
-  border-radius: 20px;
-  padding: 20px;
-  border: 1px solid #e2e8f0;
-  margin-bottom: 20px;
+  background: var(--bg-secondary);
+  border-radius: 24px;
+  padding: 32px;
+  border: 2px solid var(--border-primary);
 }
 .label-row {
   display: flex;
@@ -820,94 +839,6 @@ textarea {
 .mic-btn.recording {
   background: #ef4444;
   color: white;
-}
-
-/* 4. 오꿀이 스타일*/
-.okkul-left-align {
-  display: flex;
-  justify-content: flex-start;
-  margin: 15px 0;
-}
-.okkul-mini-container {
-  width: 65px;
-  height: 65px;
-  position: relative;
-  animation: float 3s infinite ease-in-out;
-}
-.platypus-body {
-  position: relative;
-  width: 65px;
-  height: 65px;
-  background: #c59358;
-  border: 3px solid #000;
-  border-radius: 50%;
-}
-.platypus-hat {
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 28px;
-  height: 12px;
-  background: #333;
-  border: 2.5px solid #000;
-  border-radius: 4px;
-}
-.platypus-eye {
-  position: absolute;
-  top: 26px;
-  width: 6px;
-  height: 6px;
-  background: #000;
-  border-radius: 50%;
-}
-.platypus-eye.left {
-  left: 18px;
-}
-.platypus-eye.right {
-  right: 18px;
-}
-.platypus-bill {
-  position: absolute;
-  top: 34px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 34px;
-  height: 12px;
-  background: #333;
-  border: 2.5px solid #000;
-  border-radius: 12px;
-}
-.platypus-arm-right {
-  position: absolute;
-  right: -20px;
-  top: 32px;
-  width: 20px;
-  height: 9px;
-  background: #c59358;
-  border: 2.5px solid #000;
-  border-radius: 10px;
-  transform-origin: left center;
-}
-.wave {
-  animation: wave-motion 0.8s infinite alternate ease-in-out;
-}
-@keyframes wave-motion {
-  from {
-    transform: rotate(10deg);
-  }
-  to {
-    transform: rotate(-50deg);
-  }
-}
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
 }
 
 /* 5. 분석 결과 섹션 */
@@ -995,16 +926,22 @@ textarea {
 }
 
 .selected-card {
-  border: 2px solid #ffd700;
+  border: 2px solid var(--primary-color);
   background: #fffef0;
 }
 
+.dark-mode .selected-card {
+  background: #422006;
+  border-color: var(--primary-color);
+}
+
 .overall-box {
-  background: #f8fafc;
+  background: var(--bg-tertiary);
   padding: 25px;
   border-radius: 15px;
-  border-left: 5px solid #ffd700;
+  border-left: 5px solid var(--primary-color);
   line-height: 1.6;
+  color: var(--text-primary);
 }
 
 /* 페이지네이션 */
@@ -1015,30 +952,29 @@ textarea {
   gap: 15px;
   margin-top: 20px;
   padding-top: 15px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border-primary);
 }
 .page-btn {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 2px solid #000;
-  background: #fff;
+  border: 2px solid var(--text-primary);
+  background: var(--bg-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 2px 2px 0 #000;
+  box-shadow: 2px 2px 0 var(--text-primary);
   transition: all 0.2s;
+  color: var(--text-primary);
 }
 .page-btn:hover:not(:disabled) {
-  background: #ffd700;
-  border-color: #000;
+  background: var(--primary-color);
   color: #000;
-  box-shadow: 2px 2px 0 #000;
 }
 .page-btn:active:not(:disabled) {
   transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0 #000;
+  box-shadow: 1px 1px 0 var(--text-primary);
 }
 .page-btn:disabled {
   opacity: 0.3;
@@ -1050,6 +986,7 @@ textarea {
   font-weight: 700;
   min-width: 50px;
   text-align: center;
+  color: var(--text-primary);
 }
 
 /* AI 분석 버튼 */
@@ -1061,7 +998,7 @@ textarea {
 .analyze-btn {
   width: 180px;
   padding: 14px;
-  background: #ffd700;
+  background: var(--primary-color);
   border: 2px solid #000;
   border-radius: 50px;
   font-weight: 800;
@@ -1073,136 +1010,21 @@ textarea {
   transform: translateY(2px);
   box-shadow: 0 2px 0 #000;
 }
-</style>
 
-<style>
-/* Dark Mode Styles - Unscoped to work globally */
-.dark-mode .practice-container {
-  color: #f1f5f9;
-}
-
-/* 질문 영역 다크모드 */
-.dark-mode .q-number {
-  color: #f1f5f9;
-}
-.dark-mode .audio-btn {
-  border-color: #f1f5f9;
-  background: #1e293b;
-  box-shadow: 2px 2px 0 #f1f5f9;
-  color: #f1f5f9;
-}
-.dark-mode .audio-btn:active {
-  box-shadow: 1px 1px 0 #f1f5f9;
-}
-.dark-mode .toggle-q-btn {
-  color: #94a3b8;
-}
-.dark-mode .question-text-card {
-  background: #0f172a;
-  border-color: #334155;
-  color: #f1f5f9;
-}
-
-/* 주제 선택 다크모드 */
-.dark-mode .tab-btn {
-  border-color: #334155;
-  background: #1e293b;
-  color: #94a3b8;
-}
-.dark-mode .expand-btn {
-  color: #94a3b8;
-}
-
-/* 카드 다크모드 */
-.dark-mode .card {
-  background: #1e293b;
-  border-color: #334155;
-}
-.dark-mode .input-label {
-  color: #f1f5f9;
-}
-.dark-mode textarea {
-  background: #0f172a;
-  color: #f1f5f9;
-}
-.dark-mode textarea::placeholder {
-  color: #94a3b8;
-}
-
-/* STT 박스 다크모드 */
-.dark-mode .stt-box {
-  background: rgba(255, 215, 0, 0.05);
-  color: #f1f5f9;
-}
-.dark-mode .mic-btn {
-  background: #0f172a;
-  color: #94a3b8;
-}
-
-/* 분석 결과 다크모드 */
-.dark-mode .bookmark {
-  background: #0f172a;
-  border-color: #334155;
-  color: #94a3b8;
-}
-.dark-mode .bookmark.active {
-  background: #1e293b;
-  border-bottom: 2px solid #1e293b;
-  color: #f1f5f9;
-}
-.dark-mode .feedback-card {
-  background: #1e293b;
-  border-color: #334155;
-}
-.dark-mode .result-title {
-  color: #f1f5f9;
-}
-.dark-mode .report-box {
-  background: #0f172a;
-  border-color: #334155;
-  color: #f1f5f9;
-}
-.dark-mode .badge.orig {
-  background: #0f172a;
-  color: #94a3b8;
-  border-color: #334155;
-}
-.dark-mode .badge.impr {
-  background: #431407;
-  color: #fb923c;
-}
-.dark-mode .detail-item {
-  border-color: #334155;
-  background: #1e293b;
-}
-.dark-mode .sentence-row {
-  color: #f1f5f9;
-}
-.dark-mode .reason-text {
-  color: #94a3b8;
-}
-.dark-mode .selected-card {
+/* Dark Mode Overrides and Extra Global Styles */
+:global(.dark-mode) .tab-btn.active {
   background: #422006;
-}
-.dark-mode .overall-box {
-  background: #0f172a;
-  color: #f1f5f9;
+  border-color: var(--primary-color);
+  color: var(--primary-color);
 }
 
-/* 페이지네이션 다크모드 */
-.dark-mode .pagination {
-  border-color: #334155;
-}
-.dark-mode .page-btn {
+:global(.dark-mode) .analyze-btn {
   border-color: #f1f5f9;
-  background: #1e293b;
-  box-shadow: 2px 2px 0 #f1f5f9;
-  color: #f1f5f9;
+  box-shadow: 0 4px 0 #f1f5f9;
+  color: #000;
 }
-.dark-mode .page-btn:active:not(:disabled) {
-  box-shadow: 1px 1px 0 #f1f5f9;
-}
-.dark-mode .page-info {
-  color: #f1f5f9;
+
+:global(.dark-mode) .analyze-btn:active {
+  box-shadow: 0 2px 0 #f1f5f9;
 }
 </style>

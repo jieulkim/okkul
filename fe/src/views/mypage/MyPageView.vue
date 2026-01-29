@@ -3,16 +3,22 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usersApi } from '@/api'
+import OkkulCharacter from '@/components/common/OkkulCharacter.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
-// 프로필 이미지 URL (없거나 빈 문자열이면 기본 오꿀이 이미지)
+// 프로필 이미지가 있는지 확인
+const hasProfileImage = computed(() => {
+  const userImage = authStore.user?.profileImageUrl
+  return userImage && typeof userImage === 'string' && userImage.trim() !== ''
+})
+
 // 프로필 이미지 URL
 const profileImageUrl = computed(() => {
   const userImage = authStore.user?.profileImageUrl
-  if (!userImage || typeof userImage !== 'string' || userImage.trim() === '') {
-    return '/default-profile.png'
+  if (!userImage || typeof userImage === 'string' || userImage.trim() === '') {
+    return ''
   }
   
   if (userImage.startsWith('http') || userImage.startsWith('data:')) {
@@ -38,14 +44,12 @@ const handleProfileImageUpload = async (event) => {
     
     const response = await usersApi.updateProfileImage({ file })
     
-    // authStore 업데이트
     if (response.data?.profileImageUrl) {
       authStore.user.profileImageUrl = response.data.profileImageUrl
       alert('프로필 이미지가 변경되었습니다.')
     }
   } catch (error) {
     console.error('이미지 업로드 실패:', error)
-    // 임시로 로컬 프리뷰만 표시
     const reader = new FileReader()
     reader.onload = (e) => {
       authStore.user.profileImageUrl = e.target.result
@@ -90,25 +94,26 @@ const cancelEdit = () => {
 
 const saveProfile = async () => {
   try {
-    // 닉네임 변경
     if (editForm.value.nickname !== authStore.user?.nickname) {
       await usersApi.updateNickname({ nickname: editForm.value.nickname })
     }
     
-    // 목표 등급 변경
     if (editForm.value.targetLevel !== authStore.user?.targetLevel) {
       await usersApi.updateTargetLevel({ targetLevel: editForm.value.targetLevel })
     }
     
-    // authStore 업데이트
     const response = await usersApi.getMyInfo()
     authStore.user = response.data
+    
+    // authStore 갱신 후 즉시 반영을 위해 관련 필드 수동 업데이트
+    if (localStorage.getItem('user')) {
+      localStorage.setItem('user', JSON.stringify(response.data))
+    }
     
     isEditing.value = false
     alert('프로필이 저장되었습니다.')
   } catch (error) {
     console.error('프로필 저장 실패:', error)
-    // 임시로 로컬에만 저장
     authStore.user.nickname = editForm.value.nickname
     authStore.user.targetLevel = editForm.value.targetLevel
     isEditing.value = false
@@ -122,9 +127,7 @@ const isLoadingExams = ref(false)
 const loadExamHistory = async () => {
   try {
     isLoadingExams.value = true
-    // TODO: 실제 API 엔드포인트 구현 필요
     
-    // 임시 더미 데이터
     examHistory.value = [
       {
         examId: 1,
@@ -165,9 +168,7 @@ const isLoadingPractice = ref(false)
 const loadPracticeHistory = async () => {
   try {
     isLoadingPractice.value = true
-    // TODO: 실제 API 엔드포인트 구현 필요
     
-    // 임시 더미 데이터
     practiceHistory.value = [
       {
         practiceId: 1,
@@ -225,32 +226,37 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="mypage-container">
-    <main class="mypage-content">
+  <div class="page-container">
+    <main class="page-content">
       <h1 class="page-title">마이페이지</h1>
 
       <div class="mypage-grid">
         <!-- 프로필 카드 -->
-        <section class="profile-section">
+        <section class="card profile-section">
           <div class="section-header">
             <h2>프로필 정보</h2>
-            <button v-if="!isEditing" @click="startEdit" class="edit-btn">
+            <button v-if="!isEditing" @click="startEdit" class="btn btn-ghost">
               <span class="material-icons-outlined">edit</span>
               편집
             </button>
           </div>
-
-          <div class="profile-card">
+          <div class="profile-content">
             <!-- 프로필 이미지 -->
-            <div class="profile-image-section" @click="triggerImageUpload">
-              <div class="profile-preview-large">
+            <div class="profile-image-section">
+              <div class="profile-preview-large" @click="!isEditing && triggerImageUpload()">
                 <img 
+                  v-if="authStore.user?.profileImageUrl" 
                   :src="profileImageUrl" 
-                  alt="프로필"
-                  class="profile-img"
-                  @error="(e) => e.target.src = '/default-profile.png'"
+                  alt="프로필" 
+                  class="profile-img" 
                 />
-                <div class="upload-overlay">
+                <img 
+                  v-else 
+                  src="/default-profile.png" 
+                  alt="기본 프로필" 
+                  class="profile-img fallback" 
+                />
+                <div v-if="!isEditing" class="upload-overlay">
                   <span class="material-icons-outlined">photo_camera</span>
                   <p>{{ isUploadingImage ? '업로드 중...' : '사진 변경' }}</p>
                 </div>
@@ -258,17 +264,17 @@ onMounted(() => {
               <input 
                 ref="profileImageInput"
                 type="file" 
-                accept="image/*"
-                @change="handleProfileImageUpload"
+                accept="image/*" 
                 style="display: none"
+                @change="handleProfileImageUpload"
               />
             </div>
 
-            <!-- 프로필 정보 (읽기 모드) -->
-            <div v-if="!isEditing" class="profile-info">
+            <!-- 프로필 정보 -->
+            <div v-if="!isEditing" class="profile-info-display">
               <div class="info-row">
                 <span class="info-label">닉네임</span>
-                <span class="info-value">{{ authStore.user?.nickname }}</span>
+                <span class="info-value">{{ authStore.user?.nickname || '사용자' }}</span>
               </div>
               <div class="info-row">
                 <span class="info-label">이메일</span>
@@ -276,162 +282,130 @@ onMounted(() => {
               </div>
               <div class="info-row">
                 <span class="info-label">목표 등급</span>
-                <span class="info-value badge">{{ authStore.user?.targetLevel || 'IH' }}</span>
+                <span class="info-value grade-badge">{{ authStore.user?.targetLevel || 'IH' }}</span>
               </div>
             </div>
 
             <!-- 프로필 편집 폼 -->
             <div v-else class="profile-edit">
               <div class="form-group">
-                <label>닉네임</label>
-                <input v-model="editForm.nickname" type="text" class="form-input" />
+                <label class="label">닉네임</label>
+                <input v-model="editForm.nickname" type="text" class="input" />
               </div>
               <div class="form-group">
-                <label>목표 등급</label>
-                <select v-model="editForm.targetLevel" class="form-select">
+                <label class="label">목표 등급</label>
+                <select v-model="editForm.targetLevel" class="input">
                   <option v-for="option in levelOptions" :key="option.value" :value="option.value">
                     {{ option.label }}
                   </option>
                 </select>
               </div>
               <div class="form-actions">
-                <button @click="cancelEdit" class="btn-cancel">취소</button>
-                <button @click="saveProfile" class="btn-save">저장</button>
+                <button @click="cancelEdit" class="btn btn-secondary">취소</button>
+                <button @click="saveProfile" class="btn btn-primary">저장</button>
               </div>
             </div>
           </div>
         </section>
 
-        <!-- 학습 통계 -->
-        <section class="stats-section">
-          <h2 class="section-title">학습 통계</h2>
+        <!-- 학습 통계 카드 -->
+        <section class="card stats-section">
+          <h2>학습 통계</h2>
           <div class="stats-grid">
-            <div class="stat-card">
-              <span class="stat-icon">📝</span>
+            <div class="stat-item">
+              <div class="stat-icon">📝</div>
               <div class="stat-content">
-                <span class="stat-value">{{ learningStats.totalExams }}</span>
-                <span class="stat-label">모의고사</span>
+                <p class="stat-label">실전 모의고사</p>
+                <p class="stat-value">{{ learningStats.totalExams }}회</p>
               </div>
             </div>
-            <div class="stat-card">
-              <span class="stat-icon">✏️</span>
+            <div class="stat-item">
+              <div class="stat-icon">🎯</div>
               <div class="stat-content">
-                <span class="stat-value">{{ learningStats.totalPractice }}</span>
-                <span class="stat-label">유형 연습</span>
+                <p class="stat-label">유형별 연습</p>
+                <p class="stat-value">{{ learningStats.totalPractice }}회</p>
               </div>
             </div>
-            <div class="stat-card">
-              <span class="stat-icon">🔥</span>
+            <div class="stat-item">
+              <div class="stat-icon">📅</div>
               <div class="stat-content">
-                <span class="stat-value">{{ learningStats.studyDays }}</span>
-                <span class="stat-label">학습일</span>
+                <p class="stat-label">학습 일수</p>
+                <p class="stat-value">{{ learningStats.studyDays }}일</p>
               </div>
             </div>
-            <div class="stat-card">
-              <span class="stat-icon">⏱️</span>
+            <div class="stat-item">
+              <div class="stat-icon">⏱️</div>
               <div class="stat-content">
-                <span class="stat-value">{{ Math.floor(learningStats.totalMinutes / 60) }}</span>
-                <span class="stat-label">학습 시간</span>
+                <p class="stat-label">학습 시간</p>
+                <p class="stat-value">{{ Math.floor(learningStats.totalMinutes / 60) }}시간</p>
               </div>
             </div>
           </div>
         </section>
+      </div>
 
+      <!-- 학습 기록 -->
+      <div class="history-section">
         <!-- 모의고사 내역 -->
-        <section class="history-section">
-          <h2 class="section-title">
-            <span class="material-icons-outlined">assignment</span>
-            모의고사 내역
-          </h2>
-          
-          <div v-if="isLoadingExams" class="loading">
-            <div class="spinner"></div>
-            <p>로딩 중...</p>
+        <section class="card">
+          <div class="section-header">
+            <h2>실전 모의고사 기록</h2>
+            <span class="count-badge">{{ examHistory.length }}회</span>
           </div>
-          
+
+          <div v-if="isLoadingExams" class="loading">로딩 중...</div>
           <div v-else-if="examHistory.length === 0" class="empty-state">
-            <span class="material-icons-outlined empty-icon">assignment</span>
-            <p>아직 모의고사 기록이 없습니다</p>
-            <button @click="router.push('/exam')" class="start-btn">
-              모의고사 시작하기
-            </button>
+            <p>아직 응시한 모의고사가 없습니다.</p>
           </div>
-          
           <div v-else class="history-list">
             <div 
               v-for="exam in examHistory" 
-              :key="exam.examId" 
-              class="history-card"
+              :key="exam.examId"
+              class="history-item"
               @click="viewExamResult(exam.examId)"
             >
-              <div class="history-content">
-                <div class="history-header">
-                  <h3>{{ exam.title }}</h3>
-                  <span class="grade-badge">{{ exam.grade }}</span>
-                </div>
-                <div class="history-meta">
-                  <span class="meta-item">
-                    <span class="material-icons-outlined">calendar_today</span>
-                    {{ new Date(exam.createdAt).toLocaleDateString('ko-KR') }}
-                  </span>
-                  <span class="meta-item">
-                    <span class="material-icons-outlined">score</span>
-                    {{ Math.round(exam.totalScore) }}점
-                  </span>
-                </div>
+              <div class="item-icon">
+                <span class="material-icons-outlined">assignment</span>
               </div>
-              <div class="history-action">
-                <span class="material-icons-outlined">chevron_right</span>
+              <div class="item-content">
+                <h4>{{ exam.title }}</h4>
+                <p class="item-date">{{ new Date(exam.createdAt).toLocaleString('ko-KR') }}</p>
               </div>
+              <div class="item-meta">
+                <span class="grade-badge">{{ exam.grade }}</span>
+                <span class="score">{{ exam.totalScore }}점</span>
+              </div>
+              <span class="material-icons-outlined arrow">chevron_right</span>
             </div>
           </div>
         </section>
 
-        <!-- 유형 연습 내역 -->
-        <section class="history-section">
-          <h2 class="section-title">
-            <span class="material-icons-outlined">category</span>
-            유형 연습 내역
-          </h2>
-          
-          <div v-if="isLoadingPractice" class="loading">
-            <div class="spinner"></div>
-            <p>로딩 중...</p>
+        <!-- 유형별 연습 내역 -->
+        <section class="card">
+          <div class="section-header">
+            <h2>유형별 연습 기록</h2>
+            <span class="count-badge">{{ practiceHistory.length }}회</span>
           </div>
-          
+
+          <div v-if="isLoadingPractice" class="loading">로딩 중...</div>
           <div v-else-if="practiceHistory.length === 0" class="empty-state">
-            <span class="material-icons-outlined empty-icon">category</span>
-            <p>아직 유형 연습 기록이 없습니다</p>
-            <button @click="router.push('/practice')" class="start-btn">
-              유형 연습 시작하기
-            </button>
+            <p>아직 연습한 문제가 없습니다.</p>
           </div>
-          
           <div v-else class="history-list">
             <div 
               v-for="practice in practiceHistory" 
-              :key="practice.practiceId" 
-              class="history-card"
+              :key="practice.practiceId"
+              class="history-item"
               @click="viewPracticeFeedback(practice.practiceId, practice.questionId)"
             >
-              <div class="history-content">
-                <div class="history-header">
-                  <h3>{{ practice.typeName }}: {{ practice.topicName }}</h3>
-                </div>
-                <div class="history-meta">
-                  <span class="meta-item">
-                    <span class="material-icons-outlined">calendar_today</span>
-                    {{ new Date(practice.createdAt).toLocaleDateString('ko-KR') }}
-                  </span>
-                  <span class="meta-item status-reviewed">
-                    <span class="material-icons-outlined">check_circle</span>
-                    피드백 확인 완료
-                  </span>
-                </div>
+              <div class="item-icon">
+                <span class="material-icons-outlined">category</span>
               </div>
-              <div class="history-action">
-                <span class="material-icons-outlined">chevron_right</span>
+              <div class="item-content">
+                <h4>{{ practice.topicName }}</h4>
+                <p class="item-date">{{ practice.typeName }} · {{ new Date(practice.createdAt).toLocaleString('ko-KR') }}</p>
               </div>
+              <span class="material-icons-outlined arrow">chevron_right</span>
             </div>
           </div>
         </section>
@@ -441,45 +415,59 @@ onMounted(() => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
-@import url('https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined');
+@import url('https://fonts.googleapis.com/css2?family=Material+Icons+Outlined&display=swap');
 
-.mypage-container {
+.page-container {
   min-height: 100vh;
-  background: #f8fafc;
-  padding: 40px 20px;
+  background: var(--bg-primary);
 }
 
-.mypage-content {
-  max-width: 1200px;
+.page-content {
+  max-width: 1400px;
   margin: 0 auto;
+  padding: 32px 64px;
+}
+
+@media (max-width: 1024px) {
+  .page-content {
+    padding: 24px 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-content {
+    padding: 16px 24px;
+  }
 }
 
 .page-title {
-  font-size: 32px;
+  font-size: 2.5rem;
   font-weight: 900;
+  color: var(--text-primary);
   margin-bottom: 32px;
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
 }
 
 .mypage-grid {
   display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 24px;
+  margin-bottom: 24px;
 }
 
-/* 섹션 공통 */
-.profile-section,
-.stats-section,
-.history-section {
-  background: white;
-  border-radius: 20px;
+.card {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-primary);
+  border-radius: 24px;
   padding: 32px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  border: 2px solid #e2e8f0;
 }
 
+@media (max-width: 1024px) {
+  .card {
+    padding: 24px;
+  }
+}
+
+/* 섹션 헤더 */
 .section-header {
   display: flex;
   justify-content: space-between;
@@ -487,35 +475,18 @@ onMounted(() => {
   margin-bottom: 24px;
 }
 
-.section-header h2,
-.section-title {
-  font-size: 20px;
-  font-weight: 700;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.section-header h2 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
 }
 
-.edit-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background: #f1f5f9;
-  border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
+/* 프로필 섹션 */
+.profile-section {
+  grid-column: 1 / 2;
 }
 
-.edit-btn:hover {
-  background: #e2e8f0;
-}
-
-/* 프로필 카드 */
-.profile-card {
+.profile-content {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -528,14 +499,17 @@ onMounted(() => {
 }
 
 .profile-preview-large {
-  width: 150px;
-  height: 150px;
+  width: 160px;
+  height: 160px;
   border-radius: 50%;
   overflow: hidden;
+  border: 4px solid var(--primary-color);
+  box-shadow: 0 8px 24px rgba(255, 215, 0, 0.3);
   position: relative;
-  border: 4px solid #FFD700;
-  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
-  background: white;
+  background: var(--bg-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .profile-img {
@@ -544,17 +518,26 @@ onMounted(() => {
   object-fit: cover;
 }
 
+.okkul-preview {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: scale(1.3);
+}
+
 .upload-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.2s;
-  color: white;
+  transition: opacity 0.3s;
+  gap: 8px;
 }
 
 .profile-image-section:hover .upload-overlay {
@@ -562,304 +545,339 @@ onMounted(() => {
 }
 
 .upload-overlay .material-icons-outlined {
-  font-size: 32px;
-  margin-bottom: 8px;
+  color: white;
+  font-size: 2rem;
 }
 
 .upload-overlay p {
-  font-size: 14px;
+  color: white;
+  font-size: 0.875rem;
   font-weight: 600;
 }
 
-/* 프로필 정보 */
-.profile-info {
+/* 프로필 정보 표시 영역 */
+.profile-info-display {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .info-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px;
-  background: #f8fafc;
-  border-radius: 8px;
+  padding: 16px;
+  background: var(--bg-tertiary);
+  border-radius: 12px;
+  border: 1px solid var(--border-primary);
 }
 
 .info-label {
+  font-size: 0.875rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .info-value {
-  font-weight: 600;
-  color: #1e293b;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
-.badge {
-  padding: 4px 12px;
-  background: linear-gradient(135deg, #FFD700, #FFA500);
+.grade-badge {
+  padding: 6px 16px;
+  background: linear-gradient(135deg, #FFF9E6 0%, #FFE4B3 100%);
   color: #92400e;
-  border-radius: 6px;
-  font-size: 14px;
+  border-radius: 8px;
+  font-weight: 800;
+  border: 2px solid var(--primary-color);
 }
 
-/* 프로필 편집 */
+.dark-mode .grade-badge {
+  background: rgba(255, 215, 0, 0.2);
+  color: var(--primary-color);
+  border-color: rgba(255, 215, 0, 0.3);
+}
+
 .profile-edit {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+  background: var(--bg-tertiary);
+  border-radius: 20px;
+  border: 2px solid var(--border-primary);
 }
 
 .form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #374151;
-}
-
-.form-input,
-.form-select {
-  width: 100%;
-  padding: 12px;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 15px;
-  transition: border-color 0.2s;
-}
-
-.form-input:focus,
-.form-select:focus {
-  outline: none;
-  border-color: #FFD700;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .form-actions {
   display: flex;
   gap: 12px;
-  justify-content: flex-end;
+  margin-top: 8px;
 }
 
-.btn-cancel,
-.btn-save {
-  padding: 10px 24px;
-  border-radius: 8px;
-  font-weight: 600;
+.form-actions .btn {
+  flex: 1;
+}
+
+/* 범용 버튼 및 입력창 스타일 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-cancel {
-  background: #f1f5f9;
+  transition: all 0.3s ease;
   border: none;
-  color: #64748b;
+  font-size: 0.95rem;
 }
 
-.btn-save {
-  background: linear-gradient(135deg, #FFD700, #FFA500);
-  border: none;
-  color: #92400e;
+.btn-primary {
+  background: var(--primary-color);
+  color: #1e293b;
 }
 
-/* 통계 */
+.btn-primary:hover {
+  background: #ffc800;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+}
+
+.btn-secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 2px solid var(--border-primary);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-secondary);
+  border-color: var(--primary-color);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 8px 12px;
+}
+
+.btn-ghost:hover {
+  color: var(--primary-color);
+  background: rgba(255, 215, 0, 0.1);
+}
+
+.label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.input {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-primary);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background: var(--bg-secondary);
+  box-shadow: 0 0 0 4px rgba(255, 215, 0, 0.1);
+}
+
+/* 학습 통계 섹션 */
+.stats-section {
+  grid-column: 2 / 3;
+}
+
+@media (max-width: 1024px) {
+  .profile-section, .stats-section {
+    grid-column: 1 / 2;
+  }
+}
+
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
 }
 
-.stat-card {
+.stat-item {
   display: flex;
   align-items: center;
   gap: 16px;
   padding: 20px;
-  background: #f8fafc;
-  border-radius: 12px;
-  border: 2px solid #e2e8f0;
-  transition: all 0.2s;
+  background: var(--bg-tertiary);
+  border-radius: 16px;
+  transition: all 0.3s ease;
 }
 
-.stat-card:hover {
-  border-color: #FFD700;
+.stat-item:hover {
   transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
 }
 
 .stat-icon {
-  font-size: 32px;
+  font-size: 2.5rem;
 }
 
 .stat-content {
   display: flex;
   flex-direction: column;
-}
-
-.stat-value {
-  font-size: 24px;
-  font-weight: 900;
-  color: #1e293b;
+  gap: 4px;
 }
 
 .stat-label {
-  font-size: 13px;
-  color: #64748b;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
   font-weight: 600;
 }
 
-/* 로딩 */
-.loading {
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--text-primary);
+}
+
+/* 학습 기록 */
+.history-section {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-  gap: 16px;
+  gap: 24px;
 }
 
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #e2e8f0;
-  border-top-color: #FFD700;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* 빈 상태 */
-.empty-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: #94a3b8;
-}
-
-.empty-icon {
-  font-size: 64px !important;
-  margin-bottom: 16px;
-  opacity: 0.5;
-}
-
-.empty-state p {
-  font-size: 16px;
-  margin-bottom: 20px;
-}
-
-.start-btn {
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #FFD700, #FFA500);
-  color: #92400e;
-  border: none;
-  border-radius: 12px;
+.count-badge {
+  padding: 6px 12px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  font-size: 0.875rem;
   font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
+  color: var(--text-secondary);
 }
 
-.start-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
-}
-
-/* 내역 리스트 */
 .history-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.history-card {
+.history-item {
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 20px;
-  background: #f8fafc;
-  border-radius: 12px;
-  border: 2px solid #e2e8f0;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.history-card:hover {
-  border-color: #FFD700;
-  transform: translateX(4px);
-}
-
-.history-content {
-  flex: 1;
-}
-
-.history-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
   gap: 16px;
+  padding: 20px;
+  background: var(--bg-tertiary);
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-.history-header h3 {
-  font-size: 16px;
-  font-weight: 700;
-  color: #1e293b;
-  flex: 1;
+.history-item:hover {
+  transform: translateX(4px);
+  box-shadow: var(--shadow-sm);
+  background: var(--bg-secondary);
 }
 
-.grade-badge {
-  padding: 4px 12px;
-  background: #FFD700;
+.item-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #FFF9E6 0%, #FFE4B3 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: #92400e;
-  border-radius: 6px;
-  font-weight: 700;
-  font-size: 14px;
   flex-shrink: 0;
 }
 
-.history-meta {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
+.dark-mode .item-icon {
+  background: rgba(255, 215, 0, 0.2);
+  color: var(--primary-color);
 }
 
-.meta-item {
+.item-icon .material-icons-outlined {
+  font-size: 1.5rem;
+}
+
+.item-content {
+  flex: 1;
+}
+
+.item-content h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.item-date {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+.item-meta {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 14px;
-  color: #64748b;
+  gap: 12px;
 }
 
-.meta-item .material-icons-outlined {
-  font-size: 18px;
+.item-meta .grade-badge {
+  padding: 4px 12px;
+  font-size: 0.875rem;
 }
 
-.status-reviewed {
-  color: #10b981;
-  font-weight: 600;
+.score {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
-.history-action {
-  color: #94a3b8;
+.arrow {
+  color: var(--text-tertiary);
+  font-size: 1.5rem;
+}
+
+.loading, .empty-state {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-secondary);
 }
 
 /* 반응형 */
+@media (max-width: 1024px) {
+  .mypage-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
+  .page-title {
+    font-size: 2rem;
+  }
+
   .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
   }
-  
-  .history-card {
+
+  .section-header {
     flex-direction: column;
     align-items: flex-start;
-  }
-  
-  .history-header {
-    flex-direction: column;
-    align-items: flex-start;
+    gap: 12px;
   }
 }
 </style>

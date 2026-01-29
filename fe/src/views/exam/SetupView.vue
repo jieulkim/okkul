@@ -90,7 +90,7 @@ onUnmounted(() => audio.pause())
 </script>
 
 <template>
-  <div class="assessment-page" :class="{ 'dark-mode': isDarkMode }">
+  <div class="page-container">
     <header class="assessment-header">
       <nav class="step-progress">
         <div class="step" :class="{ completed: currentStep > 1, active: currentStep === 1 }">
@@ -115,7 +115,7 @@ onUnmounted(() => audio.pause())
       <h1 class="page-title">Device Setup</h1>
     </header>
 
-    <main class="assessment-main">
+    <main class="page-content">
       <div class="setup-grid">
         <div class="character-card">
           <div class="okkul-mini-container">
@@ -160,10 +160,27 @@ onUnmounted(() => audio.pause())
 <style scoped>
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
-.assessment-page {
+.page-container {
   min-height: 100vh;
-  background: #ffffff;
-  color: #1e293b;
+  background: var(--bg-primary);
+}
+
+.page-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 64px;
+}
+
+@media (max-width: 1024px) {
+  .page-content {
+    padding: 24px 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-content {
+    padding: 16px 24px;
+  }
 }
 
 .step-progress {
@@ -204,8 +221,26 @@ onUnmounted(() => audio.pause())
 .assessment-header { max-width: 1280px; margin: 0 auto; padding: 32px 16px; }
 .page-title { font-size: 24px; font-weight: 800; margin-top: 20px; }
 .setup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; max-width: 1000px; margin: 0 auto; }
-.character-card { background: #f8f9fa; border-radius: 20px; padding: 60px; text-align: center; }
-.play-btn { background: #FFD700; border: none; padding: 12px 24px; border-radius: 30px; cursor: pointer; display: flex; align-items: center; gap: 8px; margin: 30px auto 0; font-weight: bold; }
+.character-card { 
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-primary);
+  border-radius: 24px;
+  padding: 60px;
+  text-align: center;
+}
+.play-btn { 
+  background: var(--primary-color);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 30px auto 0;
+  font-weight: 700;
+  color: #1e293b;
+}
 
 .btns { display: flex; gap: 10px; margin-top: 20px; }
 .rec-btn { background: #ef4444; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; }

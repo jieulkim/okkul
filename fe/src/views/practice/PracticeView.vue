@@ -134,14 +134,20 @@ const fetchSurveyDetails = async (surveyId) => {
       4: { name: categoryNames[4], topics: [] }
     };
 
-    // 1. 기본 토픽 (selectedTopics) 및 중복 제거
+    // 1. 기본 토픽 (selectedTopics) 분류
     (data.selectedTopics || []).forEach(t => {
-      const catId = t.categoryId || 1; // 기본값 여가
+      let catId = t.categoryId || 1; // 기본값 여가
       
-      // 배경 정보와 겹칠 수 있는 항목 제외 (단순 문자열 매칭 등)
+      // 배경 정보와 겹칠 수 있는 항목 강제 이동 (단순 문자열 매칭 등)
       const lowerName = t.topicName.toLowerCase();
-      if (lowerName.includes('직장인') || lowerName.includes('학생') || lowerName.includes('거주')) {
-        return;
+      if (
+        lowerName.includes('직장인') || 
+        lowerName.includes('학생') || 
+        lowerName.includes('거주') ||
+        lowerName.includes('무직') ||
+        lowerName.includes('구직')
+      ) {
+        catId = 0; // 배경 정보로 강제 할당
       }
 
       if (groups[catId]) {
@@ -152,20 +158,8 @@ const fetchSurveyDetails = async (surveyId) => {
       }
     });
 
-    // 2. Background 정보 가공 (배경 정보 섹션으로 강제 할당)
-    if (data.occupation) {
-      groups[0].topics.push({ topicId: -1, name: `직업: ${data.occupation}`, type: 'background' });
-    }
-    if (data.residence) {
-      groups[0].topics.push({ topicId: -2, name: `거주: ${data.residence}`, type: 'background' });
-    }
-    if (data.student !== undefined) {
-      groups[0].topics.push({ 
-        topicId: -3, 
-        name: data.student ? "학생 신분" : "직장인/비학생", 
-        type: 'background' 
-      });
-    }
+    // 2. Background 정보 가공
+    // 사용자 피드백에 따라 설문 토픽 위주로만 표시
 
     // 빈 그룹 제거
     const finalGroups = Object.values(groups).filter(g => g.topics.length > 0);
@@ -259,9 +253,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="practice-page" :class="{ 'dark-mode': isDarkMode }">
-    
-    <div v-if="currentStep === 'type'" class="container">
+  <div class="page-container">
+    <main v-if="currentStep === 'type'" class="page-content">
       <h1 class="page-title">유형별 연습</h1>
       <div class="types-grid">
         <div 
@@ -284,9 +277,9 @@ onMounted(async () => {
           </div>
         </div>
       </div>
-    </div>
+    </main>
 
-    <div v-else-if="currentStep === 'topic-check'" class="container">
+    <main v-else-if="currentStep === 'topic-check'" class="page-content">
       <h1 class="page-title">연습 주제 선택</h1>
       
       <div class="condition-card">
@@ -314,7 +307,7 @@ onMounted(async () => {
       >
         선택한 주제로 연습 시작
       </button>
-    </div>
+    </main>
 
     <SurveySelectModal
       :isVisible="showSurveySelectModal"
@@ -329,16 +322,57 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.practice-page { min-height: 100vh; background: #f8fafc; padding: 60px 20px; }
-.container { max-width: 1100px; margin: 0 auto; }
-.page-title { text-align: center; font-size: 32px; font-weight: 900; margin-bottom: 40px; }
+.page-container {
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+.page-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 64px;
+}
+
+@media (max-width: 1024px) {
+  .page-content {
+    padding: 24px 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-content {
+    padding: 16px 24px;
+  }
+}
+
+.page-title {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  margin-bottom: 32px;
+  text-align: center;
+}
 
 .types-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
 .type-card { 
-  background: white; border-radius: 24px; padding: 40px 20px; text-align: center; border: 2px solid #e2e8f0; 
-  cursor: pointer; position: relative; transition: all 0.3s; height: 320px; display: flex; flex-direction: column; align-items: center;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-primary);
+  border-radius: 24px;
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+  height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
-.type-card:hover { border-color: #FFD700; transform: translateY(-5px); }
+.type-card:hover { 
+  border-color: var(--primary-color);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
 .type-icon { font-size: 50px; margin-bottom: 15px; }
 .type-name { font-size: 22px; font-weight: 800; margin-bottom: 10px; }
 .type-desc { font-size: 14px; color: #64748b; }
@@ -352,10 +386,10 @@ onMounted(async () => {
 
 /* Topic Selection Styles */
 .condition-card {
-  background: white;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-primary);
   border-radius: 24px;
   padding: 40px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .section-label {
@@ -456,12 +490,5 @@ onMounted(async () => {
   box-shadow: none;
 }
 
-/* 다크모드 간단 대응 */
-.dark-mode .type-card { background: #1e293b; border-color: #334155; color: white; }
-.dark-mode .hover-details { background: rgba(30, 41, 59, 0.98); }
-.dark-mode .condition-card { background: #1e293b; }
-.dark-mode .section-label, .dark-mode .info-value { color: #f1f5f9; }
-.dark-mode .topic-btn { background: #0f172a; border-color: #334155; color: #94a3b8; }
-.dark-mode .topic-btn.active { background: #422006; border-color: #FFD700; color: #fbbf24; }
-.dark-mode .info-item { background: #0f172a; }
+
 </style>

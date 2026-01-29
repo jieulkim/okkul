@@ -62,12 +62,8 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: white;
-}
-
-.dark-mode .redirect-container {
-  background: #0f172a;
-  color: white;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .loading-content {
@@ -78,15 +74,11 @@ onMounted(async () => {
   font-size: 24px;
   font-weight: 800;
   margin-top: 24px;
-  color: #1e293b;
-}
-
-.dark-mode .loading-content h2 {
-  color: #f1f5f9;
+  color: var(--text-primary);
 }
 
 .loading-content p {
-  color: #64748b;
+  color: var(--text-secondary);
   margin-top: 8px;
 }
 
@@ -100,7 +92,7 @@ onMounted(async () => {
 .honey-drop {
   width: 16px;
   height: 16px;
-  background: #FFD700;
+  background: var(--primary-color);
   border-radius: 50% 50% 50% 0;
   transform: rotate(45deg);
   animation: drip 1.2s ease-in-out infinite;

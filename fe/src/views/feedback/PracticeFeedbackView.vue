@@ -204,14 +204,14 @@ const selectCorrection = (index) => {
 
 .practice-feedback-page {
   min-height: 100vh;
-  background: #f8fafc;
+  background: var(--bg-primary);
   font-family: 'Noto Sans KR', sans-serif;
   padding: 40px 20px;
 }
 
 .dark-mode {
-  background: #0f172a;
-  color: #f1f5f9;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 /* 로딩 */
@@ -253,22 +253,23 @@ const selectCorrection = (index) => {
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  font-weight: 700;
+  background: var(--bg-secondary);
+  border: var(--border-secondary);
+  border-radius: var(--border-radius);
+  font-weight: 900;
   cursor: pointer;
   transition: all 0.2s;
   margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
 }
 
 .back-btn:hover {
-  background: #f8fafc;
-  border-color: #FFD700;
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
 }
 
 .dark-mode .back-btn {
-  background: #1e293b;
+  background: var(--bg-tertiary);
   border-color: #334155;
   color: #f1f5f9;
 }
@@ -276,10 +277,8 @@ const selectCorrection = (index) => {
 .feedback-title {
   font-size: 36px;
   font-weight: 900;
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--primary-color);
+  -webkit-text-fill-color: initial;
 }
 
 /* 섹션 */
@@ -290,17 +289,17 @@ const selectCorrection = (index) => {
 }
 
 .section-card {
-  background: white;
-  border-radius: 20px;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
   padding: 32px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  border: 2px solid #e2e8f0;
+  box-shadow: var(--shadow-md);
+  border: var(--border-primary);
   margin-bottom: 24px;
 }
 
 .dark-mode .section-card {
-  background: #1e293b;
-  border-color: #334155;
+  background: var(--bg-secondary);
+  border-color: #FFFFFF;
 }
 
 .section-title {
@@ -310,7 +309,7 @@ const selectCorrection = (index) => {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .dark-mode .section-title {
@@ -318,7 +317,7 @@ const selectCorrection = (index) => {
 }
 
 .section-title .material-icons {
-  color: #FFD700;
+  color: var(--primary-color);
   font-size: 28px;
 }
 
@@ -333,7 +332,7 @@ const selectCorrection = (index) => {
   font-size: 18px;
   font-weight: 700;
   margin-bottom: 12px;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .dark-mode .subsection-title {
@@ -349,22 +348,22 @@ const selectCorrection = (index) => {
 }
 
 .enhanced-script {
-  background: #f8fafc;
-  border: 2px solid #FFD700;
+  background: var(--bg-tertiary);
+  border: var(--border-secondary);
 }
 
 .dark-mode .enhanced-script {
-  background: #0f172a;
+  background: var(--bg-primary);
 }
 
 .original-script {
-  background: #f1f5f9;
-  border: 2px solid #e2e8f0;
+  background: var(--bg-tertiary);
+  border: var(--border-thin);
 }
 
 .dark-mode .original-script {
-  background: #0f172a;
-  border-color: #334155;
+  background: var(--bg-tertiary);
+  border-color: #FFFFFF;
 }
 
 .script-word {
@@ -374,23 +373,21 @@ const selectCorrection = (index) => {
 }
 
 .highlighted-word {
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  color: #92400e;
+  background: var(--primary-color);
+  color: #000000;
   padding: 4px 8px;
   border-radius: 6px;
-  font-weight: 600;
-  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+  font-weight: 900;
+  border: 1px solid #000;
   cursor: pointer;
-}
-
-.highlighted-word:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
+  display: inline-block;
+  margin: 2px;
 }
 
 .dark-mode .highlighted-word {
-  background: linear-gradient(135deg, #78350f, #92400e);
-  color: #fef3c7;
+  background: var(--primary-color);
+  color: #000000;
+  border-color: #FFFFFF;
 }
 
 /* 교정 목록 */
@@ -403,23 +400,24 @@ const selectCorrection = (index) => {
 .correction-item {
   display: flex;
   gap: 20px;
-  background: white;
-  border-radius: 16px;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
   padding: 24px;
-  border: 2px solid #e2e8f0;
+  border: var(--border-primary);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
 }
 
 .correction-item:hover,
 .correction-item.selected {
-  border-color: #FFD700;
-  transform: translateX(5px);
-  box-shadow: 0 8px 16px -4px rgba(255, 215, 0, 0.2);
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
+  background: var(--primary-color);
 }
 
 .dark-mode .correction-item {
-  background: #0f172a;
+  background: var(--bg-primary);
   border-color: #334155;
 }
 
@@ -430,11 +428,12 @@ const selectCorrection = (index) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #FFD700, #FFA500);
-  color: #1e293b;
+  background: var(--primary-color);
+  color: #000000;
   font-weight: 900;
   font-size: 16px;
   border-radius: 50%;
+  border: var(--border-secondary);
 }
 
 .correction-content {
@@ -491,15 +490,15 @@ const selectCorrection = (index) => {
   align-items: flex-start;
   gap: 8px;
   padding: 16px;
-  background: #f8fafc;
-  border-radius: 8px;
-  border-left: 4px solid #FFD700;
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+  border-left: 4px solid var(--primary-color);
   line-height: 1.6;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 .dark-mode .correction-comment {
-  background: #1e293b;
+  background: var(--bg-tertiary);
   color: #cbd5e1;
 }
 
@@ -527,8 +526,8 @@ const selectCorrection = (index) => {
 
 /* 종합 평가 */
 .overall-card {
-  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
-  border-color: #FFD700;
+  background: var(--primary-color);
+  border-color: #000000;
 }
 
 .dark-mode .overall-card {
@@ -537,18 +536,19 @@ const selectCorrection = (index) => {
 
 .overall-content {
   padding: 20px;
-  background: white;
-  border-radius: 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
+  border: var(--border-thin);
 }
 
 .dark-mode .overall-content {
-  background: #0f172a;
+  background: var(--bg-primary);
 }
 
 .overall-comment {
   font-size: 16px;
   line-height: 1.8;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .dark-mode .overall-comment {
@@ -568,38 +568,37 @@ const selectCorrection = (index) => {
   align-items: center;
   gap: 12px;
   padding: 16px 32px;
-  border-radius: 16px;
-  border: none;
-  font-weight: 700;
+  border-radius: var(--border-radius);
+  border: var(--border-secondary);
+  font-weight: 900;
   font-size: 16px;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
 }
 
 .retry-btn {
-  background: linear-gradient(135deg, #FFD700, #FFA500);
-  color: #1e293b;
-  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+  background: var(--primary-color);
+  color: #000000;
 }
 
 .retry-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(255, 215, 0, 0.4);
+  transform: translate(-0.05em, -0.05em);
+  box-shadow: var(--shadow-lg);
 }
 
 .home-btn {
-  background: white;
-  color: #1e293b;
-  border: 2px solid #e2e8f0;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .home-btn:hover {
-  background: #f8fafc;
-  border-color: #FFD700;
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
 }
 
 .dark-mode .home-btn {
-  background: #1e293b;
+  background: var(--bg-tertiary);
   border-color: #334155;
   color: #f1f5f9;
 }

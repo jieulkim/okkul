@@ -1,53 +1,61 @@
-/* 오꿀 프로젝트 전역 스타일 */
+/* 오꿀 프로젝트 전역 스타일 - Neobrutalism Theme */
 :root {
   /* 메인 컬러 */
   --primary-color: #FFD700;
   --primary-hover: #FFA500;
   
   /* 라이트모드 배경 */
-  --bg-primary: #FFD700;
-  --bg-secondary: #FFD700;
-  --bg-tertiary: #FFC700;
+  --bg-primary: #F8F9FA;
+  --bg-secondary: #FFFFFF;
+  --bg-tertiary: #E9ECEF;
   
   /* 라이트모드 텍스트 */
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --text-tertiary: #94a3b8;
+  --text-primary: #1A1A1A;
+  --text-secondary: #4A4A4A;
+  --text-tertiary: #6C757D;
   
-  /* 라이트모드 테두리 */
-  --border-primary: #e2e8f0;
-  --border-secondary: #cbd5e1;
+  /* 네오브루탈리즘 테두리 */
+  --border-primary: 3px solid #000000;
+  --border-secondary: 2px solid #000000;
+  --border-thin: 1px solid #000000;
   
-  /* 그림자 */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+  /* 네오브루탈리즘 그림자 */
+  --shadow-sm: 0.08em 0.08em 0 #000000;
+  --shadow-md: 0.12em 0.12em 0 #000000;
+  --shadow-lg: 0.18em 0.18em 0 #000000;
   
   /* 레이아웃 */
-  --container-padding: 64px;
+  --container-padding: clamp(1rem, 5vw, 4rem);
   --max-width: 1400px;
+  --border-radius: 0.4em;
+  
+  /* 반응형 폰트 크기 */
+  --font-size-base: clamp(0.875rem, 1vw + 0.5rem, 1rem);
+  --font-size-lg: clamp(1rem, 1.2vw + 0.6rem, 1.25rem);
+  --font-size-xl: clamp(1.25rem, 2vw + 0.8rem, 2.5rem);
 }
 
 /* ========== 다크모드 컬러 ========== */
 .dark-mode {
-  /* 다크모드 배경 */
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --bg-tertiary: #0f172a;
+  /* 다크모드 배경 (순수 무채색) */
+  --bg-primary: #121212;
+  --bg-secondary: #1E1E1E;
+  --bg-tertiary: #2D2D2D;
   
   /* 다크모드 텍스트 */
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-tertiary: #64748b;
+  --text-primary: #E0E0E0;
+  --text-secondary: #B0B0B0;
+  --text-tertiary: #808080;
   
-  /* 다크모드 테두리 */
-  --border-primary: #334155;
-  --border-secondary: #475569;
+  /* 다크모드 테두리 (밝은 회색/흰색) */
+  --border-primary: 3px solid #FFFFFF;
+  --border-secondary: 2px solid #FFFFFF;
+  --border-thin: 1px solid #FFFFFF;
   
   /* 다크모드 그림자 */
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0.08em 0.08em 0 #FFFFFF;
+  --shadow-md: 0.12em 0.12em 0 #FFFFFF;
+  --shadow-lg: 0.18em 0.18em 0 #FFFFFF;
 }
 
 /* ========== 전역 리셋 ========== */
@@ -58,14 +66,14 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: var(--bg-primary);
   color: var(--text-primary);
-  transition: background 0.3s ease, color 0.3s ease;
+  font-size: var(--font-size-base);
+  transition: background 0.2s ease, color 0.2s ease;
+  line-height: 1.5;
 }
 
 /* ========== 페이지 컨테이너 ========== */
@@ -80,34 +88,90 @@ body {
   padding: 32px var(--container-padding);
 }
 
-/* ========== 공통 카드 스타일 ========== */
+/* ========== 공통 카드 스타일 (Neobrutalism) ========== */
 .card {
   background: var(--bg-secondary);
-  border: 2px solid var(--border-primary);
-  border-radius: 24px;
+  border: var(--border-primary);
+  border-radius: var(--border-radius);
   padding: 32px;
-  transition: all 0.3s ease;
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s ease;
 }
 
 .card:hover {
-  border-color: var(--primary-color);
-  box-shadow: var(--shadow-md);
+  transform: translate(-0.05em, -0.05em);
+  box-shadow: var(--shadow-lg);
 }
 
-/* ========== 버튼 스타일 ========== */
+.card:active {
+  transform: translate(0.05em, 0.05em);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ========== 버튼 스타일 (Neobrutalism & 3D Tilt) ========== */
 .btn {
-  padding: 12px 24px;
-  border-radius: 12px;
-  font-weight: 700;
-  font-size: 0.95rem;
+  background: var(--primary-color);
+  font-family: inherit;
+  padding: 0.5em 1.1em;
+  font-weight: 900;
+  font-size: var(--font-size-base);
+  border: var(--border-secondary);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
   cursor: pointer;
-  transition: all 0.3s ease;
-  border: none;
+  transition: all 0.1s ease;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   justify-content: center;
+  color: #000000; /* 버튼 텍스트는 항상 검은색 (네오브루탈리즘) */
+  position: relative;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translate(-0.05em, -0.05em);
+  box-shadow: var(--shadow-md);
+}
+
+.btn:active:not(:disabled) {
+  transform: translate(0.05em, 0.05em);
+  box-shadow: 0.05em 0.05em 0 #000000;
+}
+
+/* 3D 틸트 효과를 위한 컨테이너 스타일 (Uiverse.io 참고) */
+.btn-3d-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  grid-template-areas: "bt-1 bt-2 bt-3" "bt-4 bt-5 bt-6";
+  position: relative;
+  perspective: 800px;
+  padding: 0;
+  display: inline-grid;
+}
+
+.btn-3d-container .hover-area {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+.btn-3d-container .bt-1 { grid-area: bt-1; }
+.btn-3d-container .bt-2 { grid-area: bt-2; }
+.btn-3d-container .bt-3 { grid-area: bt-3; }
+.btn-3d-container .bt-4 { grid-area: bt-4; }
+.btn-3d-container .bt-5 { grid-area: bt-5; }
+.btn-3d-container .bt-6 { grid-area: bt-6; }
+
+.btn-3d-container .bt-1:hover ~ .btn { transform: rotateX(15deg) rotateY(-15deg) rotateZ(0deg); box-shadow: -4px -4px 0 #000000; }
+.btn-3d-container .bt-3:hover ~ .btn { transform: rotateX(15deg) rotateY(15deg) rotateZ(0deg); box-shadow: 4px -4px 0 #000000; }
+.btn-3d-container .bt-4:hover ~ .btn { transform: rotateX(-15deg) rotateY(-15deg) rotateZ(0deg); box-shadow: -4px 4px 0 #000000; }
+.btn-3d-container .bt-6:hover ~ .btn { transform: rotateX(-15deg) rotateY(15deg) rotateZ(0deg); box-shadow: 4px 4px 0 #000000; }
+
+.btn-3d-container:active {
+  transform: scale(0.95);
 }
 
 .btn:disabled {
@@ -117,54 +181,38 @@ body {
 
 .btn-primary {
   background: var(--primary-color);
-  color: #000;
-  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: var(--primary-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+  color: #000000;
 }
 
 .btn-secondary {
   background: var(--bg-secondary);
   color: var(--text-primary);
-  border: 2px solid var(--border-primary);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  border-color: var(--primary-color);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
 }
 
 .btn-ghost {
   background: transparent;
   color: var(--text-secondary);
+  border: var(--border-secondary);
 }
 
-.btn-ghost:hover:not(:disabled) {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-/* ========== 입력 필드 스타일 ========== */
+/* ========== 입력 필드 스타일 (Neobrutalism) ========== */
 .input {
   width: 100%;
   padding: 12px 16px;
-  border: 2px solid var(--border-primary);
-  border-radius: 12px;
+  border: var(--border-secondary);
+  border-radius: var(--border-radius);
   background: var(--bg-secondary);
   color: var(--text-primary);
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
+  font-size: 16px;
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
 }
 
 .input:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+  transform: translate(-0.05em, -0.05em);
+  box-shadow: var(--shadow-md);
 }
 
 .input::placeholder {
@@ -186,38 +234,42 @@ textarea.input {
 .label {
   display: block;
   font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--text-secondary);
+  font-weight: 900;
+  color: var(--text-primary);
   margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* ========== 페이지 타이틀 ========== */
 .page-title {
-  font-size: 2.5rem;
+  font-size: var(--font-size-xl);
   font-weight: 900;
   color: var(--text-primary);
-  margin-bottom: 32px;
+  margin-bottom: 2rem;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
 }
 
-/* ========== 뱃지 스타일 ========== */
+/* ========== 뱃지 스타일 (Neobrutalism) ========== */
 .badge {
   display: inline-block;
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius: var(--border-radius);
   font-size: 0.875rem;
-  font-weight: 700;
+  font-weight: 900;
+  border: var(--border-secondary);
+  box-shadow: var(--shadow-sm);
 }
 
 .badge-primary {
-  background: linear-gradient(135deg, #FFF9E6 0%, #FFE4B3 100%);
-  color: #92400e;
-  border: 2px solid var(--primary-color);
+  background: var(--primary-color);
+  color: #000000;
 }
 
 .dark-mode .badge-primary {
-  background: rgba(255, 215, 0, 0.2);
-  color: var(--primary-color);
-  border-color: rgba(255, 215, 0, 0.3);
+  background: var(--primary-color);
+  color: #000000;
 }
 
 /* ========== 반응형 ========== */
@@ -255,25 +307,31 @@ textarea.input {
   .card {
     padding: 20px;
   }
+  
+  .btn {
+    font-size: 16px;
+  }
 }
 
 /* ========== 스크롤바 스타일 ========== */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
   background: var(--bg-primary);
+  border: var(--border-thin);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-primary);
-  border-radius: 5px;
+  background: var(--primary-color);
+  border: var(--border-secondary);
+  border-radius: var(--border-radius);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-color);
+  background: var(--primary-hover);
 }
 
 /* ========== 애니메이션 ========== */
@@ -307,6 +365,19 @@ textarea.input {
   animation: slideIn 0.3s ease-out;
 }
 
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.bounce {
+  animation: bounce 0.5s ease;
+}
+
 /* ========== Material Icons ========== */
 .material-icons-outlined {
   font-family: 'Material Icons Outlined';
@@ -322,12 +393,12 @@ textarea.input {
   direction: ltr;
 }
 
-/* ========== 로딩 스피너 ========== */
+/* ========== 로딩 스피너 (Neobrutalism) ========== */
 .loading-spinner {
   display: inline-block;
   width: 40px;
   height: 40px;
-  border: 4px solid var(--border-primary);
+  border: 4px solid var(--text-primary);
   border-top-color: var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -344,19 +415,24 @@ textarea.input {
   text-align: center;
   padding: 60px 20px;
   color: var(--text-secondary);
+  border: var(--border-secondary);
+  border-radius: var(--border-radius);
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-sm);
 }
 
 .empty-state .icon {
   font-size: 4rem;
   margin-bottom: 16px;
-  opacity: 0.5;
+  opacity: 0.7;
 }
 
 .empty-state h3 {
   font-size: 1.25rem;
-  font-weight: 700;
+  font-weight: 900;
   color: var(--text-primary);
   margin-bottom: 8px;
+  text-transform: uppercase;
 }
 
 .empty-state p {
@@ -366,39 +442,38 @@ textarea.input {
 
 /* ========== 유틸리티 클래스 ========== */
 .text-center { text-align: center; }
-
 .text-left { text-align: left; }
-
 .text-right { text-align: right; }
-
 .flex { display: flex; }
-
 .flex-col { flex-direction: column; }
-
 .items-center { align-items: center; }
-
 .justify-center { justify-content: center;}
-
 .gap-sm { gap: 8px; }
-
 .gap-md { gap: 16px; }
-
 .gap-lg { gap: 24px; }
-
 .gap-xl { gap: 32px; }
-
 .mt-sm { margin-top: 8px; }
-
 .mt-md { margin-top: 16px; }
-
 .mt-lg { margin-top: 24px; }
-
 .mt-xl { margin-top: 32px;}
-
 .mb-sm { margin-bottom: 8px; }
-
 .mb-md { margin-bottom: 16px; }
-
 .mb-lg { margin-bottom: 24px; }
-
 .mb-xl { margin-bottom: 32px; }
+
+/* ========== Neobrutalism 특수 효과 ========== */
+.neo-border {
+  border: var(--border-primary);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+}
+
+.neo-hover:hover {
+  transform: translate(-0.05em, -0.05em);
+  box-shadow: var(--shadow-lg);
+}
+
+.neo-active:active {
+  transform: translate(0.05em, 0.05em);
+  box-shadow: var(--shadow-sm);
+}

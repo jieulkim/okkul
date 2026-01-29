@@ -525,15 +525,12 @@ onUnmounted(() => {
 
         <div class="difficulty-options">
           <button @click="setRelevel('easy')" class="difficulty-btn easy">
-            <span class="emoji">😊</span>
             <span class="label">쉬운 질문</span>
           </button>
           <button @click="setRelevel('same')" class="difficulty-btn same active">
-            <span class="emoji">😐</span>
             <span class="label">비슷한 질문</span>
           </button>
           <button @click="setRelevel('hard')" class="difficulty-btn hard">
-            <span class="emoji">😤</span>
             <span class="label">어려운 질문</span>
           </button>
         </div>
@@ -624,24 +621,25 @@ onUnmounted(() => {
 
 .error-content h2 {
   font-size: 24px;
-  color: #1e293b;
+  color: var(--text-primary);
   margin-bottom: 30px;
 }
 
 .back-to-exam-btn {
   padding: 14px 32px;
-  background: #FFD700;
-  color: #1e293b;
-  border: none;
-  border-radius: 12px;
-  font-weight: 700;
+  background: var(--primary-color);
+  color: #000000;
+  border: var(--border-secondary);
+  border-radius: var(--border-radius);
+  font-weight: 900;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
 }
 
 .back-to-exam-btn:hover {
-  background: #ffc800;
-  transform: translateY(-2px);
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
 }
 
 /* 헤더 */
@@ -650,8 +648,8 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 20px 40px;
-  background: white;
-  border-bottom: 2px solid #e2e8f0;
+  background: var(--bg-secondary);
+  border-bottom: var(--border-primary);
   position: sticky;
   top: 0;
   z-index: 100;
@@ -662,23 +660,24 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  background: transparent;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  font-weight: 700;
+  background: var(--bg-tertiary);
+  border: var(--border-secondary);
+  border-radius: var(--border-radius);
+  font-weight: 900;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
 }
 
 .exit-btn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
 }
 
 .question-number {
   font-size: 18px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .time-display {
@@ -686,11 +685,12 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   padding: 10px 20px;
-  background: #fffef0;
-  border: 2px solid #FFD700;
-  border-radius: 12px;
-  font-weight: 700;
-  color: #1e293b;
+  background: var(--primary-color);
+  border: var(--border-secondary);
+  border-radius: var(--border-radius);
+  font-weight: 900;
+  color: #000000;
+  box-shadow: var(--shadow-sm);
 }
 
 /* 메인 콘텐츠 */
@@ -713,15 +713,16 @@ onUnmounted(() => {
 
 .question-card {
   background: var(--bg-secondary);
-  border: 2px solid var(--border-primary);
-  border-radius: 24px;
+  border: var(--border-primary);
+  border-radius: var(--border-radius);
   padding: 40px;
+  box-shadow: var(--shadow-md);
 }
 
 .question-header h2 {
   font-size: 24px;
-  font-weight: 700;
-  color: #1e293b;
+  font-weight: 900;
+  color: var(--text-primary);
   line-height: 1.5;
   margin-bottom: 30px;
 }
@@ -736,19 +737,20 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   padding: 16px 40px;
-  background: #FFD700;
-  border: none;
-  border-radius: 16px;
+  background: var(--primary-color);
+  border: var(--border-secondary);
+  border-radius: var(--border-radius);
   font-size: 18px;
-  font-weight: 700;
-  color: #1e293b;
+  font-weight: 900;
+  color: #000000;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
 }
 
 .play-button:hover {
-  background: #ffc800;
-  transform: translateY(-2px);
+  transform: translate(-0.05em, -0.05em);
+  box-shadow: var(--shadow-md);
 }
 
 .play-button.playing {
@@ -765,12 +767,13 @@ onUnmounted(() => {
 
 .recording-card {
   background: var(--bg-secondary);
-  border: 2px solid var(--border-primary);
-  border-radius: 24px;
+  border: var(--border-primary);
+  border-radius: var(--border-radius);
   padding: 40px;
   display: flex;
   flex-direction: column;
   gap: 30px;
+  box-shadow: var(--shadow-md);
 }
 
 .recording-header {
@@ -783,10 +786,11 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   padding: 12px 24px;
-  background: #f1f5f9;
-  border-radius: 12px;
-  font-weight: 700;
-  color: #64748b;
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+  border: var(--border-thin);
+  font-weight: 900;
+  color: var(--text-secondary);
 }
 
 .status-indicator.recording {
@@ -819,14 +823,15 @@ onUnmounted(() => {
   gap: 4px;
   height: 80px;
   padding: 20px;
-  background: #f8fafc;
+  background: var(--bg-tertiary);
   border-radius: 12px;
+  border: var(--border-thin);
 }
 
 .volume-bar {
   width: 12px;
   height: 10px;
-  background: #e2e8f0;
+  background: var(--bg-secondary);
   border-radius: 3px;
   transition: all 0.1s;
 }
@@ -858,22 +863,23 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   padding: 16px 40px;
-  border: none;
-  border-radius: 16px;
+  border: var(--border-secondary);
+  border-radius: var(--border-radius);
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 900;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
 }
 
 .record-btn {
-  background: #FFD700;
-  color: #1e293b;
+  background: var(--primary-color);
+  color: #000000;
 }
 
 .record-btn:hover {
-  background: #ffc800;
-  transform: translateY(-2px);
+  transform: translate(-0.05em, -0.05em);
+  box-shadow: var(--shadow-md);
 }
 
 .stop-btn {
@@ -899,18 +905,19 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   padding: 14px 32px;
-  background: #1e293b;
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-weight: 700;
+  background: var(--primary-color);
+  color: #000000;
+  border: var(--border-secondary);
+  border-radius: var(--border-radius);
+  font-weight: 900;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
 }
 
 .next-btn:hover {
-  background: #0f172a;
-  transform: translateY(-2px);
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
 }
 
 /* 모달 */
@@ -926,12 +933,13 @@ onUnmounted(() => {
 }
 
 .modal-card {
-  background: white;
-  border-radius: 24px;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
   max-width: 600px;
   width: 90%;
   padding: 40px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: var(--border-primary);
+  box-shadow: var(--shadow-lg);
 }
 
 .modal-header {
@@ -943,7 +951,7 @@ onUnmounted(() => {
   font-size: 28px;
   font-weight: 900;
   margin-bottom: 12px;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .difficulty-options {
@@ -959,21 +967,22 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
   padding: 24px;
-  background: #f8fafc;
-  border: 3px solid #e2e8f0;
-  border-radius: 16px;
+  background: var(--bg-tertiary);
+  border: var(--border-secondary);
+  border-radius: var(--border-radius);
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
 }
 
 .difficulty-btn:hover {
-  border-color: #FFD700;
-  transform: translateY(-3px);
+  transform: translate(-0.05em, -0.05em);
+  box-shadow: var(--shadow-md);
 }
 
 .difficulty-btn.active {
-  border-color: #FFD700;
-  background: #fffef0;
+  background: var(--primary-color);
+  box-shadow: var(--shadow-md);
 }
 
 .difficulty-btn .emoji {
@@ -982,58 +991,18 @@ onUnmounted(() => {
 
 .difficulty-btn .label {
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
-/* 다크모드 */
-.dark-mode {
-  background: #0f172a;
-}
-
-.dark-mode .exam-header {
-  background: #1e293b;
-  border-color: #334155;
-}
-
-.dark-mode .question-number {
-  color: #f1f5f9;
-}
-
-.dark-mode .question-card,
-.dark-mode .recording-card {
-  background: #1e293b;
-  border-color: #334155;
-}
-
-.dark-mode .question-header h2 {
-  color: #f1f5f9;
-}
-
-.dark-mode .status-indicator {
-  background: #0f172a;
-  color: #94a3b8;
-}
-
-.dark-mode .volume-meter {
-  background: #0f172a;
-}
-
+/* 다크모드 상속 */
 .dark-mode-card {
-  background: #1e293b;
-  color: #f1f5f9;
-}
-
-.dark-mode-card .modal-header h3 {
-  color: #f1f5f9;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .dark-mode-card .difficulty-btn {
-  background: #0f172a;
-  border-color: #334155;
-}
-
-.dark-mode-card .difficulty-btn .label {
-  color: #f1f5f9;
+  background: var(--bg-tertiary);
+  border-color: #FFFFFF;
 }
 
 /* 반응형 */

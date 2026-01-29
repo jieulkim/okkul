@@ -448,16 +448,17 @@ onMounted(() => {
 
 .mypage-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1.2fr;
   gap: 24px;
   margin-bottom: 24px;
 }
 
 .card {
   background: var(--bg-secondary);
-  border: 2px solid var(--border-primary);
-  border-radius: 24px;
+  border: var(--border-primary);
+  border-radius: var(--border-radius);
   padding: 32px;
+  box-shadow: var(--shadow-md);
 }
 
 @media (max-width: 1024px) {
@@ -476,7 +477,7 @@ onMounted(() => {
 
 .section-header h2 {
   font-size: 1.5rem;
-  font-weight: 800;
+  font-weight: 900;
   color: var(--text-primary);
 }
 
@@ -502,8 +503,8 @@ onMounted(() => {
   height: 160px;
   border-radius: 50%;
   overflow: hidden;
-  border: 4px solid var(--primary-color);
-  box-shadow: 0 8px 24px rgba(255, 215, 0, 0.3);
+  border: var(--border-primary);
+  box-shadow: var(--shadow-sm);
   position: relative;
   background: var(--bg-secondary);
   display: flex;
@@ -580,17 +581,18 @@ onMounted(() => {
 
 .info-value {
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 900;
   color: var(--text-primary);
 }
 
 .grade-badge {
   padding: 6px 16px;
-  background: linear-gradient(135deg, #FFF9E6 0%, #FFE4B3 100%);
-  color: #92400e;
-  border-radius: 8px;
-  font-weight: 800;
-  border: 2px solid var(--primary-color);
+  background: var(--primary-color);
+  color: #000000;
+  border-radius: var(--border-radius);
+  font-weight: 900;
+  border: var(--border-secondary);
+  box-shadow: var(--shadow-sm);
 }
 
 .dark-mode .grade-badge {
@@ -605,9 +607,10 @@ onMounted(() => {
   flex-direction: column;
   gap: 24px;
   padding: 24px;
-  background: var(--bg-tertiary);
-  border-radius: 20px;
-  border: 2px solid var(--border-primary);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
+  border: var(--border-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .form-group {
@@ -633,29 +636,28 @@ onMounted(() => {
   justify-content: center;
   gap: 8px;
   padding: 10px 20px;
-  border-radius: 12px;
-  font-weight: 700;
+  border-radius: var(--border-radius);
+  font-weight: 900;
   cursor: pointer;
-  transition: all 0.3s ease;
-  border: none;
+  transition: all 0.2s ease;
+  border: var(--border-secondary);
   font-size: 0.95rem;
+  box-shadow: var(--shadow-sm);
 }
 
 .btn-primary {
   background: var(--primary-color);
-  color: #1e293b;
+  color: #000000;
 }
 
 .btn-primary:hover {
-  background: #ffc800;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-secondary {
   background: var(--bg-tertiary);
   color: var(--text-primary);
-  border: 2px solid var(--border-primary);
 }
 
 .btn-secondary:hover {
@@ -667,11 +669,13 @@ onMounted(() => {
   background: transparent;
   color: var(--text-secondary);
   padding: 8px 12px;
+  border: none;
+  box-shadow: none;
 }
 
 .btn-ghost:hover {
   color: var(--primary-color);
-  background: rgba(255, 215, 0, 0.1);
+  background: var(--bg-tertiary);
 }
 
 .label {
@@ -684,12 +688,12 @@ onMounted(() => {
 .input {
   width: 100%;
   padding: 12px 16px;
-  background: var(--bg-tertiary);
-  border: 2px solid var(--border-primary);
-  border-radius: 12px;
+  background: var(--bg-secondary);
+  border: var(--border-secondary);
+  border-radius: var(--border-radius);
   color: var(--text-primary);
   font-size: 1rem;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .input:focus {
@@ -722,12 +726,13 @@ onMounted(() => {
   gap: 16px;
   padding: 20px;
   background: var(--bg-tertiary);
-  border-radius: 16px;
-  transition: all 0.3s ease;
+  border-radius: var(--border-radius);
+  border: var(--border-thin);
+  transition: all 0.2s ease;
 }
 
 .stat-item:hover {
-  transform: translateY(-2px);
+  transform: translate(-0.02em, -0.02em);
   box-shadow: var(--shadow-sm);
 }
 
@@ -762,11 +767,12 @@ onMounted(() => {
 
 .count-badge {
   padding: 6px 12px;
-  background: var(--bg-tertiary);
-  border-radius: 8px;
+  background: var(--primary-color);
+  border-radius: var(--border-radius);
   font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--text-secondary);
+  font-weight: 900;
+  color: #000000;
+  border: var(--border-thin);
 }
 
 .history-list {
@@ -781,14 +787,16 @@ onMounted(() => {
   gap: 16px;
   padding: 20px;
   background: var(--bg-tertiary);
-  border-radius: 16px;
+  border-radius: var(--border-radius);
+  border: var(--border-thin);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .history-item:hover {
-  transform: translateX(4px);
-  box-shadow: var(--shadow-sm);
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
   background: var(--bg-secondary);
 }
 
@@ -796,7 +804,8 @@ onMounted(() => {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #FFF9E6 0%, #FFE4B3 100%);
+  background: var(--primary-color);
+  border: var(--border-thin);
   display: flex;
   align-items: center;
   justify-content: center;

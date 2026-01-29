@@ -429,14 +429,14 @@ onMounted(() => {
 
 .exam-result-page {
   min-height: 100vh;
-  background: #f8fafc;
+  background: var(--bg-primary);
   font-family: 'Noto Sans KR', sans-serif;
   padding: 40px 20px;
 }
 
 .dark-mode {
-  background: #0f172a;
-  color: #f1f5f9;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 /* 로딩 */
@@ -487,24 +487,25 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 12px 24px;
-  background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  font-weight: 700;
+  background: var(--bg-secondary);
+  border: var(--border-secondary);
+  border-radius: var(--border-radius);
+  font-weight: 900;
   cursor: pointer;
   transition: all 0.2s;
   font-size: 15px;
+  box-shadow: var(--shadow-sm);
 }
 
 .back-btn:hover {
-  background: #f8fafc;
-  border-color: #FFD700;
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
 }
 
 .dark-mode .back-btn {
-  background: #1e293b;
-  border-color: #334155;
-  color: #f1f5f9;
+  background: var(--bg-tertiary);
+  border-color: #FFFFFF;
+  color: var(--text-primary);
 }
 
 .header-content {
@@ -515,10 +516,8 @@ onMounted(() => {
   font-size: 36px;
   font-weight: 900;
   margin-bottom: 8px;
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--primary-color);
+  -webkit-text-fill-color: initial;
 }
 
 .exam-date {
@@ -538,19 +537,19 @@ onMounted(() => {
 .score-card,
 .radar-chart-card,
 .comment-card {
-  background: white;
-  border-radius: 20px;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
   padding: 32px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  border: 2px solid #e2e8f0;
+  border: var(--border-primary);
+  box-shadow: var(--shadow-md);
   transition: all 0.3s;
 }
 
 .dark-mode .score-card,
 .dark-mode .radar-chart-card,
 .dark-mode .comment-card {
-  background: #1e293b;
-  border-color: #334155;
+  background: var(--bg-secondary);
+  border-color: #FFFFFF;
 }
 
 .score-card h3,
@@ -559,7 +558,7 @@ onMounted(() => {
   font-size: 18px;
   font-weight: 700;
   margin-bottom: 20px;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .dark-mode .score-card h3,
@@ -583,7 +582,7 @@ onMounted(() => {
 .score {
   font-size: 24px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .dark-mode .score {
@@ -601,7 +600,7 @@ onMounted(() => {
 .chart-label {
   font-size: 13px;
   font-weight: 700;
-  fill: #1e293b;
+  fill: var(--text-primary);
 }
 
 .dark-label {
@@ -630,7 +629,7 @@ onMounted(() => {
 .score-item .score-label {
   min-width: 90px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   font-size: 14px;
 }
 
@@ -652,9 +651,10 @@ onMounted(() => {
 
 .score-fill {
   height: 100%;
-  background: linear-gradient(90deg, #FFD700, #FFA500);
+  background: var(--primary-color);
   transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 5px;
+  border-right: 1px solid #000;
 }
 
 .score-value {
@@ -668,7 +668,7 @@ onMounted(() => {
 /* 총평 */
 .comment-text {
   line-height: 1.8;
-  color: #1e293b;
+  color: var(--text-primary);
   margin-bottom: 24px;
   font-size: 15px;
 }
@@ -721,7 +721,7 @@ onMounted(() => {
   font-size: 16px;
   font-weight: 700;
   margin-bottom: 12px;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .dark-mode .strength-box h4,
@@ -746,7 +746,7 @@ onMounted(() => {
   font-size: 28px;
   font-weight: 900;
   margin-bottom: 24px;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .dark-mode .section-title {
@@ -762,23 +762,23 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 20px;
-  background: white;
-  border-radius: 16px;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
   padding: 24px;
-  border: 2px solid #e2e8f0;
+  border: var(--border-primary);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
 }
 
 .question-card:hover {
-  border-color: #FFD700;
-  transform: translateX(5px);
-  box-shadow: 0 8px 16px -4px rgba(255, 215, 0, 0.2);
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
 }
 
 .dark-mode .question-card {
-  background: #1e293b;
-  border-color: #334155;
+  background: var(--bg-secondary);
+  border-color: #FFFFFF;
 }
 
 .dark-mode .question-card:hover {
@@ -792,12 +792,13 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #FFD700, #FFA500);
-  color: #1e293b;
+  background: var(--primary-color);
+  color: #000000;
   font-weight: 900;
   font-size: 18px;
   border-radius: 50%;
-  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+  border: var(--border-secondary);
+  box-shadow: var(--shadow-sm);
 }
 
 .question-preview {
@@ -807,7 +808,7 @@ onMounted(() => {
 .question-text {
   font-weight: 600;
   margin-bottom: 12px;
-  color: #1e293b;
+  color: var(--text-primary);
   font-size: 15px;
   line-height: 1.5;
 }
@@ -832,7 +833,7 @@ onMounted(() => {
 }
 
 .dark-mode .mini-score {
-  background: #0f172a;
+  background: var(--bg-primary);
   color: #94a3b8;
 }
 
@@ -850,17 +851,18 @@ onMounted(() => {
 }
 
 .modal-card {
-  background: white;
-  border-radius: 24px;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
   max-width: 900px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  border: var(--border-primary);
+  box-shadow: var(--shadow-lg);
 }
 
 .dark-mode .modal-card {
-  background: #1e293b;
+  background: var(--bg-secondary);
 }
 
 .modal-header {
@@ -876,14 +878,14 @@ onMounted(() => {
 }
 
 .dark-mode .modal-header {
-  background: #1e293b;
-  border-bottom-color: #334155;
+  background: var(--bg-secondary);
+  border-bottom-color: #FFFFFF;
 }
 
 .modal-header h3 {
   font-size: 24px;
   font-weight: 900;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .dark-mode .modal-header h3 {
@@ -931,7 +933,7 @@ onMounted(() => {
   font-size: 18px;
   font-weight: 700;
   margin-bottom: 16px;
-  color: #1e293b;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -943,7 +945,7 @@ onMounted(() => {
 
 .detail-text {
   line-height: 1.8;
-  color: #1e293b;
+  color: var(--text-primary);
   font-size: 15px;
 }
 
@@ -959,22 +961,22 @@ onMounted(() => {
 }
 
 .dark-mode .script-box {
-  background: #0f172a;
-  border-color: #334155;
+  background: var(--bg-tertiary);
+  border-color: #FFFFFF;
 }
 
 /* 하이라이트 스크립트 */
 .highlighted-script {
   line-height: 2;
   padding: 20px;
-  background: #f8fafc;
-  border-radius: 12px;
-  border: 2px solid #FFD700;
+  background: var(--bg-tertiary);
+  border-radius: var(--border-radius);
+  border: var(--border-secondary);
   margin-bottom: 12px;
 }
 
 .dark-mode .highlighted-script {
-  background: #0f172a;
+  background: var(--bg-primary);
 }
 
 .script-word {
@@ -983,17 +985,21 @@ onMounted(() => {
 }
 
 .highlighted-word {
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  color: #92400e;
-  padding: 3px 6px;
-  border-radius: 4px;
-  font-weight: 600;
-  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
+  background: var(--primary-color);
+  color: #000000;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 900;
+  border: 1px solid #000;
+  cursor: help;
+  display: inline-block;
+  margin: 2px;
 }
 
 .dark-mode .highlighted-word {
-  background: linear-gradient(135deg, #78350f, #92400e);
-  color: #fef3c7;
+  border-color: #FFFFFF;
+  background: var(--primary-color); /* Added for dark mode consistency */
+  color: #000000; /* Added for dark mode consistency */
 }
 
 .highlight-guide {
@@ -1023,12 +1029,12 @@ onMounted(() => {
 }
 
 .dark-mode .feedback-item {
-  background: #0f172a;
-  border-left-color: #FFD700;
+  background: var(--bg-tertiary);
+  border-left-color: var(--primary-color);
 }
 
 .dark-mode .feedback-item:hover {
-  background: #1e293b;
+  background: var(--bg-secondary);
 }
 
 .feedback-header {
@@ -1040,7 +1046,7 @@ onMounted(() => {
 
 .feedback-label {
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
   font-size: 16px;
 }
 

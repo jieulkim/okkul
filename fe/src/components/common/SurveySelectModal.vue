@@ -220,17 +220,18 @@ const getTopicsSummary = (topics) => {
 }
 
 .modal-card {
-  background: white;
-  border-radius: 24px;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
   max-width: 600px;
   width: 90%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: var(--border-primary);
+  box-shadow: var(--shadow-lg);
   padding-bottom: 20px;
 }
 
 .dark-mode-card {
-  background: #1e293b;
-  color: #f1f5f9;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .modal-header {
@@ -257,7 +258,7 @@ const getTopicsSummary = (topics) => {
 
 .modal-close-btn:hover {
   background: #f1f5f9;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .dark-mode-card .modal-close-btn:hover {
@@ -269,7 +270,7 @@ const getTopicsSummary = (topics) => {
   font-size: 24px;
   font-weight: 700;
   margin: 0 0 8px;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .dark-mode-card .modal-header h3 {
@@ -315,31 +316,35 @@ const getTopicsSummary = (topics) => {
   align-items: center;
   gap: 16px;
   padding: 16px;
-  border-radius: 12px;
-  border: 2px solid #e2e8f0;
-  background: #f8f9fa;
+  border-radius: var(--border-radius);
+  border: var(--border-secondary);
+  background: var(--bg-tertiary);
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
 }
 
 .dark-mode-item {
-  background: #0f172a !important;
-  border-color: #334155 !important;
-  color: #f1f5f9;
+  background: var(--bg-tertiary) !important;
+  border-color: #FFFFFF !important;
+  color: var(--text-primary);
 }
 
 .survey-card-item:hover {
-  border-color: rgba(255, 215, 0, 0.5);
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
 }
 
 .survey-card-item.active {
-  border-color: #ffd700 !important;
-  background: #fffef0;
+  border-color: var(--primary-color) !important;
+  background: var(--primary-color) !important;
+  color: #000000;
 }
 
 .dark-mode-item.active {
-  background: #422006 !important;
-  border-color: #ffd700 !important;
+  background: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  color: #000000;
 }
 
 .survey-info {
@@ -472,37 +477,45 @@ button {
 }
 
 .primary-btn {
-  background: #ffd700;
-  color: #1e293b;
+  background: var(--primary-color);
+  color: #000000;
+  border: var(--border-secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.primary-btn:hover:not(:disabled) {
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
 }
 
 .primary-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .cancel-btn {
-  background: #f8fafc;
-  border: 1.5px solid #e2e8f0;
-  color: #64748b;
+  background: var(--bg-tertiary);
+  border: var(--border-secondary);
+  color: var(--text-primary);
   transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
 }
 
 .cancel-btn:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-  color: #1e293b;
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
 }
 
 .dark-mode-btn.cancel-btn {
-  background: #0f172a;
-  border-color: #334155;
-  color: #94a3b8;
+  background: var(--bg-tertiary);
+  border-color: #FFFFFF;
+  color: var(--text-primary);
 }
 
 .dark-mode-btn.cancel-btn:hover {
-  background: #1e293b;
-  color: #f1f5f9;
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
 }
 
 /* 주제 및 상세 태그 스타일 */

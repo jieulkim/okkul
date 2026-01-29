@@ -35,7 +35,8 @@ const profileImageUrl = computed(() => {
 // 네비게이션 메뉴
 const navItems = [
   { path: '/exam', label: '실전 모의고사', icon: 'assignment' },
-  { path: '/practice', label: '유형별 연습', icon: 'category' }
+  { path: '/practice', label: '유형별 연습', icon: 'category' },
+  { path: '/feedback', label: '오꿀쌤 피드백', icon: 'feedback' }
 ]
 
 // 다크모드
@@ -62,9 +63,7 @@ const isActive = (path) => {
     <div class="navbar-content">
       <!-- 로고 -->
       <router-link to="/" class="logo">
-        <span class="logo-text-wrapper">
-          <span class="logo-text">오꿀</span>
-        </span>
+        <span class="logo-text">오꿀</span>
       </router-link>
 
       <!-- 네비게이션 메뉴 -->
@@ -130,114 +129,96 @@ const isActive = (path) => {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  border-bottom: 2px solid #e5e7eb;
+  background: var(--bg-secondary);
+  border-bottom: var(--border-primary);
   transition: all 0.3s ease;
 }
 
 .dark-mode .main-navbar {
-  background: rgba(15, 23, 42, 0.95);
-  border-bottom-color: #334155;
+  background: var(--bg-secondary);
 }
 
 .navbar-content {
-  max-width: 1400px;
+  max-width: var(--max-width);
   margin: 0 auto;
-  padding: 0 64px;
+  padding: 0 var(--container-padding);
   display: flex;
   align-items: center;
   height: 64px;
-  gap: 1.2rem;
+  gap: 1.5rem;
 }
 
 .logo {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: center;
+  padding: 0.4em 1em;
+  background: var(--primary-color);
+  border: var(--border-secondary);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
   text-decoration: none;
-  transition: transform 0.2s;
-  position: relative;
+  transition: all 0.2s ease;
   z-index: 10;
+  cursor: pointer;
 }
 
 .logo:hover {
-  transform: scale(1.02);
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
 }
 
-.logo-text-wrapper {
-  background: #000000;
-  padding: 8px 16px;
-  border-radius: 12px;
-  transition: all 0.2s;
-}
-
-.logo:hover .logo-text-wrapper {
-  background: #1a1a1a;
+.logo:active {
+  transform: translate(0.02em, 0.02em);
+  box-shadow: none;
 }
 
 .logo-text {
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-weight: 900;
-  color: #FFD700;
-  flex-shrink: 0;
-}
-
-.dark-mode .logo-text-wrapper {
-  background: #FFD700;
-}
-
-.dark-mode .logo:hover .logo-text-wrapper {
-  background: #FFC700;
-}
-
-.dark-mode .logo-text {
   color: #000000;
+  flex-shrink: 0;
+  font-family: inherit;
 }
 
 .nav-menu {
   flex: 1;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 16px;
-  margin-right: 16px;
+  justify-content: center;
+  gap: 8px;
 }
 
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  border-radius: 12px;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--border-radius);
   text-decoration: none;
-  color: #6b7280;
-  font-weight: 600;
-  font-size: 1.05rem;
+  color: var(--text-secondary);
+  font-weight: 900;
+  font-size: var(--font-size-base);
   transition: all 0.2s;
-  position: relative;
+  border: 2px solid transparent;
 }
 
 .nav-link:hover {
-  background: #f9fafb;
-  color: #1f2937;
-}
-
-.dark-mode .nav-link:hover {
-  background: #1e293b;
-  color: #f1f5f9;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .nav-link.active {
-  background: linear-gradient(135deg, #FFF9E6 0%, #FFE4B3 100%);
-  color: #92400e;
-  border: 2px solid #FFD700;
+  background: var(--primary-color);
+  color: #000000;
+  border: var(--border-secondary);
+  box-shadow: var(--shadow-sm);
 }
 
 .dark-mode .nav-link.active {
-  background: rgba(255, 215, 0, 0.2);
-  color: #ffd700;
-  border-color: rgba(255, 215, 0, 0.3);
+  background: var(--primary-color);
+  color: #000000;
+  border: var(--border-secondary);
 }
 
 .nav-icon {
@@ -288,13 +269,13 @@ const isActive = (path) => {
 }
 
 .user-profile.active {
-  background: linear-gradient(135deg, #FFF9E6 0%, #FFE4B3 100%);
-  border-color: #FFD700;
+  background: var(--primary-color);
+  border-color: #000000;
 }
 
 .dark-mode .user-profile.active {
-  background: rgba(255, 215, 0, 0.2);
-  border-color: rgba(255, 215, 0, 0.3);
+  background: var(--primary-color);
+  border-color: #FFFFFF;
 }
 
 .profile-avatar {
@@ -387,29 +368,29 @@ const isActive = (path) => {
 
 .dark-mode .theme-toggle:hover {
   background: #475569;
-  color: #FFD700;
+  color: var(--primary-color);
 }
 
 .login-btn {
-  padding: 8px 16px;
-  background: #FFD700;
+  padding: 8px 20px;
+  background: var(--primary-color);
   color: #000;
   text-decoration: none;
+  border: var(--border-secondary);
   border-radius: 12px;
-  font-weight: 700;
-  font-size: 0.9rem;
+  font-weight: 800;
+  font-size: 0.95rem;
   transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+  box-shadow: var(--shadow-sm);
 }
 
 .login-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
-  background: #FFA500;
+  transform: translate(-0.05em, -0.05em);
+  box-shadow: var(--shadow-md);
 }
 
 .dark-mode .login-btn {
-  background: #FFD700;
+  background: var(--primary-color);
   color: #000;
 }
 

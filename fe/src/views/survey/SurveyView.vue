@@ -1034,7 +1034,7 @@ const showGuide = ref(false);
 
 .survey-page {
   min-height: 100vh;
-  background: #ffffff;
+  background: var(--bg-primary);
   font-family: "Noto Sans KR", sans-serif;
   display: flex;
   flex-direction: column;
@@ -1042,8 +1042,8 @@ const showGuide = ref(false);
 }
 
 .dark-mode {
-  background: #0f172a;
-  color: #f1f5f9;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .survey-header {
@@ -1102,11 +1102,12 @@ const showGuide = ref(false);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #eee;
-  color: #94a3b8;
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
   font-size: 12px;
   clip-path: polygon(0% 0%, 90% 0%, 100% 50%, 90% 100%, 0% 100%, 10% 50%);
   margin-right: -2px;
+  border: var(--border-thin);
 }
 
 .step:first-child {
@@ -1117,9 +1118,10 @@ const showGuide = ref(false);
 }
 
 .step.active {
-  background: #ffd700 !important;
-  color: #1e293b !important;
-  font-weight: bold;
+  background: var(--primary-color) !important;
+  color: #000000 !important;
+  font-weight: 900;
+  border: var(--border-secondary);
 }
 
 .step.completed {
@@ -1128,14 +1130,14 @@ const showGuide = ref(false);
 }
 
 .dark-mode .step {
-  background: #1e293b;
+  background: var(--bg-tertiary);
 }
 .dark-mode .step.active {
-  background: #ffd700 !important;
-  color: #0f172a !important;
+  background: var(--primary-color) !important;
+  color: #000000 !important;
 }
 .dark-mode .step.completed {
-  background: #334155;
+  background: var(--bg-secondary);
 }
 
 .step-content {
@@ -1207,7 +1209,7 @@ const showGuide = ref(false);
 .question-text {
   font-size: 18px;
   font-weight: 500;
-  color: #1e293b;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -1225,31 +1227,34 @@ const showGuide = ref(false);
   gap: 12px;
   cursor: pointer;
   padding: 12px 16px;
-  border-radius: 8px;
+  border-radius: var(--border-radius);
   transition: all 0.2s;
-  background: #f8f9fa;
+  background: var(--bg-secondary);
+  border: var(--border-thin);
 }
 
 .dark-mode .form-check-label {
-  background: #1e293b;
+  background: var(--bg-secondary);
 }
 
 .form-check-label:hover {
-  background: #f1f5f9;
+  background: var(--bg-tertiary);
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-sm);
 }
 
 .dark-mode .form-check-label:hover {
-  background: #334155;
+  background: var(--bg-tertiary);
 }
 
 .form-check-label:hover span {
-  color: #ffd700;
+  color: var(--primary-color);
 }
 
 .form-check-input {
   width: 20px;
   height: 20px;
-  accent-color: #ffd700;
+  accent-color: var(--primary-color);
   cursor: pointer;
 }
 
@@ -1265,7 +1270,7 @@ const showGuide = ref(false);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .dark-mode .group-instruction {
@@ -1307,7 +1312,7 @@ const showGuide = ref(false);
 }
 
 .dark-mode .survey-footer {
-  background: #0f172a;
+  background: var(--bg-primary);
   border-top-color: #334155;
 }
 
@@ -1327,8 +1332,8 @@ const showGuide = ref(false);
 }
 
 .dark-mode .back-btn {
-  background: #1e293b;
-  color: #94a3b8;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .back-btn:hover:not(:disabled) {
@@ -1340,9 +1345,9 @@ const showGuide = ref(false);
 }
 
 .next-btn {
-  background: #ffd700;
-  color: #1e293b;
-  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+  background: var(--primary-color);
+  color: #000000;
+  box-shadow: var(--shadow-sm);
 }
 
 .next-btn:hover:not(:disabled) {
@@ -1392,7 +1397,7 @@ const showGuide = ref(false);
 }
 
 .dark-mode .modal-card {
-  background: #1e293b;
+  background: var(--bg-secondary);
 }
 
 .modal-header {
@@ -1408,7 +1413,7 @@ const showGuide = ref(false);
   font-size: 18px;
   font-weight: 700;
   margin: 0;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .dark-mode .modal-header h3 {

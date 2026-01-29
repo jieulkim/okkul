@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, inject, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+const router = useRouter()
 
 import { useAuthStore } from '@/stores/auth'
 
@@ -10,10 +11,10 @@ const userProfile = inject('userProfile')
 // 다크모드 상태
 const isDarkMode = inject('isDarkMode', ref(false))
 
-const authStore = inject('authStore')
+const authStore = useAuthStore()
 import { useSurveyStore } from '@/stores/survey'
 const surveyStore = useSurveyStore()
-const isLoggedIn = computed(() => !!authStore?.user)
+const isLoggedIn = computed(() => !!authStore.user)
 
 // 다크모드 변경 감지
 watch(isDarkMode, (newVal) => {
@@ -31,22 +32,9 @@ onMounted(() => {
   }
 })
 
-// 프로필 이미지 업로드
-const profileImageInput = ref(null)
-
-const handleProfileImageUpload = (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      userProfile.value.profileImage = e.target.result
-    }
-    reader.readAsDataURL(file)
-  }
-}
-
-const triggerImageUpload = () => {
-  profileImageInput.value?.click()
+// 마이페이지 이동
+const goToMyPage = () => {
+  router.push('/mypage')
 }
 
 // 최근 성적 데이터
@@ -115,51 +103,44 @@ const getStatusColor = (status) => {
       <div v-if="isLoggedIn" class="dashboard-grid">
         <!-- 왼쪽 컬럼 -->
         <div class="left-column">
-          <!-- 웰컴 배너 -->
-          <section class="welcome-banner">
+          <!-- 웰컴 배너 / 학습 시작 섹션 -->
+          <section class="welcome-banner" :class="{ 'no-history': recentActivities.length === 0 }">
             <div class="welcome-header">
-              <h1 v-if="authStore.user?.nickname">{{ authStore.user.nickname }}님, 오늘도 달콤한 성과를 만들어요!</h1>
-              <h1 v-else>오늘도 달콤한 성과를 만들어요!</h1>
-              <img src="/okkul.svg" alt="Okkul" class="okkul-img mini" />
+              <div class="welcome-text">
+                <h1 v-if="authStore.user?.nickname">{{ authStore.user.nickname }}님, 오늘도 달콤한 성과를 만들어요!</h1>
+                <h1 v-else>오늘도 달콤한 성과를 만들어요!</h1>
+                <p class="subtitle">오꿀쌤과 함께 목표 등급 달성까지 달려봐요!</p>
+              </div>
+              <img src="/okkul.svg" alt="Okkul" class="okkul-img" />
             </div>
-            <p class="subtitle">오꿀쌤과 함께 목표 등급 달성까지 달려봐요!</p>
             
-            <div class="action-buttons">
-              <!-- Mock Mode: 설문 데이터 있으면 바로 레벨 선택으로 -->
-              <a 
-                v-if="surveyStore && surveyStore.surveyData" 
-                href="#"
-                @click.prevent="$router.push('/survey/level?from=exam')" 
-                class="btn-primary" 
-                style="z-index: 10;"
-              >
-                <span class="material-icons-outlined btn-icon">play_circle_filled</span>
-                <div class="btn-text">
-                  <span class="title">실전 모의고사 시작 (설문 완료됨)</span>
-                  <span class="sub">15문항, 바로 난이도 선택으로</span>
-                </div>
-              </a>
-              
-              <router-link 
-                v-else
-                to="/survey?from=exam" 
-                class="btn-primary" 
-                style="z-index: 10;"
-              >
-                <span class="material-icons-outlined btn-icon">play_circle_filled</span>
-                <div class="btn-text">
-                  <span class="title">실전 모의고사 시작</span>
-                  <span class="sub">15문항, 약 40분 소요</span>
-                </div>
-              </router-link>
-              
-              <router-link to="/practice" class="btn-secondary">
-                <span class="material-icons-outlined btn-icon">category</span>
-                <div class="btn-text">
-                  <span class="title">유형별 집중 연습</span>
-                  <span class="sub">약점 보완 테마별 학습</span>
-                </div>
-              </router-link>
+            <div class="action-buttons-container">
+              <div class="action-buttons">
+                <!-- 실전 모의고사 -->
+                <router-link 
+                  :to="surveyStore && surveyStore.surveyData ? '/survey/level?from=exam' : '/survey?from=exam'" 
+                  class="action-card primary"
+                >
+                  <div class="card-icon">
+                    <span class="material-icons">play_circle_filled</span>
+                  </div>
+                  <div class="card-info">
+                    <span class="card-title">실전 모의고사 시작</span>
+                    <span class="card-sub">15문항, 약 40분 소요</span>
+                  </div>
+                </router-link>
+                
+                <!-- 유형별 연습 -->
+                <router-link to="/practice" class="action-card secondary">
+                  <div class="card-icon">
+                    <span class="material-icons">category</span>
+                  </div>
+                  <div class="card-info">
+                    <span class="card-title">유형별 집중 연습</span>
+                    <span class="card-sub">약점 보완 테마별 학습</span>
+                  </div>
+                </router-link>
+              </div>
             </div>
           </section>
 
@@ -227,7 +208,7 @@ const getStatusColor = (status) => {
             <h3>프로필 관리</h3>
             
             <div class="profile-edit">
-              <div class="profile-image-section" @click="triggerImageUpload">
+              <div class="profile-image-section" @click="goToMyPage">
                 <div class="profile-avatar">
                   <img 
                     v-if="authStore.user?.profileImageUrl" 
@@ -242,19 +223,12 @@ const getStatusColor = (status) => {
                     class="avatar-img fallback" 
                   />
                   <div class="upload-overlay">
-                    <span class="material-icons-outlined">photo_camera</span>
+                    <span class="material-icons-outlined">settings</span>
                   </div>
                 </div>
-                <input 
-                  ref="profileImageInput"
-                  type="file" 
-                  accept="image/*"
-                  @change="handleProfileImageUpload"
-                  style="display: none"
-                />
               </div>
     
-              <div class="profile-info">
+              <div class="profile-info" @click="goToMyPage" style="cursor: pointer;">
                 <div class="info-row">
                   <label>닉네임</label>
                   <span>{{ authStore.user?.nickname || '사용자' }}</span>
@@ -379,20 +353,21 @@ const getStatusColor = (status) => {
 
 .badge {
   display: inline-block;
-  padding: 8px 20px;
-  background: linear-gradient(135deg, #FFF9E6 0%, #FFE4B3 100%);
-  color: #92400e;
-  border-radius: 50px;
+  padding: 8px 16px;
+  background: var(--primary-color);
+  color: #000000;
+  border-radius: var(--border-radius);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 900;
   margin-bottom: 32px;
-  border: 2px solid #FFD700;
+  border: var(--border-secondary);
+  box-shadow: var(--shadow-sm);
 }
 
 .dark-mode .badge {
-  background: rgba(255, 215, 0, 0.2);
-  color: #ffd700;
-  border-color: rgba(255, 215, 0, 0.3);
+  background: var(--primary-color);
+  color: #000000;
+  border-color: #FFFFFF;
 }
 
 .hero-title-wrapper {
@@ -406,7 +381,7 @@ const getStatusColor = (status) => {
 .hero-title {
   font-size: 3.5rem;
   font-weight: 900;
-  color: #1e293b;
+  color: var(--text-primary);
   line-height: 1.2;
   margin: 0;
 }
@@ -416,7 +391,7 @@ const getStatusColor = (status) => {
 }
 
 .highlight-text {
-  color: #FFD700;
+  color: var(--primary-color);
   position: relative;
   display: inline-block;
 }
@@ -447,25 +422,26 @@ const getStatusColor = (status) => {
 
 .hero-btn-primary {
   padding: 18px 48px;
-  background: #FFD700;
+  background: var(--primary-color);
   color: #000;
   text-decoration: none;
-  border-radius: 16px;
-  font-weight: 800;
+  border: var(--border-primary);
+  border-radius: var(--border-radius);
+  font-weight: 900;
   font-size: 1.125rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 8px 24px rgba(255, 215, 0, 0.3);
+  transition: all 0.2s;
+  box-shadow: var(--shadow-md);
 }
 
 .hero-btn-primary:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(255, 215, 0, 0.4);
-  background: #FFA500;
+  transform: translate(-0.05em, -0.05em);
+  box-shadow: var(--shadow-lg);
 }
 
 .dark-mode .hero-btn-primary {
-  background: #FFD700;
+  background: var(--primary-color);
   color: #000;
+  border-color: #FFFFFF;
 }
 
 .hero-features {
@@ -478,27 +454,26 @@ const getStatusColor = (status) => {
 
 .feature-card {
   padding: 40px 32px;
-  background: #fff;
-  border-radius: 24px;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
   text-align: center;
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
+  transition: all 0.2s ease;
+  border: var(--border-primary);
+  box-shadow: var(--shadow-md);
 }
 
 .feature-card:hover {
-  transform: translateY(-8px);
-  border-color: #FFD700;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+  transform: translate(-0.05em, -0.05em);
+  box-shadow: var(--shadow-lg);
 }
 
 .dark-mode .feature-card {
-  background: #1e293b;
-  border-color: #334155;
+  background: var(--bg-secondary);
+  border-color: #FFFFFF;
 }
 
 .dark-mode .feature-card:hover {
-  border-color: #FFD700;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-lg);
 }
 
 .f-icon {
@@ -509,7 +484,7 @@ const getStatusColor = (status) => {
 .feature-card h3 {
   font-size: 1.5rem;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--text-primary);
   margin-bottom: 12px;
 }
 
@@ -542,132 +517,163 @@ const getStatusColor = (status) => {
 
 /* 웰컴 배너 */
 .welcome-banner {
-  background: linear-gradient(135deg, #FFF9E6 0%, #FFE4B3 100%);
+  background: var(--bg-secondary);
   padding: 40px;
-  border-radius: 24px;
-  border: 2px solid #FFD700;
+  border-radius: var(--border-radius);
+  border: var(--border-primary);
+  box-shadow: var(--shadow-md);
 }
 
 .dark-mode .welcome-banner {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 165, 0, 0.1) 100%);
-  border-color: rgba(255, 215, 0, 0.3);
+  background: var(--bg-secondary);
+  border-color: #FFFFFF;
 }
 
-.welcome-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
+.welcome-text {
+  flex: 1;
 }
 
 .welcome-banner h1 {
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: 900;
-  color: #1e293b;
-  margin: 0;
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin-bottom: 8px;
 }
 
-.dark-mode .welcome-banner h1 {
-  color: #f1f5f9;
+.okkul-img {
+  width: 180px;
+  height: auto;
+  transition: transform 0.3s ease;
+}
+
+.okkul-img:hover {
+  transform: scale(1.05) rotate(5deg);
 }
 
 .subtitle {
-  font-size: 1.125rem;
+  font-size: 1.25rem;
   color: #64748b;
-  margin-bottom: 32px;
+  margin: 0;
 }
 
-.dark-mode .subtitle {
-  color: #94a3b8;
+.action-buttons-container {
+  margin-top: 40px;
+  width: 100%;
 }
 
 .action-buttons {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
 }
 
-.btn-primary, .btn-secondary {
+.action-card {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 24px;
-  border-radius: 16px;
+  gap: 20px;
+  padding: 30px;
+  border-radius: 24px;
   text-decoration: none;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 4px solid #000000;
+  box-shadow: 8px 8px 0 #000000;
 }
 
-.btn-primary {
-  background: #FFD700;
+.action-card.primary {
+  background: var(--primary-color);
   color: #000;
-  box-shadow: 0 4px 16px rgba(255, 215, 0, 0.3);
 }
 
-.btn-primary:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(255, 215, 0, 0.4);
+.action-card.secondary {
+  background: #FFFFFF;
+  color: #000;
 }
 
-.btn-secondary {
-  background: #fff;
-  color: #1e293b;
-  border: 2px solid #e2e8f0;
+.action-card:hover {
+  transform: translate(-4px, -4px);
+  box-shadow: 12px 12px 0 #000000;
 }
 
-.btn-secondary:hover {
-  border-color: #FFD700;
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+.action-card:active {
+  transform: translate(2px, 2px);
+  box-shadow: 4px 4px 0 #000000;
 }
 
-.dark-mode .btn-secondary {
-  background: #1e293b;
-  color: #f1f5f9;
-  border-color: #334155;
+.card-icon {
+  width: 60px;
+  height: 60px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.dark-mode .btn-secondary:hover {
-  border-color: #FFD700;
+.action-card.primary .card-icon {
+  background: rgba(0, 0, 0, 0.1);
 }
 
-.btn-icon {
-  font-size: 2rem;
-  font-family: 'Material Icons Outlined';
+.card-icon .material-icons {
+  font-size: 32px;
 }
 
-.btn-text {
+.card-info {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.btn-text .title {
-  font-size: 1.125rem;
-  font-weight: 800;
+.card-title {
+  font-size: 1.5rem;
+  font-weight: 900;
 }
 
-.btn-text .sub {
-  font-size: 0.875rem;
-  opacity: 0.7;
+.card-sub {
+  font-size: 0.95rem;
+  opacity: 0.8;
+  font-weight: 600;
+}
+
+/* Dark Mode Overrides */
+.dark-mode .action-card {
+  border-color: #FFFFFF;
+  box-shadow: 8px 8px 0 #FFFFFF;
+}
+
+.dark-mode .action-card.secondary {
+  background: var(--bg-secondary);
+  color: #FFFFFF;
+}
+
+.dark-mode .action-card.secondary .card-icon {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode .action-card:hover {
+  box-shadow: 12px 12px 0 #FFFFFF;
+}
+
+.dark-mode .action-card:active {
+  box-shadow: 4px 4px 0 #FFFFFF;
 }
 
 /* 카드 공통 스타일 */
 .stats-card, .recent-activities, .profile-card, .ai-analysis-card {
-  background: #fff;
+  background: var(--bg-secondary);
   padding: 32px;
-  border-radius: 24px;
-  border: 2px solid #e2e8f0;
-  transition: all 0.3s ease;
+  border-radius: var(--border-radius);
+  border: var(--border-primary);
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s ease;
 }
 
 .dark-mode .stats-card,
 .dark-mode .recent-activities,
 .dark-mode .profile-card,
 .dark-mode .ai-analysis-card {
-  background: #1e293b;
-  border-color: #334155;
+  background: var(--bg-secondary);
+  border-color: #FFFFFF;
 }
 
 .card-header {
@@ -680,7 +686,7 @@ const getStatusColor = (status) => {
 .card-header h3 {
   font-size: 1.25rem;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .dark-mode .card-header h3 {
@@ -715,18 +721,31 @@ const getStatusColor = (status) => {
 
 .bar {
   flex: 1;
+  width: 40px; /* 명시적 너비 추가 */
   max-width: 60px;
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
+  background: rgba(0, 0, 0, 0.05); /* 바 배경 추가 */
+  border-radius: 8px 8px 0 0;
+}
+
+.dark-mode .bar {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .fill {
   width: 100%;
-  background: linear-gradient(to top, #e2e8f0, #cbd5e1);
+  height: 100%;
+  background: var(--bg-tertiary);
+  border: 2px solid #000;
   border-radius: 8px 8px 0 0;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark-mode .fill {
+  border-color: #FFF;
 }
 
 .fill.active {
@@ -785,7 +804,7 @@ const getStatusColor = (status) => {
 }
 
 .dark-mode .activity-item {
-  background: #0f172a;
+  background: var(--bg-primary);
 }
 
 .dark-mode .activity-item:hover {
@@ -820,7 +839,7 @@ const getStatusColor = (status) => {
 .activity-header h4 {
   font-size: 1rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .dark-mode .activity-header h4 {
@@ -887,7 +906,7 @@ const getStatusColor = (status) => {
   position: relative;
 }
 
-.profile-preview {
+.profile-avatar {
   width: 120px;
   height: 120px;
   border-radius: 50%;
@@ -895,18 +914,18 @@ const getStatusColor = (status) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
+  background: #f1f5f9;
   border: 4px solid #FFD700;
   box-shadow: 0 8px 24px rgba(255, 215, 0, 0.3);
   position: relative;
 }
 
-.dark-mode .profile-preview {
-  background: #1e293b;
+.dark-mode .profile-avatar {
+  background: var(--bg-tertiary);
   border-color: #FFD700;
 }
 
-.profile-preview img {
+.avatar-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -950,7 +969,7 @@ const getStatusColor = (status) => {
 }
 
 .dark-mode .info-row {
-  background: #0f172a;
+  background: var(--bg-primary);
 }
 
 .info-row label {
@@ -961,7 +980,7 @@ const getStatusColor = (status) => {
 
 .info-row span {
   font-size: 0.875rem;
-  color: #1e293b;
+  color: var(--text-primary);
   font-weight: 700;
 }
 
@@ -1050,7 +1069,7 @@ const getStatusColor = (status) => {
 }
 
 .dark-mode .grade-stats {
-  background: #0f172a;
+  background: var(--bg-primary);
 }
 
 .stat {
@@ -1066,7 +1085,7 @@ const getStatusColor = (status) => {
 .stat strong {
   font-size: 1.5rem;
   font-weight: 900;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .dark-mode .stat strong {
@@ -1093,13 +1112,13 @@ const getStatusColor = (status) => {
   border: 2px solid #e2e8f0;
   border-radius: 12px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .dark-mode .detail-btn {
-  background: #0f172a;
+  background: var(--bg-primary);
   border-color: #334155;
   color: #f1f5f9;
 }

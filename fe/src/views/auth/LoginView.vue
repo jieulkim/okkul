@@ -89,10 +89,10 @@ const startDevTest = () => {
 
 .login-card {
   background: var(--bg-secondary);
-  border: 2px solid var(--border-primary);
+  border: var(--border-primary);
   padding: 48px;
-  border-radius: 32px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-lg);
   max-width: 440px;
   width: 100%;
   text-align: center;
@@ -130,20 +130,20 @@ const startDevTest = () => {
   justify-content: center;
   gap: 12px;
   padding: 16px;
-  background: white;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
+  background: var(--primary-color);
+  border: var(--border-secondary);
+  border-radius: var(--border-radius);
   font-size: 16px;
-  font-weight: 700;
-  color: #1e293b;
+  font-weight: 900;
+  color: #000000;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
 }
 
 .google-login-btn:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  transform: translateY(-2px);
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
 }
 
 .google-login-btn img {
@@ -168,19 +168,19 @@ const startDevTest = () => {
   gap: 12px;
   padding: 16px;
   margin-top: 12px;
-  background: #334155;
-  border: 2px solid #334155;
-  border-radius: 12px;
+  background: var(--bg-tertiary);
+  border: var(--border-secondary);
+  border-radius: var(--border-radius);
   font-size: 16px;
-  font-weight: 700;
-  color: white;
+  font-weight: 900;
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
 }
 
 .dev-login-btn:hover {
-  background: #475569;
-  border-color: #475569;
-  transform: translateY(-2px);
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
 }
 </style>

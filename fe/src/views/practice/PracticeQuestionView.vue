@@ -536,7 +536,7 @@ onUnmounted(() => {
         <!-- 한글 스크립트 입력 -->
         <div class="card">
           <div class="label-row">
-            <label class="input-label">📝 한글로 써 보세요</label>
+            <label class="input-label">한글로 써 보세요</label>
             <span class="count"
               >{{ koreanScript.length }} / {{ maxChars }}</span
             >
@@ -552,7 +552,7 @@ onUnmounted(() => {
         <!-- 영어 답변 녹음 -->
         <div class="card">
           <div class="label-row">
-            <label class="input-label">🎙️ 영어로 대답해보세요</label>
+            <label class="input-label">영어로 대답해보세요</label>
             <div class="mic-group">
               <span v-if="isRecording" class="timer">
                 {{ Math.floor(recordingTime / 60) }}:{{
@@ -729,17 +729,23 @@ onUnmounted(() => {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 2px solid #000;
-  background: #fff;
+  border: var(--border-secondary);
+  background: var(--primary-color);
+  color: #000;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 2px 2px 0 #000;
+  box-shadow: var(--shadow-sm);
+}
+.dark-mode .audio-btn {
+  background: var(--primary-color);
+  color: #000;
+  border-color: #FFFFFF;
 }
 .audio-btn:active {
-  transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0 #000;
+  transform: translate(0.02em, 0.02em);
+  box-shadow: none;
 }
 .toggle-q-btn {
   background: none;
@@ -751,12 +757,14 @@ onUnmounted(() => {
   text-decoration: underline;
 }
 .question-text-card {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 15px;
+  background: var(--bg-secondary);
+  border: var(--border-primary);
+  border-radius: var(--border-radius);
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-md);
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 900;
   line-height: 1.5;
 }
 
@@ -769,7 +777,7 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
-  max-height: 96px;
+  max-height: 120px;
   overflow: hidden;
   transition: max-height 0.3s ease;
 }
@@ -781,12 +789,12 @@ onUnmounted(() => {
   width: 100%;
   height: 48px;
   padding: 0 12px;
-  border-radius: 12px;
-  border: 2px solid var(--border-primary);
+  border-radius: var(--border-radius);
+  border: var(--border-secondary);
   background: var(--bg-secondary);
   cursor: pointer;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 900;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -795,22 +803,24 @@ onUnmounted(() => {
   justify-content: center;
   transition: all 0.2s ease;
   color: var(--text-secondary);
+  box-shadow: var(--shadow-sm);
 }
 .tab-btn.active {
-  background: #fff9e6;
-  border-color: #d97706;
-  color: #d97706;
-  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.2);
+  background: var(--primary-color);
+  color: #000000;
+  box-shadow: var(--shadow-md);
+  transform: translate(-0.02em, -0.02em);
 }
 .expand-btn {
   display: block;
   margin: 15px auto 0;
-  background: none;
-  border: none;
-  color: #64748b;
+  background: var(--bg-tertiary);
+  border: var(--border-thin);
+  border-radius: var(--border-radius);
+  padding: 8px 24px;
+  font-weight: 900;
   cursor: pointer;
-  font-weight: bold;
-  text-decoration: underline;
+  box-shadow: var(--shadow-sm);
 }
 
 /* 2. 레이아웃 및 카드 */
@@ -837,24 +847,30 @@ onUnmounted(() => {
 }
 textarea {
   width: 100%;
-  height: 120px;
-  border: none;
-  background: #f8fafc;
-  padding: 15px;
-  border-radius: 12px;
-  resize: none;
-  box-sizing: border-box;
-  font-size: 15px;
+  min-height: 120px;
+  border: var(--border-secondary);
+  border-radius: var(--border-radius);
+  padding: 16px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 900;
+  background: var(--bg-tertiary);
+  resize: vertical;
 }
 
+textarea:focus {
+  outline: none;
+  background: var(--bg-secondary);
+}
 /* 3. STT 박스 */
 .stt-box {
   min-height: 100px;
-  background: #f8fafc;
-  border: 2px dashed #ffd700;
-  border-radius: 12px;
+  background: var(--bg-tertiary);
+  border: 2px dashed var(--primary-color);
+  border-radius: var(--border-radius);
   padding: 15px;
-  font-size: 15px;
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
 }
 
 .recording-border {
@@ -862,16 +878,23 @@ textarea {
   border-color: #ef4444;
 }
 .mic-btn {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  border: none;
-  background: #f8fafc;
+  border: var(--border-secondary);
+  background: var(--primary-color);
+  color: #000;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #64748b;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+.dark-mode .mic-btn {
+  background: var(--primary-color);
+  color: #000;
+  border-color: #FFFFFF;
 }
 .mic-group {
   display: flex;
@@ -886,6 +909,9 @@ textarea {
 .mic-btn.recording {
   background: #ef4444;
   color: white;
+  animation: pulse 1.5s infinite;
+  box-shadow: none;
+  transform: scale(0.95);
 }
 
 /* 5. 분석 결과 섹션 */
@@ -895,26 +921,28 @@ textarea {
   margin-bottom: -1px;
 }
 .bookmark {
-  padding: 10px 20px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  padding: 12px 24px;
+  background: var(--bg-tertiary);
+  border: var(--border-secondary);
   border-bottom: none;
   border-radius: 12px 12px 0 0;
+  font-weight: 900;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: bold;
-  color: #64748b;
+  transition: all 0.2s;
+  color: var(--text-secondary);
 }
 .bookmark.active {
-  background: #fff;
-  border-bottom: 2px solid #fff;
-  z-index: 2;
+  background: var(--primary-color);
+  color: #000000;
+  padding-top: 8px;
+  transform: translateY(-4px);
 }
 .feedback-card {
-  background: #fff;
-  border-radius: 0 20px 20px 20px;
-  padding: 25px;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-secondary);
+  border: var(--border-primary);
+  border-radius: 0 24px 24px 24px;
+  padding: 32px;
+  box-shadow: var(--shadow-lg);
 }
 .result-title {
   font-size: 22px;
@@ -925,12 +953,12 @@ textarea {
   margin-bottom: 10px;
 }
 .report-box {
-  background: #f8fafc;
-  padding: 20px;
-  border-radius: 15px;
+  background: var(--bg-tertiary);
+  padding: 24px;
+  border-radius: var(--border-radius);
+  border: var(--border-thin);
   line-height: 1.8;
-  border: 1px solid #e2e8f0;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 .badge {
   font-size: 10px;
@@ -939,29 +967,32 @@ textarea {
   margin-right: 5px;
   font-weight: bold;
 }
-.badge.orig {
-  background: #f8fafc;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
-}
-.badge.impr {
-  background: #fff7ed;
-  color: #ea580c;
-}
+.badge.orig { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
+.badge.impr { background: #dcfce7; color: #16a34a; border: 1px solid #86efac; }
 
 .highlighted {
   background: #ffd700;
   font-weight: 700;
   color: #000;
 }
+.report-span.highlighted {
+  background: var(--primary-color);
+  color: #000000;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 900;
+  border: 1px solid #000;
+}
+.dark-mode .report-span.highlighted {
+  border-color: #FFF;
+}
 .detail-item {
-  padding: 15px;
-  border-radius: 16px;
-  border: 1px solid #e2e8f0;
-  margin-bottom: 10px;
+  padding: 20px;
+  background: var(--bg-tertiary);
+  border: var(--border-thin);
+  border-radius: var(--border-radius);
   cursor: pointer;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s;
 }
 .sentence-row {
   margin-bottom: 6px;
@@ -975,6 +1006,12 @@ textarea {
 .selected-card {
   border: 2px solid var(--primary-color);
   background: #fffef0;
+}
+.detail-item.selected-card {
+  border-color: var(--primary-color);
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-sm);
+  transform: translateX(5px);
 }
 
 .dark-mode .selected-card {
@@ -1064,19 +1101,30 @@ textarea {
   border-radius: 50%;
 }
 .analyze-btn {
-  width: 180px;
-  padding: 14px;
+  width: auto;
+  min-width: 240px;
+  padding: 12px 32px;
   background: var(--primary-color);
-  border: 2px solid #000;
-  border-radius: 50px;
-  font-weight: 800;
+  color: #000000;
+  border: var(--border-primary);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-lg);
+  font-weight: 900;
   cursor: pointer;
-  box-shadow: 0 4px 0 #000;
-  color: #000;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-md);
 }
-.analyze-btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 #000;
+
+.analyze-btn:hover:not(:disabled) {
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
+}
+
+.analyze-btn:disabled {
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 /* Dark Mode Overrides and Extra Global Styles */

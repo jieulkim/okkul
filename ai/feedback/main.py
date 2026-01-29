@@ -19,6 +19,7 @@ GEMINI_URL = "https://gms.ssafy.io/gmsapi/generativelanguage.googleapis.com/v1be
 class AnalysisRequest(BaseModel):
     question_text: str
     user_answer: str
+    user_korean_script: str  # 한국어 의도 입력 필드 추가
 
 class SentenceFeedback(BaseModel):
     target_sentence: str
@@ -80,24 +81,25 @@ async def analyze_sentences_gemini(text: str):
     print(f"📊 [Step 1] 문장 교정 완료 ({time.perf_counter() - start_time:.2f}s)")
     return sentences
 
-async def analyze_overall_gemini(question: str, user_answer: str, corrected_text: str):
-    """2단계: 교정본으로 모범 답안을 생성하되, 평가는 원본 답변을 기준으로 수행"""
+async def analyze_overall_gemini(question: str, user_answer: str, corrected_text: str, user_korean_script: str):
+    """2단계: 교정본으로 모범 답안을 생성하되, 한국어 스크립트 대조 및 원본 기준 평가 수행"""
     start_time = time.perf_counter()
     headers = {"Content-Type": "application/json", "x-goog-api-key": GMS_KEY}
     
-    # 평가 기준의 객관성을 위해 원본(user_answer) 중심의 피드백 지시 강화
     prompt = f"""
     당신은 오픽(OPIc) AL 전문 채점관입니다. 
-    아래 제공된 [원본 답변]을 분석하여 실제 시험 점수를 매기듯 피드백하고, [교정된 문장들]을 활용해 최종 학습용 모범 답안을 만드세요.
+    아래 제공된 [원본 답변] 및 [한국어 의도]를 분석하여 피드백하고, [교정된 문장들]을 활용해 최종 학습용 모범 답안을 만드세요.
 
     [입력 데이터]
     - 질문: {question}
+    - 한국어 의도(사용자가 말하고 싶었던 내용): {user_korean_script}
     - 원본 답변(사용자 실제 발화): {user_answer}
     - 교정된 문장들(1단계 결과물): {corrected_text}
 
     [작성 규칙 - 반드시 JSON 포맷으로 응답하세요]
-    1. improved_answer: [교정된 문장들]의 내용을 그대로 유지하며, 전체 흐름이 자연스럽도록 연결 어구만 추가하여 완성하세요.
+    1. improved_answer: [교정된 문장들]의 내용을 유지하며, 전체 흐름이 자연스럽도록 연결 어구만 추가하여 완성하세요.
        - 서두에 확실한 Main Point(MP)가 드러나야 합니다.
+       - 한국어 의도에는 있으나 영어 답변에서 누락된 핵심 내용이 있다면 자연스럽게 포함시켜 완성하세요.
        - COMBO 문제거나, 이전에 말한 내용이 언급될 땐 "As I told you before"와 같은 연결 고리를 넣으세요.
        - 그 외에 문장 연결 간에 필요한 필러를 문맥상 적절히 사용하세요. (I think that's all I can say about me, That's all I wanted to say, What I'm trying to say, To put detail~ , At the end of the day, Or something, Obviously, Currently, basically, You see, I mean, In fact, what else- , What I really love about is that, The reason why, what am I trying to say, anyway, I gotta tell you, Wow... It's quite a tough question, That's tricky, That is a reason why)
        - 앞 뒤 문장의 맥락이 달라질 땐 By the way 등의 접속사를 적절하게 사용하세요. 
@@ -110,12 +112,12 @@ async def analyze_overall_gemini(question: str, user_answer: str, corrected_text
        - 부족하다면 위 구조를 참고하라는 가이드를 포함하세요.
 
     4. fluency_feedback: [원본 답변]의 발화량과 유창성을 한국어로 평가하세요.
-       - 2문장 이하: 심각한 감점 요인 지적.
-       - 4문장 이하: 분량을 더 늘려야 한다는 조언.
-       - 5문장 이상: 충분한 발화량에 대한 칭찬.
-       - 표현의 다양성은 지나치게 엄격하지 않게 격려 위주로 작성하세요.
-
-    주의: relevance_feedback, logic_feedback, fluency_feedback은 절대로 [교정된 문장들] 기준이 아닌, [원본 답변]의 수준을 바탕으로 작성해야 합니다.
+       - [한국어 의도]와 비교했을 때 영어 답변에서 빠진 부분이나 왜곡된 내용이 있는지 대조 분석을 포함하세요.
+       - [한국어 의도]의 분량에 비해 영어 답변이 현저히 짧다면 유창성 부족을 지목하세요.
+       - 2문장 이하: 심각한 지적, 4문장 이하: 보강 조언, 5문장 이상: 칭찬.
+       - 표현의 다양성은 지나치게 엄격하지 않게, 격려 위주로 작성하세요. 너무 단조롭다면 그때만 지적하세요.
+    
+    주의: relevance_feedback, logic_feedback, fluency_feedback은 절대로 [교정된 문장들] 기준이 아닌, [원본 답변]의 수준을 바탕으로 작성해야 합니다. fluency_feedback 항목은 [원본 답변]과 [한국어 의도] 사이의 간극도 체크하세요.
     """
     
     payload = {
@@ -139,7 +141,7 @@ async def analyze_overall_gemini(question: str, user_answer: str, corrected_text
         response = await client.post(GEMINI_URL, headers=headers, json=payload, timeout=30.0)
         res_json = response.json()
     
-    print(f"📊 [Step 2] 원본 기준 종합 피드백 완료 ({time.perf_counter() - start_time:.2f}s)")
+    print(f"📊 [Step 2] 원본 및 의도 대조 종합 피드백 완료 ({time.perf_counter() - start_time:.2f}s)")
     return json.loads(res_json['candidates'][0]['content']['parts'][0]['text'])
 
 # --- API 엔드포인트 ---
@@ -148,17 +150,18 @@ async def analyze_overall_gemini(question: str, user_answer: str, corrected_text
 async def analyze_voice_text(request: AnalysisRequest):
     total_start = time.perf_counter()
     try:
-        # 1. 문법 및 필러 교정 (Sequential Start)
+        # 1. 문법 및 필러 교정
         sentence_details = await analyze_sentences_gemini(request.user_answer)
         
         # 교정된 문장들을 하나의 텍스트로 결합
         corrected_text = " ".join([s['improved_text'] for s in sentence_details])
         
-        # 2. 교정본을 바탕으로 전체 로직 및 최종 답안 생성
+        # 2. 한국어 의도 대조 및 종합 피드백 생성 (순차 실행)
         overall_res = await analyze_overall_gemini(
             request.question_text, 
             request.user_answer, 
-            corrected_text
+            corrected_text,
+            request.user_korean_script
         )
         
         total_duration = time.perf_counter() - total_start

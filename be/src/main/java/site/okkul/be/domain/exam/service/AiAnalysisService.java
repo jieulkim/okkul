@@ -22,8 +22,8 @@ public class AiAnalysisService {
     @Async
     @Transactional
     public void analyzeAndSaveFeedback(Long answerId, String script) {
-        ExamAnswer examAnswer = examAnswerRepository.findById(answerId)
-                .orElseThrow(() -> new EntityNotFoundException("답변을 찾을 수 없습니다."));
+//        ExamAnswer examAnswer = examAnswerRepository.findById(answerId)
+//                .orElseThrow(() -> new EntityNotFoundException("답변을 찾을 수 없습니다."));
 
 //        Long examId = examAnswer.getExamId();
 

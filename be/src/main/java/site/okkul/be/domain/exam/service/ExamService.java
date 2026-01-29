@@ -16,7 +16,7 @@ import site.okkul.be.domain.exam.dto.response.ExamDetailResponse;
 import site.okkul.be.domain.exam.entity.Exam;
 import site.okkul.be.domain.exam.entity.ExamAnswer;
 import site.okkul.be.domain.exam.repository.ExamAnswerJpaRepository;
-import site.okkul.be.domain.exam.repository.ExamJpARepository;
+import site.okkul.be.domain.exam.repository.ExamJpaRepository;
 import site.okkul.be.domain.qustion.entity.QuestionSet;
 import site.okkul.be.domain.qustion.entity.QuestionType;
 import site.okkul.be.domain.qustion.repository.QuestionSetRepository;
@@ -46,7 +46,7 @@ public class ExamService {
 	/**
 	 * Exam 레포지토리
 	 */
-	private final ExamJpARepository examRepository;
+	private final ExamJpaRepository examRepository;
 	/**
 	 * Exam Answer 레포지토리
 	 */

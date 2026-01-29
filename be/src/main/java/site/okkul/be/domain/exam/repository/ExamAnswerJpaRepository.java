@@ -5,6 +5,6 @@ import site.okkul.be.domain.exam.entity.ExamAnswer;
 
 import java.util.List;
 
-public interface ExamAnswerJpaRepository extends JpaRepository<ExamAnswer, Long> {
+public interface ExamAnswerJpaRepository extends JpaRepository<ExamAnswer, ExamAnswer.ExamAnswerId> {
     List<ExamAnswer> findAllByExamId(Long examId);
 }

@@ -63,6 +63,12 @@ public class ExamAnswer {
 	private String sttScript;
 
 	/**
+	 * AI가 개선한 텍스트
+	 */
+	@Column(name = "improved_answer", columnDefinition = "TEXT")
+	private String improvedAnswer;
+
+	/**
 	 * 답변 상태
 	 */
 	@Enumerated(EnumType.STRING)

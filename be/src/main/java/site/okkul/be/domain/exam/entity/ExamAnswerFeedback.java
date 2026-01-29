@@ -20,5 +20,5 @@ public class ExamAnswerFeedback {
 	private String fluencyFeedback;
 
 	@Column(name = "relevance_feedback", columnDefinition = "TEXT")
-	private String relevance_feedback;
+	private String relevanceFeedback;
 }

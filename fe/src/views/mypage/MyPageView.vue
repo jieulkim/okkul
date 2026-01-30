@@ -375,8 +375,8 @@ onMounted(() => {
 }
 
 .page-title {
-  font-size: 2.5rem;
-  font-weight: 900;
+  font-size: var(--font-size-xl);
+  font-weight: 800;
   color: var(--text-primary);
   margin-bottom: 32px;
 }
@@ -391,7 +391,7 @@ onMounted(() => {
 .card {
   background: var(--bg-secondary);
   border: var(--border-primary);
-  border-radius: var(--border-radius);
+  border-radius: 20px;
   padding: 32px;
   box-shadow: var(--shadow-md);
 }
@@ -412,7 +412,7 @@ onMounted(() => {
 
 .section-header h2 {
   font-size: 1.5rem;
-  font-weight: 900;
+  font-weight: 800;
   color: var(--text-primary);
 }
 
@@ -444,8 +444,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 4px solid var(--primary-color);
-  box-shadow: 0 8px 24px rgba(255, 215, 0, 0.3);
+  border: 4px solid var(--bg-secondary);
+  box-shadow: 0 8px 24px rgba(255, 215, 0, 0.2);
   overflow: hidden;
 }
 
@@ -470,7 +470,7 @@ onMounted(() => {
   padding: 16px;
   background: var(--bg-tertiary);
   border-radius: 12px;
-  border: 1px solid var(--border-primary);
+  border: var(--border-thin);
 }
 
 .info-label {
@@ -481,24 +481,22 @@ onMounted(() => {
 
 .info-value {
   font-size: 1rem;
-  font-weight: 900;
+  font-weight: 700;
   color: var(--text-primary);
 }
 
 .grade-badge {
-  padding: 6px 16px;
-  background: var(--primary-color);
-  color: #000000;
-  border-radius: var(--border-radius);
-  font-weight: 900;
-  border: var(--border-secondary);
-  box-shadow: var(--shadow-sm);
+  padding: 4px 12px;
+  background: var(--primary-light);
+  color: #8B7300;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.8125rem;
 }
 
 .dark-mode .grade-badge {
   background: rgba(255, 215, 0, 0.2);
   color: var(--primary-color);
-  border-color: rgba(255, 215, 0, 0.3);
 }
 
 .profile-edit {
@@ -508,9 +506,8 @@ onMounted(() => {
   gap: 24px;
   padding: 24px;
   background: var(--bg-secondary);
-  border-radius: var(--border-radius);
+  border-radius: 16px;
   border: var(--border-primary);
-  box-shadow: var(--shadow-sm);
 }
 
 .form-group {
@@ -536,22 +533,22 @@ onMounted(() => {
   justify-content: center;
   gap: 8px;
   padding: 10px 20px;
-  border-radius: var(--border-radius);
-  font-weight: 900;
+  border-radius: 12px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
-  border: var(--border-secondary);
+  border: none;
   font-size: 0.95rem;
-  box-shadow: var(--shadow-sm);
 }
 
 .btn-primary {
   background: var(--primary-color);
-  color: #000000;
+  color: #212529;
 }
 
 .btn-primary:hover {
-  transform: translate(-0.02em, -0.02em);
+  background: var(--primary-hover);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
@@ -562,7 +559,7 @@ onMounted(() => {
 
 .btn-secondary:hover {
   background: var(--bg-secondary);
-  border-color: var(--primary-color);
+  border: var(--border-thin);
 }
 
 .btn-ghost {
@@ -570,7 +567,6 @@ onMounted(() => {
   color: var(--text-secondary);
   padding: 8px 12px;
   border: none;
-  box-shadow: none;
 }
 
 .btn-ghost:hover {
@@ -580,7 +576,7 @@ onMounted(() => {
 
 .label {
   font-size: 0.9rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-secondary);
   margin-bottom: 6px;
 }
@@ -589,8 +585,8 @@ onMounted(() => {
   width: 100%;
   padding: 12px 16px;
   background: var(--bg-secondary);
-  border: var(--border-secondary);
-  border-radius: var(--border-radius);
+  border: var(--border-primary);
+  border-radius: 12px;
   color: var(--text-primary);
   font-size: 1rem;
   transition: all 0.2s ease;
@@ -599,8 +595,7 @@ onMounted(() => {
 .input:focus {
   outline: none;
   border-color: var(--primary-color);
-  background: var(--bg-secondary);
-  box-shadow: 0 0 0 4px rgba(255, 215, 0, 0.1);
+  box-shadow: 0 0 0 4px var(--primary-light);
 }
 
 /* 학습 통계 섹션 */
@@ -626,14 +621,8 @@ onMounted(() => {
   gap: 16px;
   padding: 20px;
   background: var(--bg-tertiary);
-  border-radius: var(--border-radius);
+  border-radius: 16px;
   border: var(--border-thin);
-  transition: all 0.2s ease;
-}
-
-.stat-item:hover {
-  transform: translate(-0.02em, -0.02em);
-  box-shadow: var(--shadow-sm);
 }
 
 .stat-icon {
@@ -654,7 +643,7 @@ onMounted(() => {
 
 .stat-value {
   font-size: 1.5rem;
-  font-weight: 900;
+  font-weight: 800;
   color: var(--text-primary);
 }
 
@@ -666,13 +655,17 @@ onMounted(() => {
 }
 
 .count-badge {
-  padding: 6px 12px;
-  background: var(--primary-color);
-  border-radius: var(--border-radius);
-  font-size: 0.875rem;
-  font-weight: 900;
-  color: #000000;
-  border: var(--border-thin);
+  padding: 4px 12px;
+  background: var(--primary-light);
+  border-radius: 16px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #8B7300;
+}
+
+.dark-mode .count-badge {
+  background: rgba(255, 215, 0, 0.2);
+  color: var(--primary-color);
 }
 
 .history-list {
@@ -687,29 +680,27 @@ onMounted(() => {
   gap: 16px;
   padding: 20px;
   background: var(--bg-tertiary);
-  border-radius: var(--border-radius);
+  border-radius: 16px;
   border: var(--border-thin);
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .history-item:hover {
-  transform: translate(-0.02em, -0.02em);
-  box-shadow: var(--shadow-md);
+  transform: translateX(4px);
   background: var(--bg-secondary);
+  border-color: var(--primary-color);
 }
 
 .item-icon {
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: var(--primary-color);
-  border: var(--border-thin);
+  background: var(--primary-light);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #92400e;
+  color: #8B7300;
   flex-shrink: 0;
 }
 
@@ -735,7 +726,7 @@ onMounted(() => {
 
 .item-date {
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
 }
 
 .item-meta {
@@ -746,7 +737,7 @@ onMounted(() => {
 
 .item-meta .grade-badge {
   padding: 4px 12px;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 .score {

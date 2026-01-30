@@ -289,11 +289,11 @@ onMounted(() => {
             
             <div class="strengths-weakness">
               <div class="strength-box">
-                <h4>💪 강점</h4>
+                <h4>강점</h4>
                 <p>{{ examResult.summary.strengths }}</p>
               </div>
               <div class="weakness-box">
-                <h4>📝 개선 필요</h4>
+                <h4>개선 필요</h4>
                 <p>{{ examResult.summary.weakness }}</p>
               </div>
             </div>
@@ -418,25 +418,10 @@ onMounted(() => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
-@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
 .exam-result-page {
   min-height: 100vh;
   background: var(--bg-primary);
-  font-family: 'Noto Sans KR', sans-serif;
-  padding: 40px 20px;
-}
-
-.dark-mode {
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  padding: 48px 24px;
 }
 
 /* 로딩 */
@@ -446,14 +431,14 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   min-height: 80vh;
-  gap: 20px;
+  gap: 24px;
 }
 
 .spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid #e2e8f0;
-  border-top-color: #FFD700;
+  width: 56px;
+  height: 56px;
+  border: 4px solid var(--bg-tertiary);
+  border-top-color: var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -463,8 +448,8 @@ onMounted(() => {
 }
 
 .loading-screen p {
-  font-size: 16px;
-  color: #64748b;
+  font-size: 1.125rem;
+  color: var(--text-secondary);
   font-weight: 600;
 }
 
@@ -476,10 +461,10 @@ onMounted(() => {
 
 /* 헤더 */
 .result-header {
-  margin-bottom: 40px;
+  margin-bottom: 48px;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 32px;
 }
 
 .back-btn {
@@ -488,24 +473,20 @@ onMounted(() => {
   gap: 8px;
   padding: 12px 24px;
   background: var(--bg-secondary);
-  border: var(--border-secondary);
-  border-radius: var(--border-radius);
-  font-weight: 900;
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
-  font-size: 15px;
+  font-size: 0.95rem;
   box-shadow: var(--shadow-sm);
+  color: var(--text-secondary);
 }
 
 .back-btn:hover {
-  transform: translate(-0.02em, -0.02em);
-  box-shadow: var(--shadow-md);
-}
-
-.dark-mode .back-btn {
   background: var(--bg-tertiary);
-  border-color: #FFFFFF;
   color: var(--text-primary);
+  transform: translateY(-2px);
 }
 
 .header-content {
@@ -513,103 +494,95 @@ onMounted(() => {
 }
 
 .result-title {
-  font-size: 36px;
-  font-weight: 900;
+  font-size: 2.25rem;
+  font-weight: 800;
   margin-bottom: 8px;
-  color: var(--primary-color);
-  -webkit-text-fill-color: initial;
+  color: var(--text-primary);
 }
 
 .exam-date {
-  color: #64748b;
-  font-size: 16px;
+  color: var(--text-tertiary);
+  font-size: 1rem;
   font-weight: 500;
 }
 
 /* 종합 피드백 */
 .summary-section {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 24px;
-  margin-bottom: 48px;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 32px;
+  margin-bottom: 64px;
 }
 
 .score-card,
 .radar-chart-card,
 .comment-card {
   background: var(--bg-secondary);
-  border-radius: var(--border-radius);
-  padding: 32px;
+  border-radius: 24px;
+  padding: 40px;
   border: var(--border-primary);
   box-shadow: var(--shadow-md);
-  transition: all 0.3s;
-}
-
-.dark-mode .score-card,
-.dark-mode .radar-chart-card,
-.dark-mode .comment-card {
-  background: var(--bg-secondary);
-  border-color: #FFFFFF;
 }
 
 .score-card h3,
 .radar-chart-card h3,
 .comment-card h3 {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 20px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-bottom: 32px;
   color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.dark-mode .score-card h3,
-.dark-mode .radar-chart-card h3,
-.dark-mode .comment-card h3 {
-  color: #f1f5f9;
+.score-card h3::before,
+.radar-chart-card h3::before,
+.comment-card h3::before {
+  content: "";
+  display: block;
+  width: 4px;
+  height: 20px;
+  background: var(--primary-color);
+  border-radius: 2px;
 }
 
 .grade-display {
   text-align: center;
+  padding: 24px 0;
 }
 
 .grade {
-  font-size: 64px;
-  font-weight: 900;
-  color: #FFD700;
-  margin-bottom: 12px;
-  text-shadow: 2px 2px 4px rgba(255, 215, 0, 0.3);
+  font-size: 5rem;
+  font-weight: 800;
+  color: var(--primary-color);
+  margin-bottom: 16px;
+  line-height: 1;
 }
 
 .score {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 700;
-  color: var(--text-primary);
-}
-
-.dark-mode .score {
-  color: #f1f5f9;
+  color: var(--text-secondary);
 }
 
 /* 오각형 차트 */
 .radar-chart {
   width: 100%;
-  max-width: 300px;
-  margin: 0 auto 32px;
+  max-width: 280px;
+  margin: 0 auto 40px;
   display: block;
 }
 
 .chart-label {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  fill: var(--text-primary);
-}
-
-.dark-label {
-  fill: #f1f5f9;
+  fill: var(--text-secondary);
 }
 
 .score-text {
-  font-size: 11px;
-  fill: #64748b;
+  font-size: 10px;
+  fill: var(--text-tertiary);
   font-weight: 600;
 }
 
@@ -617,70 +590,57 @@ onMounted(() => {
 .scores-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .score-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
 
 .score-item .score-label {
-  min-width: 90px;
+  min-width: 80px;
   font-weight: 600;
-  color: var(--text-primary);
-  font-size: 14px;
-}
-
-.dark-mode .score-item .score-label {
-  color: #f1f5f9;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
 }
 
 .score-bar {
   flex: 1;
-  height: 10px;
-  background: #e2e8f0;
-  border-radius: 5px;
+  height: 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
   overflow: hidden;
-}
-
-.dark-mode .score-bar {
-  background: #334155;
 }
 
 .score-fill {
   height: 100%;
   background: var(--primary-color);
-  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 5px;
-  border-right: 1px solid #000;
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 4px;
 }
 
 .score-value {
-  min-width: 45px;
+  min-width: 40px;
   text-align: right;
   font-weight: 700;
-  color: #FFD700;
-  font-size: 15px;
+  color: var(--primary-color);
+  font-size: 1rem;
 }
 
 /* 총평 */
 .comment-text {
-  line-height: 1.8;
+  line-height: 1.7;
   color: var(--text-primary);
-  margin-bottom: 24px;
-  font-size: 15px;
-}
-
-.dark-mode .comment-text {
-  color: #e2e8f0;
+  margin-bottom: 32px;
+  font-size: 1rem;
 }
 
 .strengths-weakness {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 20px;
 }
 
 @media (max-width: 768px) {
@@ -691,66 +651,47 @@ onMounted(() => {
 
 .strength-box,
 .weakness-box {
-  padding: 20px;
-  border-radius: 12px;
-  border: 2px solid;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid transparent;
 }
 
 .strength-box {
-  background: #f0fdf4;
-  border-color: #10b981;
-}
-
-.dark-mode .strength-box {
-  background: #064e3b;
-  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.05);
+  border-color: rgba(16, 185, 129, 0.2);
 }
 
 .weakness-box {
-  background: #fef2f2;
-  border-color: #ef4444;
-}
-
-.dark-mode .weakness-box {
-  background: #450a0a;
-  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.05);
+  border-color: rgba(239, 68, 68, 0.2);
 }
 
 .strength-box h4,
 .weakness-box h4 {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 700;
   margin-bottom: 12px;
-  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.dark-mode .strength-box h4,
-.dark-mode .weakness-box h4 {
-  color: #f1f5f9;
-}
+.strength-box h4 { color: #059669; }
+.weakness-box h4 { color: #dc2626; }
 
 .strength-box p,
 .weakness-box p {
   line-height: 1.6;
-  color: #374151;
-  font-size: 14px;
-}
-
-.dark-mode .strength-box p,
-.dark-mode .weakness-box p {
-  color: #d1d5db;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
 }
 
 /* 문항별 피드백 */
 .section-title {
-  font-size: 28px;
-  font-weight: 900;
-  margin-bottom: 24px;
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin-bottom: 32px;
   color: var(--text-primary);
-}
-
-.dark-mode .section-title {
-  color: #f1f5f9;
 }
 
 .questions-grid {
@@ -761,44 +702,34 @@ onMounted(() => {
 .question-card {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 24px;
   background: var(--bg-secondary);
-  border-radius: var(--border-radius);
-  padding: 24px;
-  border: var(--border-primary);
+  border-radius: 20px;
+  padding: 24px 32px;
+  border: 1px solid var(--border-primary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: var(--shadow-sm);
 }
 
 .question-card:hover {
-  transform: translate(-0.02em, -0.02em);
+  border-color: var(--primary-color);
+  transform: translateX(8px);
   box-shadow: var(--shadow-md);
-}
-
-.dark-mode .question-card {
-  background: var(--bg-secondary);
-  border-color: #FFFFFF;
-}
-
-.dark-mode .question-card:hover {
-  border-color: #FFD700;
 }
 
 .question-number {
   flex-shrink: 0;
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--primary-color);
-  color: #000000;
-  font-weight: 900;
-  font-size: 18px;
-  border-radius: 50%;
-  border: var(--border-secondary);
-  box-shadow: var(--shadow-sm);
+  background: var(--primary-light);
+  color: #8B7300;
+  font-weight: 700;
+  font-size: 1.125rem;
+  border-radius: 12px;
 }
 
 .question-preview {

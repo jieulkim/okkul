@@ -341,21 +341,18 @@ const getStatusColor = (status) => {
 
 .badge {
   display: inline-block;
-  padding: 8px 16px;
-  background: var(--primary-color);
-  color: #000000;
-  border-radius: var(--border-radius);
+  padding: 6px 16px;
+  background: var(--primary-light);
+  color: #8B7300;
+  border-radius: 20px;
   font-size: 14px;
-  font-weight: 900;
+  font-weight: 700;
   margin-bottom: 32px;
-  border: var(--border-secondary);
-  box-shadow: var(--shadow-sm);
 }
 
 .dark-mode .badge {
-  background: var(--primary-color);
-  color: #000000;
-  border-color: #FFFFFF;
+  background: rgba(255, 215, 0, 0.2);
+  color: var(--primary-color);
 }
 
 .hero-title-wrapper {
@@ -409,27 +406,27 @@ const getStatusColor = (status) => {
 }
 
 .hero-btn-primary {
-  padding: 18px 48px;
+  padding: 16px 40px;
   background: var(--primary-color);
-  color: #000;
+  color: #212529;
   text-decoration: none;
-  border: var(--border-primary);
+  border: none;
   border-radius: var(--border-radius);
-  font-weight: 900;
+  font-weight: 700;
   font-size: 1.125rem;
   transition: all 0.2s;
   box-shadow: var(--shadow-md);
 }
 
 .hero-btn-primary:hover {
-  transform: translate(-0.05em, -0.05em);
+  transform: translateY(-2px);
+  background: var(--primary-hover);
   box-shadow: var(--shadow-lg);
 }
 
 .dark-mode .hero-btn-primary {
   background: var(--primary-color);
-  color: #000;
-  border-color: #FFFFFF;
+  color: #212529;
 }
 
 .hero-features {
@@ -443,25 +440,14 @@ const getStatusColor = (status) => {
 .feature-card {
   padding: 40px 32px;
   background: var(--bg-secondary);
-  border-radius: var(--border-radius);
+  border-radius: 24px;
   text-align: center;
-  transition: all 0.2s ease;
   border: var(--border-primary);
-  box-shadow: var(--shadow-md);
-}
-
-.feature-card:hover {
-  transform: translate(-0.05em, -0.05em);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .dark-mode .feature-card {
   background: var(--bg-secondary);
-  border-color: #FFFFFF;
-}
-
-.dark-mode .feature-card:hover {
-  box-shadow: var(--shadow-lg);
 }
 
 .f-icon {
@@ -561,31 +547,31 @@ const getStatusColor = (status) => {
   align-items: center;
   gap: 20px;
   padding: 30px;
-  border-radius: 24px;
+  border-radius: 20px;
   text-decoration: none;
-  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  border: 3px solid #000000;
-  box-shadow: 2px 2px 0 #000000;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: var(--border-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .action-card.primary {
   background: var(--primary-color);
-  color: #000;
+  color: #212529;
 }
 
 .action-card.secondary {
-  background: #FFFFFF;
-  color: #000;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .action-card:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0 #000000;
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-color);
 }
 
 .action-card:active {
-  transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0 #000000;
+  transform: translateY(-2px);
 }
 
 .card-icon {
@@ -625,25 +611,21 @@ const getStatusColor = (status) => {
 
 /* Dark Mode Overrides */
 .dark-mode .action-card {
-  border-color: #FFFFFF;
-  box-shadow: 2px 2px 0 #FFFFFF;
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .dark-mode .action-card.secondary {
   background: var(--bg-secondary);
-  color: #FFFFFF;
+  color: var(--text-primary);
 }
 
 .dark-mode .action-card.secondary .card-icon {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .dark-mode .action-card:hover {
-  box-shadow: 3px 3px 0 #FFFFFF;
-}
-
-.dark-mode .action-card:active {
-  box-shadow: 1px 1px 0 #FFFFFF;
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-color);
 }
 
 /* 카드 공통 스타일 */
@@ -727,13 +709,13 @@ const getStatusColor = (status) => {
   width: 100%;
   height: 100%;
   background: var(--bg-tertiary);
-  border: 2px solid #000;
+  border: 1px solid rgba(0, 0, 0, 0.05);
   border-radius: 8px 8px 0 0;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dark-mode .fill {
-  border-color: #FFF;
+  border-color: rgba(255, 255, 255, 0.05);
 }
 
 .fill.active {

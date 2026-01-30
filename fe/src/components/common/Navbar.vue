@@ -66,6 +66,11 @@ const isActive = (path) => {
 
       <!-- 우측 컨트롤 -->
       <div class="nav-controls">
+        <!-- 다크모드 토글 -->
+        <button class="theme-toggle" @click="toggleDarkMode" title="테마 변경">
+          <span class="material-icons-outlined">{{ isDarkMode ? 'light_mode' : 'dark_mode' }}</span>
+        </button>
+
         <template v-if="isLoggedIn">
           <!-- 프로필 -->
           <router-link to="/mypage" class="user-profile" :class="{ active: isActive('/mypage') }">
@@ -74,11 +79,6 @@ const isActive = (path) => {
             </div>
             <span class="profile-name">{{ userName }}님</span>
           </router-link>
-
-          <!-- 다크모드 토글 -->
-          <button class="theme-toggle" @click="toggleDarkMode" title="테마 변경">
-            <span class="material-icons-outlined">{{ isDarkMode ? 'light_mode' : 'dark_mode' }}</span>
-          </button>
 
           <!-- 로그아웃 -->
           <button class="logout-btn" @click="handleLogout" title="로그아웃">

@@ -9,27 +9,9 @@ const authStore = useAuthStore()
 // 로그인 여부
 const isLoggedIn = computed(() => !!authStore.user)
 
-// 프로필 이미지가 있는지 확인
-const hasProfileImage = computed(() => {
-  const userImage = authStore.user?.profileImageUrl
-  return userImage && typeof userImage === 'string' && userImage.trim() !== ''
-})
-
-// 프로필 이미지 URL
-const profileImageUrl = computed(() => {
-  const userImage = authStore.user?.profileImageUrl
-  if (!userImage || typeof userImage !== 'string' || userImage.trim() === '') {
-    return ''
-  }
-  
-  if (userImage.startsWith('http') || userImage.startsWith('data:')) {
-    return userImage
-  }
-  
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
-  const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
-  const cleanPath = userImage.startsWith('/') ? userImage : `/${userImage}`
-  return `${cleanBase}${cleanPath}`
+// 사용자 닉네임 (우선순위: nickname > name > '사용자')
+const userName = computed(() => {
+  return authStore.user?.nickname || authStore.user?.name || '사용자'
 })
 
 // 네비게이션 메뉴
@@ -84,30 +66,19 @@ const isActive = (path) => {
 
       <!-- 우측 컨트롤 -->
       <div class="nav-controls">
+        <!-- 다크모드 토글 -->
+        <button class="theme-toggle" @click="toggleDarkMode" title="테마 변경">
+          <span class="material-icons-outlined">{{ isDarkMode ? 'light_mode' : 'dark_mode' }}</span>
+        </button>
+
         <template v-if="isLoggedIn">
           <!-- 프로필 -->
           <router-link to="/mypage" class="user-profile" :class="{ active: isActive('/mypage') }">
             <div class="profile-avatar">
-              <img 
-                v-if="hasProfileImage"
-                :src="profileImageUrl" 
-                alt="프로필"
-                class="profile-image"
-              />
-              <img 
-                v-else 
-                src="/default-profile.png" 
-                alt="기본 프로필"
-                class="profile-image fallback"
-              />
+              <img src="/default-profile.png" alt="프로필" class="profile-image" />
             </div>
-            <span class="profile-name">{{ authStore.user?.nickname }}님</span>
+            <span class="profile-name">{{ userName }}님</span>
           </router-link>
-
-          <!-- 다크모드 토글 -->
-          <button class="theme-toggle" @click="toggleDarkMode" title="테마 변경">
-            <span class="material-icons-outlined">{{ isDarkMode ? 'light_mode' : 'dark_mode' }}</span>
-          </button>
 
           <!-- 로그아웃 -->
           <button class="logout-btn" @click="handleLogout" title="로그아웃">
@@ -148,6 +119,14 @@ const isActive = (path) => {
   gap: 1.5rem;
 }
 
+@media (max-width: 768px) {
+  .navbar-content {
+    height: 56px;
+    gap: 0.75rem;
+  }
+}
+
+/* 로고 - 원래 버튼 스타일 유지 */
 .logo {
   display: flex;
   align-items: center;
@@ -181,12 +160,25 @@ const isActive = (path) => {
   font-family: inherit;
 }
 
+/* 네비게이션 메뉴 - 원래 중앙 정렬 유지 */
 .nav-menu {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .nav-menu {
+    display: none;
+  }
+}
+
+.guest-msg {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
 .nav-link {
@@ -209,91 +201,47 @@ const isActive = (path) => {
 }
 
 .nav-link.active {
-  background: var(--primary-color);
-  color: #000000;
-  border: var(--border-secondary);
-  box-shadow: var(--shadow-sm);
-}
-
-.dark-mode .nav-link.active {
-  background: var(--primary-color);
-  color: #000000;
-  border: var(--border-secondary);
+  background: var(--bg-tertiary);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
 }
 
 .nav-icon {
   font-size: 1.25rem;
 }
 
-.guest-msg {
-  color: #6b7280;
-  font-size: 1.05rem;
-  font-weight: 600;
-}
-
-.dark-mode .guest-msg {
-  color: #94a3b8;
-}
-
-.nav-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
+/* 프로필 */
 .user-profile {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 6px 12px;
-  border-radius: 12px;
+  gap: 0.75rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--border-radius);
   text-decoration: none;
-  color: #374151;
-  font-weight: 600;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   border: 2px solid transparent;
 }
 
 .user-profile:hover {
-  background: #f9fafb;
-  border-color: #FFD700;
-}
-
-.dark-mode .user-profile {
-  color: #f1f5f9;
-}
-
-.dark-mode .user-profile:hover {
-  background: #1e293b;
-  border-color: #FFD700;
+  background: var(--bg-tertiary);
 }
 
 .user-profile.active {
-  background: var(--primary-color);
-  border-color: #000000;
-}
-
-.dark-mode .user-profile.active {
-  background: var(--primary-color);
-  border-color: #FFFFFF;
+  background: var(--bg-tertiary);
+  border-color: var(--primary-color);
 }
 
 .profile-avatar {
-  width: 36px; /* 크기 축소 */
+  width: 36px;
   height: 36px;
   border-radius: 50%;
   overflow: hidden;
-  border: 2px solid #FFD700;
-  box-shadow: 0 2px 6px rgba(255, 215, 0, 0.2);
-  background: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0; /* 찌그러짐 방지 */
-}
-
-.dark-mode .profile-avatar {
-  background: #1e293b;
+  flex-shrink: 0;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--primary-color);
 }
 
 .profile-image {
@@ -302,129 +250,62 @@ const isActive = (path) => {
   object-fit: cover;
 }
 
-.profile-image.fallback {
-  width: 80%;
-  height: 80%;
-  object-fit: contain;
-  opacity: 0.8;
-}
-
 .profile-name {
   font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
 }
 
+@media (max-width: 768px) {
+  .profile-name {
+    display: none;
+  }
+}
+
+/* 컨트롤 버튼들 */
+.nav-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.theme-toggle,
 .logout-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: var(--border-thin);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  border: none;
-  background: #f9fafb;
-  color: #6b7280;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
+.theme-toggle:hover,
 .logout-btn:hover {
-  background: #fee2e2;
-  color: #dc2626;
-}
-
-.dark-mode .logout-btn {
-  background: #1e293b;
-  color: #94a3b8;
-}
-
-.dark-mode .logout-btn:hover {
-  background: rgba(220, 38, 38, 0.2);
-  color: #ef4444;
-}
-
-.theme-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  border: none;
-  background: #f9fafb;
-  color: #6b7280;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.theme-toggle:hover {
-  background: #f3f4f6;
-  color: #FFD700;
-}
-
-.dark-mode .theme-toggle {
-  background: #334155;
-  color: #94a3b8;
-}
-
-.dark-mode .theme-toggle:hover {
-  background: #475569;
+  background: var(--bg-primary);
   color: var(--primary-color);
+  border-color: var(--primary-color);
 }
 
 .login-btn {
-  padding: 8px 20px;
+  padding: 0.5rem 1.5rem;
   background: var(--primary-color);
-  color: #000;
+  color: #000000;
+  border-radius: var(--border-radius);
+  font-weight: 900;
   text-decoration: none;
   border: var(--border-secondary);
-  border-radius: 12px;
-  font-weight: 800;
-  font-size: 0.95rem;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   box-shadow: var(--shadow-sm);
 }
 
 .login-btn:hover {
-  transform: translate(-0.05em, -0.05em);
+  transform: translate(-0.02em, -0.02em);
   box-shadow: var(--shadow-md);
-}
-
-.dark-mode .login-btn {
-  background: var(--primary-color);
-  color: #000;
-}
-
-@media (max-width: 1024px) {
-  .navbar-content {
-    padding: 0 32px;
-  }
-}
-
-@media (max-width: 768px) {
-  .navbar-content {
-    padding: 0 24px;
-    gap: 1rem;
-  }
-
-  .nav-label {
-    display: none;
-  }
-
-  .profile-name {
-    display: none;
-  }
-
-  .guest-msg {
-    font-size: 0.85rem;
-  }
-
-  .logo-text {
-    font-size: 1.5rem;
-  }
-  
-  .logo-character {
-    width: 44px;
-    height: 44px;
-  }
 }
 </style>

@@ -5,7 +5,7 @@ import time
 import httpx
 from typing import List
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,17 +16,18 @@ GMS_KEY = os.environ.get("GMS_KEY")
 GEMINI_URL = "https://gms.ssafy.io/gmsapi/generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent"
 
 # --- Pydantic 모델 정의 ---
+
 class AnalysisRequest(BaseModel):
-    question_text: str
-    user_answer: str
-    user_korean_script: str  # 한국어 의도 입력 필드 추가
+    question_text: str = Field(..., description="오픽 질문 텍스트", example="Tell me about your favorite park.")
+    user_answer: str = Field(..., description="사용자가 발화한 영어 답변", example="I like Central Park...")
+    user_korean_script: str = Field(..., description="사용자가 말하고 싶었던 한국어 의도", example="나는 센트럴 파크를 좋아해. 거기 가면 마음이 편해지거든.")
 
 class SentenceFeedback(BaseModel):
-    target_sentence: str
-    target_text: str
-    improved_text: str
-    feedback: str
-    sentence_order: int
+    target_sentence: str = Field(..., description="원본 문장")
+    target_text: str = Field(..., description="수정이 필요한 부분")
+    improved_text: str = Field(..., description="교정된 전체 문장")
+    feedback: str = Field(..., description="교정 이유 및 AL 팁")
+    sentence_order: int = Field(..., description="문장 순서")
 
 class CombinedResponse(BaseModel):
     improved_answer: str
@@ -46,6 +47,7 @@ async def analyze_sentences_gemini(text: str):
     당신은 오픽 문장 교정 전문가입니다. 아래 사용자 답변을 분석하여 AL 등급에 맞게 교정하세요.
     
     [교정 가이드라인]
+    중요: 해당 문장이 어느정도 완벽하면 교정하지 않습니다.
     1. 문법 오류 수정은 기본입니다.
     2. 문장 사이에 자연스러운 Filler(you know, I mean, I gotta say, What I'm trying to say is, Well, actually I've never thought about it...) 등을 필요하다면 추가하세요.
     3. 구어체 형태로, 감정 표현을 더욱 풍부하게 만들어주세요. (numerous, incredibly, crystal clear, stunning, go-to, laid back, relaxing, striking, challenging, various, truly, tasty 등 사용)
@@ -146,7 +148,13 @@ async def analyze_overall_gemini(question: str, user_answer: str, corrected_text
 
 # --- API 엔드포인트 ---
 
-@app.post("/v1/analyze", response_model=CombinedResponse)
+@app.post(
+    "/v1/analyze", 
+    response_model=CombinedResponse,
+    tags=["Practice"],
+    summary="사용자 답변 AI 종합 분석",
+    description="사용자의 영어 답변과 한국어 의도를 바탕으로 문법 교정 및 AL 기준 피드백을 생성합니다."
+)
 async def analyze_voice_text(request: AnalysisRequest):
     total_start = time.perf_counter()
     try:
@@ -172,3 +180,7 @@ async def analyze_voice_text(request: AnalysisRequest):
     except Exception as e:
         print(f"❌ Error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+# --- 라우터 등록 ---
+from exam_feedback import router as exam_router
+app.include_router(exam_router, prefix="/v1")

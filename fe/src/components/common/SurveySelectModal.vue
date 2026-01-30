@@ -63,26 +63,28 @@ const labels = {
 
 const getOccupationLabel = (val) => {
   if (!val) return null;
+  // 백엔드 Enum 명칭 또는 숫자 ID 대응
   const occMap = {
-    1: "직장인",
-    2: "재택근무",
-    3: "교육계",
-    4: "무직/경험없음"
+    1: "직장인", COMPANY: "직장인",
+    2: "재택근무", HOME: "재택근무",
+    3: "교육계", EDUCATION: "교육계",
+    4: "무직/경험없음", NONE: "무직/경험없음",
+    MILITARY: "군인"
   };
-  return occMap[val] || labels.occupation[val] || val;
+  return occMap[val] || val;
 };
 
 const getResidenceLabel = (val) => {
   if (!val) return null;
-  // Handle numeric IDs if they come as numbers
+  // 백엔드 Enum 명칭 또는 숫자 ID 대응
   const resMap = {
-    1: "1인 가구",
-    2: "공동 거주",
-    3: "가족 거주",
-    4: "기숙사",
-    5: "군대 막사",
+    1: "1인 가구", ALONE: "1인 가구",
+    2: "공동 거주", FRIENDS: "공동 거주",
+    3: "가족 거주", FAMILY: "가족 거주",
+    4: "기숙사", DORMITORY: "기숙사",
+    5: "군대 막사", MILITARY: "군대 막사"
   };
-  return resMap[val] || labels.residence[val] || val;
+  return resMap[val] || val;
 };
 
 const topicMapping = {
@@ -103,14 +105,24 @@ const topicMapping = {
 const getTopicsSummary = (topics) => {
   if (!topics || topics.length === 0) return "선택된 주제 없음";
   
-  const names = topics.map((t) => {
+  // 500~799 범위의 ID는 백엔드 내부 배경 정보용 토픽이므로 필터링
+  const filteredTopics = topics.filter(t => {
+    const id = typeof t === "number" ? t : (t.topicId || t.id);
+    return !(id >= 500 && id < 800);
+  });
+
+  if (filteredTopics.length === 0) return "선택된 주제 없음";
+
+  const names = filteredTopics.map((t) => {
     if (typeof t === "string") return t;
-    if (typeof t === "number") return topicMapping[t] || `토픽 ${t}`;
-    return t.topicName || t.name || topicMapping[t.topicId] || topicMapping[t] || "알 수 없는 주제";
+    if (typeof t === "number") return topicMapping[t] || null;
+    return t.topicName || t.name || topicMapping[t.topicId] || topicMapping[t] || null;
   });
   
+  // 매핑되지 않았거나 유효하지 않은 이름 제거
   const validNames = names.filter(n => n && !n.includes('난이도'));
   
+  if (validNames.length === 0) return "선택된 주제 없음";
   if (validNames.length <= 3) return validNames.join(", ");
   return `${validNames.slice(0, 3).join(", ")} 외 ${validNames.length - 3}개`;
 };

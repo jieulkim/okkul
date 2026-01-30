@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import site.okkul.be.domain.qustion.entity.QuestionSet;
 import site.okkul.be.domain.qustion.entity.QuestionType;
+import site.okkul.be.domain.qustion.entity.converter.QuestionTypeConverter;
 import site.okkul.be.domain.topic.entity.Topic;
 import site.okkul.be.domain.user.entity.User;
 
@@ -36,8 +37,7 @@ public class Practice {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "type_id", nullable = false)
+    @Convert(converter = QuestionTypeConverter.class)
     private QuestionType questionType;
 
     @ManyToOne(fetch = FetchType.LAZY)

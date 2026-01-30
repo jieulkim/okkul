@@ -100,7 +100,9 @@ const goToDetail = (item) => {
         <!-- 카테고리 선택 화면 -->
         <div v-if="!currentCategory" class="categories-grid">
           <div class="category-card" @click="selectCategory('EXAM')">
-            <div class="category-icon">🎓</div>
+            <div class="category-icon">
+              <span class="material-icons">school</span>
+            </div>
             <h2>실전 모의고사</h2>
             <p>전체 시험에 대한 종합적인 피드백을 확인하세요.</p>
             <div class="category-footer">
@@ -109,7 +111,9 @@ const goToDetail = (item) => {
             </div>
           </div>
           <div class="category-card" @click="selectCategory('PRACTICE')">
-            <div class="category-icon">🎯</div>
+            <div class="category-icon">
+              <span class="material-icons">track_changes</span>
+            </div>
             <h2>유형별 연습</h2>
             <p>각 주제별 집중 연습에 대한 피드백을 확인하세요.</p>
             <div class="category-footer">
@@ -241,8 +245,15 @@ const goToDetail = (item) => {
 }
 
 .category-icon {
-  font-size: 64px;
   margin-bottom: 24px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.category-icon .material-icons {
+  font-size: 64px;
+  color: var(--primary-color);
 }
 
 .category-card h2 {

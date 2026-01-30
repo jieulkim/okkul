@@ -24,7 +24,7 @@ const practiceTypes = [
   {
     id: 'INTRO',
     name: '자기소개',
-    icon: '👤',
+    icon: 'person',
     description: '자신을 소개하는 문제입니다.',
     details: {
       difficulty: {
@@ -38,7 +38,7 @@ const practiceTypes = [
   {
     id: 'COMBO',
     name: '콤보',
-    icon: '🎯',
+    icon: 'track_changes',
     description: '묘사, 루틴, 과거경험 등이 결합된 연속 문제입니다.',
     details: {
       difficulty: {
@@ -52,7 +52,7 @@ const practiceTypes = [
   {
     id: 'ROLEPLAY',
     name: '롤플레잉',
-    icon: '🎭',
+    icon: 'theater_comedy',
     description: '실제 상황을 가정한 문제 해결 유형입니다.',
     details: {
       difficulty: {
@@ -66,7 +66,7 @@ const practiceTypes = [
   {
     id: 'ADVANCED',
     name: '어드밴스',
-    icon: '🚀',
+    icon: 'rocket_launch',
     description: 'AL 등급을 위한 고난이도 문제입니다.',
     details: {
       difficulty: {
@@ -265,7 +265,9 @@ onMounted(async () => {
           @mouseleave="hoveredType = null"
           @click="selectType(type)"
         >
-          <div class="type-icon">{{ type.icon }}</div>
+          <div class="type-icon">
+            <span class="material-icons">{{ type.icon }}</span>
+          </div>
           <h2 class="type-name">{{ type.name }}</h2>
           <p class="type-desc">{{ type.description }}</p>
           
@@ -381,7 +383,17 @@ onMounted(async () => {
   border-color: var(--primary-color);
 }
 
-.type-icon { font-size: 48px; margin-bottom: 20px; }
+.type-icon { 
+  margin-bottom: 20px; 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.type-icon .material-icons {
+  font-size: 56px;
+  color: var(--primary-color);
+}
 
 .type-name { 
   font-size: 1.5rem; 

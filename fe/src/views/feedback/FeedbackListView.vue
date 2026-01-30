@@ -163,9 +163,13 @@ const goToDetail = (item) => {
 
 <style scoped>
 .feedback-list-page {
-  min-height: 100vh;
-  background: var(--bg-primary);
-  padding: 60px 20px;
+  height: calc(100vh - var(--header-height));
+  overflow: hidden;
+  background: var(--bg-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
 .container {
@@ -225,8 +229,8 @@ const goToDetail = (item) => {
 }
 
 .category-card {
-  background: var(--bg-secondary);
-  border: var(--border-primary);
+  background: #FFFFFF;
+  border: 1px solid #F1F5F9;
   border-radius: 32px;
   padding: 48px 32px;
   text-align: center;
@@ -306,8 +310,8 @@ const goToDetail = (item) => {
 }
 
 .feedback-card {
-  background: var(--bg-secondary);
-  border: var(--border-primary);
+  background: #FFFFFF;
+  border: 1px solid #F1F5F9;
   border-radius: 20px;
   padding: 24px;
   cursor: pointer;
@@ -326,7 +330,14 @@ const goToDetail = (item) => {
   left: 0;
   width: 4px;
   height: 100%;
+}
+
+.feedback-card.exam::before {
   background: #FBC02D;
+}
+
+.feedback-card.practice::before {
+  background: #fcfc05;
 }
 
 .feedback-card:hover {

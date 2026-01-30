@@ -38,8 +38,9 @@
   --text-tertiary: #8D8D8D;
 
   /* Theming Variables */
-  --bg-color: #FFFFFF;
-  --bg-subtle: #FFFEF5;
+  --bg-color: #fefee5;
+  /* Pastel Chick Yellow */
+  --bg-subtle: #fbfb30;
 
   --text-main: var(--text-primary);
   --text-sub: var(--text-secondary);
@@ -104,21 +105,6 @@ body {
   font-weight: 400;
   overflow-x: hidden;
   transition: background-color 0.3s var(--ease-smooth), color 0.3s var(--ease-smooth);
-}
-
-/* Subtle Animated Background Grain/Gradient */
-body::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background:
-    radial-gradient(circle at 10% 20%, rgba(255, 245, 157, 0.15), transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(255, 224, 130, 0.1), transparent 40%);
-  z-index: -1;
-  pointer-events: none;
 }
 
 h1,

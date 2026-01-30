@@ -302,14 +302,19 @@ onMounted(async () => {
 
 <style scoped>
 .page-container {
-  min-height: 100vh;
-  background: var(--bg-primary);
+  height: calc(100vh - var(--header-height));
+  overflow: hidden;
+  background: var(--bg-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .page-content {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 32px 64px;
+  padding: 20px 40px;
+  width: 100%;
 }
 
 @media (max-width: 1024px) {
@@ -325,10 +330,10 @@ onMounted(async () => {
 }
 
 .page-title {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 800;
   color: var(--text-primary);
-  margin-bottom: 40px;
+  margin-bottom: 24px;
   text-align: center;
 }
 
@@ -339,24 +344,22 @@ onMounted(async () => {
 }
 
 .type-card { 
-  background: var(--bg-secondary);
-  border: var(--border-primary);
+  background: #FFFFFF;
+  border: 1px solid #F1F5F9;
   border-radius: 24px;
-  padding: 48px 32px;
+  padding: 32px 24px;
   text-align: center;
   cursor: pointer;
   position: relative;
   transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-  /* 고정 높이 대신 최소 높이 사용 */
-  min-height: 340px;
+  /* 고정 높이 사용 및 오버레이 처리를 위한 설정 */
+  height: 250px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* 내용이 추가되면 아래로 늘어날 수 있도록 상단 정렬 */
-  justify-content: flex-start;
-  box-shadow: var(--shadow-sm);
-  /* 내용 넘침은 보여주되, 카드 자체의 둥근 모서리는 유지 */
+  justify-content: center; /* 내용 수직 중앙 정렬 */
   overflow: hidden;
+  padding: 24px;
 }
 
 .type-card:hover { 
@@ -370,7 +373,7 @@ onMounted(async () => {
 }
 
 .type-icon { 
-  margin-bottom: 20px; 
+  margin-bottom: 12px; 
   display: flex;
   justify-content: center;
   align-items: center;
@@ -400,46 +403,31 @@ onMounted(async () => {
 }
 
 .hover-details { 
-  /* 절대 위치 제거: 문서 흐름에 따라 아래에 배치 */
-  position: relative; 
+  position: absolute; 
+  top: 0;
+  left: 0;
   width: 100%;
+  height: 100%;
   
-  /* 초기 상태: 숨김 */
-  max-height: 0;
-  padding: 0 16px; /* 좌우 여백 약간 줄임 */
-  margin-top: 0;
+  /* 오버레이 스타일 */
+  background: rgba(255, 255, 255, 0.98);
+  padding: 32px;
   opacity: 0;
-  overflow: hidden;
   
-  /* 스타일: 배경 및 그림자 제거하여 하나의 카드처럼 보이게 함 */
-  background: transparent;
-  border-top: 1px solid var(--border-primary); /* 상단 구분선만 유지 */
-  
-  /* 애니메이션 분리: 공간 확장은 즉각적으로, 글자는 천천히 등장 */
-  transition: max-height 0.5s cubic-bezier(0.1, 0, 0.1, 0.1), 
-              padding 0.5s cubic-bezier(0.1, 0, 0.1, 0.1), 
-              margin 0.5s cubic-bezier(0.1, 0, 0.1, 0.1), 
-              /* 글자는 0.2초 기다렸다가 1.5초 동안 아주 천천히 나타남 */
-              opacity 1s ease 0.1s, 
-              transform 1s ease 0.1s;
-  transform: translateY(20px);
-  
-  /* 내부 텍스트 정렬 */
+  /* Flex 중앙 정렬 */
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  
+  transition: opacity 0.3s ease;
+  z-index: 10;
 }
 
-/* 호버 시 펼쳐짐 */
+/* 호버 시 오버레이 표시 */
 .type-card:hover .hover-details {
-  max-height: 500px;
-  padding-top: 24px; /* 상단 여백 추가 */
-  padding-bottom: 16px;
-  margin-top: 16px;
   opacity: 1;
-  transform: translateY(0);
-  /* box-shadow 제거 */
 }
 
 .diff-box { 
@@ -467,8 +455,8 @@ onMounted(async () => {
 
 /* Topic Selection Styles */
 .condition-card {
-  background: var(--bg-secondary);
-  border: var(--border-primary);
+  background: #FFFFFF;
+  border: 1px solid #F1F5F9;
   border-radius: 24px;
   padding: 48px;
   box-shadow: var(--shadow-md);

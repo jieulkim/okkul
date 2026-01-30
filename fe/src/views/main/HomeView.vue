@@ -200,8 +200,8 @@ const handleCardClick = (path) => {
 .circle {
   position: absolute;
   border-radius: 50%;
-  filter: blur(60px);
-  opacity: 0.6;
+  filter: blur(50px);
+  opacity: 0.3;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -209,8 +209,8 @@ const handleCardClick = (path) => {
 }
 
 .circle-1 { 
-  width: 700px; 
-  height: 700px; 
+  width: 600px; 
+  height: 600px; 
   background: #FFFDE7; /* 가장 바깥쪽: 아주 연한 아이보리 */
   z-index: 0;
 }

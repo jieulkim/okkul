@@ -19,7 +19,6 @@ import site.okkul.be.domain.exam.docs.ExamControllerDocs;
 import site.okkul.be.domain.exam.dto.request.ExamCreateRequest;
 import site.okkul.be.domain.exam.dto.request.ExamQuestionAnswerRequest;
 import site.okkul.be.domain.exam.dto.response.ExamDetailResponse;
-import site.okkul.be.domain.exam.dto.response.ExamResultResponse;
 import site.okkul.be.domain.exam.service.ExamService;
 
 @RestController
@@ -122,18 +121,6 @@ public class ExamController implements ExamControllerDocs {
 			@AuthenticationPrincipal UserDetails user
 	) {
 		examService.completeExam(examId);
-		return ResponseEntity.ok().build();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	@GetMapping("/{examId}/result")
-	public ResponseEntity<ExamResultResponse> getExamResult(
-			@PathVariable Long examId,
-			@AuthenticationPrincipal UserDetails user) {
-		// TODO: 실제 서비스 연동 전까지 더미 유지 가능
 		return ResponseEntity.ok().build();
 	}
 }

@@ -9,10 +9,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 import site.okkul.be.domain.exam.dto.request.ExamCreateRequest;
 import site.okkul.be.domain.exam.dto.request.ExamQuestionAnswerRequest;
 import site.okkul.be.domain.exam.dto.response.ExamDetailResponse;
-import site.okkul.be.domain.exam.dto.response.ExamResultResponse;
 import site.okkul.be.global.config.SwaggerConfig;
 
-@Tag(name = "Exam", description = "모의고사 응시 API (시험 진행 및 음성 제출)")
+@Tag(name = "Exam", description = "모의고사 진행에 필요한 API")
 public interface ExamControllerDocs {
 
 	/**
@@ -99,20 +98,4 @@ public interface ExamControllerDocs {
 			@Parameter(hidden = true) UserDetails user
 	);
 
-	/**
-	 * 시험 결과 조회
-	 *
-	 * @param examId 시험번호
-	 * @param user   유저정보
-	 * @return 시험 결과
-	 */
-	@Operation(
-			summary = "시험 결과 조회",
-			description = "전체 문항의 답변, STT 스크립트 및 AI 피드백 결과를 조회합니다."
-	)
-	@SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
-	ResponseEntity<ExamResultResponse> getExamResult(
-			@Parameter(description = "시험 ID") Long examId,
-			@Parameter(hidden = true) UserDetails user
-	);
 }

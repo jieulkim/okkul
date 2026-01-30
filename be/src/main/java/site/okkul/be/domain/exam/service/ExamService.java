@@ -93,11 +93,6 @@ public class ExamService {
 	}
 
 	@Transactional(readOnly = true)
-	public ExamDetailResponse getExamInfoSummary(Long userId, Long examId) {
-		throw new RuntimeException("Not yet implemented");
-	}
-
-	@Transactional(readOnly = true)
 	public ExamDetailResponse getExamInfoDetails(Long userId, Long examId) {
 		Exam exam = examRepository.findByIdAndUserId(examId, userId).orElseThrow(
 				() -> new IllegalArgumentException("존재하지 않는 시험 세션입니다. ID: " + examId)

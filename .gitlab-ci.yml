@@ -55,6 +55,7 @@ build-fe:
     - echo "⚛️ Frontend 빌드 시작..."
     - cd fe
     - docker build -t frontend:$CI_COMMIT_REF_SLUG .
+    - docker build --build-arg PROFILE=$CI_COMMIT_BRANCH -t frontend:$CI_COMMIT_REF_SLUG .
 
 # [AI 빌드] - Python Docker 환경
 build-ai:

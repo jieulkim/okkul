@@ -15,8 +15,11 @@ RUN npm install
 # 소스 코드 복사
 COPY . .
 
-# 빌드 실행 (결과물은 /app/dist 에 생성됨)
-RUN npm run build
+# 빌드 인자(Argument) 설정 (기본값: production)
+ARG PROFILE=production
+
+# 빌드 실행 (브랜치명을 mode로 전달: cicd, develop, master)
+RUN npm run build -- --mode ${PROFILE}
 
 # --------------------------------------------------------
 # 2단계: Production Stage (Nginx로 배포)

@@ -3,19 +3,19 @@ import json
 import time
 
 def test_exam_report_column_details():
-    url = "http://localhost:8000/v1/exam/report"
+    url = "http://localhost:8000/v1/analyze/exam-feedback"
     
-    # 더미 데이터 생성 (15개 문항)
+    # 더미 데이터 생성 (15개 문항 중 3개 예시)
     dummy_payload = [
         {
             "question_order": i,
             "stt_script": "I go hiking once a week and I think it is good for my health.",
             "improved_answer": "Well, I usually go hiking once a week because I believe it's beneficial for my health.",
-            "relevance_score": 85,
-            "logic_score": 80,
-            "vocab_score": 75,
-            "grammar_score": 70,
-            "fluency_score": 90,
+            "relevance_score": 55,
+            "logic_score": 57,
+            "vocab_score": 59,
+            "grammar_score": 61,
+            "fluency_score": 63,
             "logic_feedback": "전반적으로 양호하나 시제 일관성이 부족함."
         } for i in range(1, 16)
     ]
@@ -33,30 +33,32 @@ def test_exam_report_column_details():
             print("=".center(60, "="))
             
             # 1. 기본 정보 및 예측 결과
-            print(f"▶ [grade] 예측 등급        : {result.get('grade')}")
-            print(f"▶ [total_score] 전체 점수   : {result.get('total_score'):.2f}")
+            print(f"▶ [predicted_level] 예측 등급   : {result.get('predicted_level')}")
+            print(f"▶ [total_score] 전체 점수       : {result.get('total_score')}")
             
             print("-" * 60)
             
             # 2. 평균 점수 (Numerical Metrics)
-            print(f"▶ [avg_grammar] 문법 평균   : {result.get('avg_grammar'):.2f}")
-            print(f"▶ [avg_vocab] 어휘 평균     : {result.get('avg_vocab'):.2f}")
-            print(f"▶ [avg_logic] 논리 평균     : {result.get('avg_logic'):.2f}")
-            print(f"▶ [avg_fluency] 유창성 평균 : {result.get('avg_fluency'):.2f}")
-            print(f"▶ [avg_relevance] 적합성 평균: {result.get('avg_relevance'):.2f}")
+            print(f"▶ [average_grammar_score] 문법 평균 : {result.get('average_grammar_score')}")
+            print(f"▶ [average_vocab_score] 어휘 평균   : {result.get('average_vocab_score')}")
+            print(f"▶ [average_logic_score] 논리 평균   : {result.get('average_logic_score')}")
+            print(f"▶ [average_fluency_score] 유창성 평균: {result.get('average_fluency_score')}")
+            print(f"▶ [average_relevance_score] 적합성 평균: {result.get('average_relevance_score')}")
             
             print("-" * 60)
             
             # 3. 텍스트 분석 결과 (Text Analysis)
-            print(f"▶ [strength_type] 전체적 강점 유형 :")
-            print(f"   => {result.get('strength_type')}")
+            print(f"▶ [strengths] 강점 리스트 :")
+            for s in result.get('strengths', []):
+                print(f"   - {s}")
             
-            print(f"\n▶ [weakness_type] 전체적 약점 유형 :")
-            print(f"   => {result.get('weakness_type')}")
+            print(f"\n▶ [improvements] 보완점 리스트 :")
+            for w in result.get('improvements', []):
+                print(f"   - {w}")
             
-            print(f"\n▶ [comment] 전체 총평 내용 :")
+            print(f"\n▶ [overall_evaluation] 전체 총평 :")
             # 긴 텍스트 가독성을 위해 줄바꿈 처리
-            wrapped_comment = result.get('comment', '').replace('. ', '.\n      ')
+            wrapped_comment = result.get('overall_evaluation', '').replace('. ', '.\n      ')
             print(f"      {wrapped_comment}")
             
             print("=".center(60, "="))

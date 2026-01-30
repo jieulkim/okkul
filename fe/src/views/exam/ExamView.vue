@@ -104,22 +104,30 @@ onMounted(async () => {
 
         <div class="features-grid">
           <div class="feature-card">
-            <div class="feature-icon">📝</div>
+            <div class="feature-icon">
+              <span class="material-icons">edit_document</span>
+            </div>
             <h3>실전 시뮬레이션</h3>
             <p>실제 시험과 동일한 15문항 구성</p>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">🎯</div>
+            <div class="feature-icon">
+              <span class="material-icons">track_changes</span>
+            </div>
             <h3>난이도 자동 조정</h3>
             <p>7번 문제 후 난이도 재설정</p>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">🤖</div>
+            <div class="feature-icon">
+              <span class="material-icons">auto_awesome</span>
+            </div>
             <h3>AI 분석</h3>
             <p>문법, 어휘, 유창성 등 종합 평가</p>
           </div>
           <div class="feature-card">
-            <div class="feature-icon">📊</div>
+            <div class="feature-icon">
+              <span class="material-icons">insights</span>
+            </div>
             <h3>상세 피드백</h3>
             <p>문항별 강점과 약점 분석</p>
           </div>
@@ -274,8 +282,15 @@ onMounted(async () => {
 }
 
 .feature-icon {
-  font-size: 48px;
   margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.feature-icon .material-icons {
+  font-size: 48px;
+  color: var(--primary-color);
 }
 
 .feature-card h3 {

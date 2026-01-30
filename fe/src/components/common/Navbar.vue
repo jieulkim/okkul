@@ -45,7 +45,7 @@ const isActive = (path) => {
     <div class="navbar-content">
       <!-- 로고 -->
       <router-link to="/" class="logo">
-        <span class="logo-text">오꿀</span>
+        <img src="/okkul_logo.png" alt="오꿀 로고" class="navbar-logo-img" />
       </router-link>
 
       <!-- 네비게이션 메뉴 -->
@@ -77,7 +77,7 @@ const isActive = (path) => {
             <div class="profile-avatar">
               <img src="/default-profile.png" alt="프로필" class="profile-image" />
             </div>
-            <span class="profile-name">{{ userName }}님</span>
+            <span class="profile-name">{{ userName }}</span>
           </router-link>
 
           <!-- 로그아웃 -->
@@ -131,11 +131,6 @@ const isActive = (path) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0.4em 1em;
-  background: var(--primary-color);
-  border: var(--border-secondary);
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-sm);
   text-decoration: none;
   transition: all 0.2s ease;
   z-index: 10;
@@ -143,8 +138,7 @@ const isActive = (path) => {
 }
 
 .logo:hover {
-  transform: translate(-0.02em, -0.02em);
-  box-shadow: var(--shadow-md);
+  transform: scale(1.05);
 }
 
 .logo:active {
@@ -152,12 +146,10 @@ const isActive = (path) => {
   box-shadow: none;
 }
 
-.logo-text {
-  font-size: 1.1rem;
-  font-weight: 900;
-  color: #000000;
-  flex-shrink: 0;
-  font-family: inherit;
+.navbar-logo-img {
+  height: 32px;
+  width: auto;
+  object-fit: contain;
 }
 
 /* 네비게이션 메뉴 - 원래 중앙 정렬 유지 */

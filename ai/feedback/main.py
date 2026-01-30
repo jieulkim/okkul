@@ -115,7 +115,7 @@ async def analyze_overall_gemini(question: str, user_answer: str, corrected_text
 
     4. fluency_feedback: [원본 답변]의 발화량과 유창성을 한국어로 평가하세요.
        - [한국어 의도]와 비교했을 때 영어 답변에서 빠진 부분이나 왜곡된 내용이 있는지 대조 분석을 포함하세요.
-       - [한국어 의도]의 분량에 비해 영어 답변이 현저히 짧다면 유창성 부족을 지목하세요.
+       - 만약 [한국어 의도]가 비어있다면, [원본 답변]의 분량과, 어휘의 지나친 반복 여부만으로 평가하세요.
        - 2문장 이하: 심각한 지적, 4문장 이하: 보강 조언, 5문장 이상: 칭찬.
        - 표현의 다양성은 지나치게 엄격하지 않게, 격려 위주로 작성하세요. 너무 단조롭다면 그때만 지적하세요.
     
@@ -183,4 +183,7 @@ async def analyze_voice_text(request: AnalysisRequest):
 
 # --- 라우터 등록 ---
 from exam_feedback import router as exam_router
+from question_feedback import router as question_router
+
 app.include_router(exam_router, prefix="/v1")
+app.include_router(question_router, prefix="/v1")

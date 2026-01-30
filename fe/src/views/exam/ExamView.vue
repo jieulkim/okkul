@@ -99,33 +99,29 @@ onMounted(async () => {
           <span class="highlight">15개 문항</span>을 풀어보세요.
         </p>
 
-        <button @click="openSurveyModal" class="start-exam-btn">
-          시험 시작하기
-        </button>
-
         <div class="features-grid">
-          <div class="feature-card">
+          <div class="feature-card delay-1">
             <div class="feature-icon">
               <span class="material-icons">edit_document</span>
             </div>
             <h3>실전 시뮬레이션</h3>
             <p>실제 시험과 동일한 15문항 구성</p>
           </div>
-          <div class="feature-card">
+          <div class="feature-card delay-2">
             <div class="feature-icon">
               <span class="material-icons">track_changes</span>
             </div>
             <h3>난이도 자동 조정</h3>
             <p>7번 문제 후 난이도 재설정</p>
           </div>
-          <div class="feature-card">
+          <div class="feature-card delay-3">
             <div class="feature-icon">
               <span class="material-icons">auto_awesome</span>
             </div>
             <h3>AI 분석</h3>
             <p>문법, 어휘, 유창성 등 종합 평가</p>
           </div>
-          <div class="feature-card">
+          <div class="feature-card delay-4">
             <div class="feature-icon">
               <span class="material-icons">insights</span>
             </div>
@@ -133,6 +129,10 @@ onMounted(async () => {
             <p>문항별 강점과 약점 분석</p>
           </div>
         </div>
+
+        <button @click="openSurveyModal" class="start-exam-btn delay-5">
+          시험 시작하기
+        </button>
       </div>
     </main>
 
@@ -177,39 +177,60 @@ onMounted(async () => {
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap");
 
 .page-container {
-  height: calc(100vh - var(--header-height));
+  height: calc(100vh - var(--header-height, 60px));
+  max-height: 100vh;
   overflow: hidden;
   background: var(--bg-color);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-bottom: 0;
+  padding-bottom: 12vh;
 }
 
 .page-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 0 24px;
   width: 100%;
+}
+
+/* Animation */
+.fade-in {
+  opacity: 0;
+  animation: firstName 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
+.delay-4 { animation-delay: 0.4s; }
+.delay-5 { animation-delay: 0.5s; }
+
+@keyframes firstName {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .hero-section {
   text-align: center;
-  margin-top: 40px;
+  margin-top: -6vh; 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .page-title {
-  font-size: 3rem;
+  font-size: 2.8rem;
   font-weight: 800;
   color: var(--text-main);
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
 .subtitle {
   font-size: 1.15rem;
   color: var(--text-sub);
-  margin-bottom: 32px;
-  line-height: 1.5;
+  margin-bottom: 50px;
+  line-height: 1.6;
 }
 
 .highlight {
@@ -234,17 +255,19 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 20px 60px;
+  padding: 20px 64px;
   background: var(--primary-gradient);
   color: #3E2723;
   border: none;
   border-radius: var(--radius-full);
-  font-size: 1.35rem;
+  font-size: 1.3rem;
   font-weight: 800;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 10px 25px rgba(255, 215, 0, 0.3);
-  margin-bottom: 40px;
+  margin-top: 60px;
+  opacity: 0;
+  animation: firstName 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
 .start-exam-btn:hover {
@@ -257,19 +280,23 @@ onMounted(async () => {
   justify-content: center;
   align-items: stretch;
   gap: 20px;
-  flex-wrap: nowrap; /* 줄바꿈 방지 */
+  flex-wrap: nowrap;
+  width: 100%;
+  max-width: 1100px;
 }
 
 .feature-card {
-  flex: 1; /* 균등 분할 */
-  min-width: 0; /* Flex item overflow 방지 */
+  flex: 1;
+  min-width: 0;
   background: #FFF;
   border: 1px solid #F1F5F9;
   border-radius: var(--radius-lg);
-  padding: 20px 16px;
+  padding: 28px 16px;
   text-align: center;
   transition: all 0.3s ease;
   box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+  opacity: 0;
+  animation: firstName 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
 .feature-card:hover {
@@ -279,9 +306,9 @@ onMounted(async () => {
 }
 
 .feature-icon {
-  width: 70px;
-  height: 70px;
-  margin: 0 auto 24px;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
   background: var(--honey-50);
   border-radius: 50%;
   display: flex;
@@ -291,23 +318,22 @@ onMounted(async () => {
 }
 
 .feature-icon .material-icons {
-  font-size: 36px;
+  font-size: 32px;
 }
 
 .feature-card h3 {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   color: var(--text-main);
 }
 
 .feature-card p {
   font-size: 0.95rem;
   color: var(--text-sub);
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
-/* Modal */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -410,15 +436,5 @@ button {
 }
 .cancel-btn:hover {
   background: #FFEBEE;
-}
-
-/* Animation */
-.fade-in {
-  animation: fadeIn 0.5s ease-out forwards;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
 }
 </style>

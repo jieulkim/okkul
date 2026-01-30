@@ -78,7 +78,6 @@ const startExam = async () => {
         };
     } else {
         response = await examApi.startExam({
-            examSetId: 1,
             surveyId: surveyId
         })
     }

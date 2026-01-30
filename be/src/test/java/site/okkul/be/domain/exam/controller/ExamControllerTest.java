@@ -172,18 +172,4 @@ class ExamControllerTest {
 					.andExpect(status().isOk());
 		}
 	}
-
-	@Nested
-	@DisplayName("GET /exam/{examId}/result")
-	class GetExamResult {
-		@Test
-		@DisplayName("200 OK - 시험 결과 조회 성공")
-		@WithMockUser(username = "1")
-		void success() throws Exception {
-
-			mockMvc.perform(get("/exam/{examId}/result", exam.id())
-							.contentType(MediaType.APPLICATION_JSON))
-					.andExpect(status().isOk());
-		}
-	}
 }

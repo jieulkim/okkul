@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 class AiClientIntegrationTest {
 
     @Autowired
-    private AiClient aiClient; // @Mock이 아닌, 실제 설정으로 생성된 AiClient Bean을 주입받습니다.
+    private AiClientProvider aiClientProvider;
 
     @Test
     @DisplayName("실제 AI 서버에 요청을 보내고 정상적으로 응답 객체를 받는다")
@@ -48,6 +48,7 @@ class AiClientIntegrationTest {
         // assertTimeoutPreemptively: 지정된 시간(15초) 내에 실행이 완료되지 않으면 테스트를 즉시 실패시킵니다.
         assertTimeoutPreemptively(Duration.ofSeconds(15), () -> {
             // aiClient.requestFeedback(request)를 호출하여 실제 HTTP 요청을 보냅니다.
+            AiClient aiClient = aiClientProvider.getClient(false);
             AiFeedbackResponse response = aiClient.requestFeedback(request);
 
             // 응답을 로그로 출력하여 눈으로 확인합니다.

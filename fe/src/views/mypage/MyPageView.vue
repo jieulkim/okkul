@@ -7,61 +7,10 @@ import { usersApi } from '@/api'
 const router = useRouter()
 const authStore = useAuthStore()
 
-// 프로필 이미지가 있는지 확인
-const hasProfileImage = computed(() => {
-  const userImage = authStore.user?.profileImageUrl
-  return userImage && typeof userImage === 'string' && userImage.trim() !== ''
+// 사용자 닉네임
+const userName = computed(() => {
+  return authStore.user?.nickname || authStore.user?.name || '사용자'
 })
-
-// 프로필 이미지 URL
-const profileImageUrl = computed(() => {
-  const userImage = authStore.user?.profileImageUrl
-  if (!userImage || typeof userImage !== 'string' || userImage.trim() === '') {
-    return ''
-  }
-  
-  if (userImage.startsWith('http') || userImage.startsWith('data:')) {
-    return userImage
-  }
-  
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || ''
-  const cleanBase = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl
-  const cleanPath = userImage.startsWith('/') ? userImage : `/${userImage}`
-  return `${cleanBase}${cleanPath}`
-})
-
-// 프로필 이미지 업로드
-const profileImageInput = ref(null)
-const isUploadingImage = ref(false)
-
-const handleProfileImageUpload = async (event) => {
-  const file = event.target.files[0]
-  if (!file) return
-  
-  try {
-    isUploadingImage.value = true
-    
-    const response = await usersApi.updateProfileImage({ file })
-    
-    if (response.data?.profileImageUrl) {
-      authStore.user.profileImageUrl = response.data.profileImageUrl
-      alert('프로필 이미지가 변경되었습니다.')
-    }
-  } catch (error) {
-    console.error('이미지 업로드 실패:', error)
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      authStore.user.profileImageUrl = e.target.result
-    }
-    reader.readAsDataURL(file)
-  } finally {
-    isUploadingImage.value = false
-  }
-}
-
-const triggerImageUpload = () => {
-  profileImageInput.value?.click()
-}
 
 // 프로필 편집
 const isEditing = ref(false)
@@ -93,6 +42,7 @@ const cancelEdit = () => {
 
 const saveProfile = async () => {
   try {
+    // API 호출
     if (editForm.value.nickname !== authStore.user?.nickname) {
       await usersApi.updateNickname({ nickname: editForm.value.nickname })
     }
@@ -101,20 +51,27 @@ const saveProfile = async () => {
       await usersApi.updateTargetLevel({ targetLevel: editForm.value.targetLevel })
     }
     
+    // 최신 사용자 정보 조회
     const response = await usersApi.getMyInfo()
-    authStore.user = response.data
     
-    // authStore 갱신 후 즉시 반영을 위해 관련 필드 수동 업데이트
-    if (localStorage.getItem('user')) {
-      localStorage.setItem('user', JSON.stringify(response.data))
+    // authStore 업데이트 - updateUser 함수 사용
+    if (response.data) {
+      // localStorage 먼저 업데이트
+      if (localStorage.getItem('user')) {
+        localStorage.setItem('user', JSON.stringify(response.data))
+      }
+      
+      // authStore의 updateUser 함수를 사용하여 반응성 보장
+      authStore.updateUser(response.data)
+      
+      console.log('[MyPageView] 프로필 업데이트 완료:', authStore.user)
     }
     
     isEditing.value = false
     alert('프로필이 저장되었습니다.')
   } catch (error) {
     console.error('프로필 저장 실패:', error)
-    authStore.user.nickname = editForm.value.nickname
-    authStore.user.targetLevel = editForm.value.targetLevel
+    alert('프로필 저장에 실패했습니다.')
     isEditing.value = false
   }
 }
@@ -241,39 +198,17 @@ onMounted(() => {
           </div>
           <div class="profile-content">
             <!-- 프로필 이미지 -->
-            <div class="profile-image-section">
-              <div class="profile-preview-large" @click="!isEditing && triggerImageUpload()">
-                <img 
-                  v-if="authStore.user?.profileImageUrl" 
-                  :src="profileImageUrl" 
-                  alt="프로필" 
-                  class="profile-img" 
-                />
-                <img 
-                  v-else 
-                  src="/default-profile.png" 
-                  alt="기본 프로필" 
-                  class="profile-img fallback" 
-                />
-                <div v-if="!isEditing" class="upload-overlay">
-                  <span class="material-icons-outlined">photo_camera</span>
-                  <p>{{ isUploadingImage ? '업로드 중...' : '사진 변경' }}</p>
-                </div>
+            <div class="profile-avatar-display">
+              <div class="avatar-circle">
+                <img src="/default-profile.png" alt="프로필" class="profile-image" />
               </div>
-              <input 
-                ref="profileImageInput"
-                type="file" 
-                accept="image/*" 
-                style="display: none"
-                @change="handleProfileImageUpload"
-              />
             </div>
 
             <!-- 프로필 정보 -->
             <div v-if="!isEditing" class="profile-info-display">
               <div class="info-row">
                 <span class="info-label">닉네임</span>
-                <span class="info-value">{{ authStore.user?.nickname || '사용자' }}</span>
+                <span class="info-value">{{ userName }}</span>
               </div>
               <div class="info-row">
                 <span class="info-label">이메일</span>
@@ -493,66 +428,31 @@ onMounted(() => {
   gap: 24px;
 }
 
-.profile-image-section {
-  cursor: pointer;
-  position: relative;
+/* 프로필 아바타 */
+.profile-avatar-display {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
 }
 
-.profile-preview-large {
-  width: 160px;
-  height: 160px;
+.avatar-circle {
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
-  overflow: hidden;
-  border: var(--border-primary);
-  box-shadow: var(--shadow-sm);
-  position: relative;
-  background: var(--bg-secondary);
+  background: var(--bg-tertiary);
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 4px solid var(--primary-color);
+  box-shadow: 0 8px 24px rgba(255, 215, 0, 0.3);
+  overflow: hidden;
 }
 
-.profile-img {
+.profile-image {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.okkul-preview {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transform: scale(1.3);
-}
-
-.upload-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.3s;
-  gap: 8px;
-}
-
-.profile-image-section:hover .upload-overlay {
-  opacity: 1;
-}
-
-.upload-overlay .material-icons-outlined {
-  color: white;
-  font-size: 2rem;
-}
-
-.upload-overlay p {
-  color: white;
-  font-size: 0.875rem;
-  font-weight: 600;
 }
 
 /* 프로필 정보 표시 영역 */

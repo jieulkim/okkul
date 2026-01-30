@@ -296,6 +296,7 @@ const itemsPerPage = 2;
 // 피드백 데이터 (API 응답으로 채워질 예정)
 const feedbackData = ref([]);
 const overallFeedback = ref("");
+const feedbackError = ref(null);
 
 const pollForFeedback = (practiceAnswerId) => {
   pollInterval = setInterval(async () => {
@@ -328,14 +329,14 @@ const pollForFeedback = (practiceAnswerId) => {
       } else if (result.feedbackStatus === "FAILED") {
         clearInterval(pollInterval);
         isAnalyzing.value = false;
-        alert("피드백 생성에 실패했습니다. 다시 시도해주세요.");
+        feedbackError.value = "피드백 생성에 실패했습니다. 다시 시도해주세요.";
       }
       // PROCESSING 중에는 아무것도 하지 않고 다음 폴링을 기다림
     } catch (error) {
       clearInterval(pollInterval);
       isAnalyzing.value = false;
       console.error("피드백 조회 실패:", error);
-      alert("피드백을 가져오는 중 오류가 발생했습니다.");
+      feedbackError.value = "피드백을 가져오는 중 오류가 발생했습니다.";
     }
   }, 3000); // 3초마다 폴링
 };
@@ -350,6 +351,8 @@ const analyze = async () => {
 
   try {
     isAnalyzing.value = true;
+    isAnalyzed.value = false;
+    feedbackError.value = null;
 
     const audioFile = new File([recordedBlob.value], "recording.mp3", {
       type: "audio/mpeg",
@@ -386,7 +389,7 @@ const analyze = async () => {
   } catch (error) {
     isAnalyzing.value = false;
     console.error("분석 요청 실패:", error);
-    alert("분석 요청에 실패했습니다. 다시 시도해주세요.");
+    feedbackError.value = "분석 요청에 실패했습니다. 다시 시도해주세요.";
   }
 };
 
@@ -641,6 +644,9 @@ onUnmounted(() => {
           >
             {{ isAnalyzing ? '분석 중...' : 'AI 분석하기' }}
           </button>
+        </div>
+        <div v-if="feedbackError" class="error-box">
+          {{ feedbackError }}
         </div>
       </section>
 
@@ -1322,5 +1328,16 @@ textarea:focus {
 
 .dark-mode .report-span.highlighted {
   color: #212529;
+}
+
+.error-box {
+  margin-top: 20px;
+  padding: 16px;
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  font-weight: 600;
+  text-align: center;
 }
 </style>

@@ -2,10 +2,12 @@
 import { onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useSurveyStore } from '@/stores/survey'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const surveyStore = useSurveyStore()
 
 onMounted(async () => {
   console.log('[OAuth2Redirect] Full Query Params:', route.query)
@@ -14,15 +16,22 @@ onMounted(async () => {
 
   if (accessToken) {
     console.log('[OAuth2Redirect] Token received. Saving to localStorage...')
-    // 토큰 저장
+    // 1. 토큰 저장
     localStorage.setItem('accessToken', accessToken)
     if (refreshToken) localStorage.setItem('refreshToken', refreshToken)
     
-    // 유저 정보 가져오기
+    // 2. 로그인 성공 시 이전 삭제 기록(deletedSurveyIds) 초기화
+    if (typeof surveyStore.resetDeletedList === 'function') {
+      surveyStore.resetDeletedList()
+    } else {
+      localStorage.removeItem('deletedSurveyIds')
+    }
+
+    // 3. 유저 정보 가져오기
     console.log('[OAuth2Redirect] Fetching user info...')
     await authStore.fetchUser()
 
-    // ✅ 로그인 성공 시 항상 홈으로
+    // 4. 로그인 성공 시 항상 홈으로
     console.log('[OAuth2Redirect] Redirecting to Home...')
     router.push('/')
   } else {
@@ -53,12 +62,8 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: white;
-}
-
-.dark-mode .redirect-container {
-  background: #0f172a;
-  color: white;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 .loading-content {
@@ -69,15 +74,11 @@ onMounted(async () => {
   font-size: 24px;
   font-weight: 800;
   margin-top: 24px;
-  color: #1e293b;
-}
-
-.dark-mode .loading-content h2 {
-  color: #f1f5f9;
+  color: var(--text-primary);
 }
 
 .loading-content p {
-  color: #64748b;
+  color: var(--text-secondary);
   margin-top: 8px;
 }
 
@@ -91,7 +92,7 @@ onMounted(async () => {
 .honey-drop {
   width: 16px;
   height: 16px;
-  background: #FFD700;
+  background: var(--primary-color);
   border-radius: 50% 50% 50% 0;
   transform: rotate(45deg);
   animation: drip 1.2s ease-in-out infinite;
@@ -103,5 +104,9 @@ onMounted(async () => {
 @keyframes drip {
   0%, 100% { transform: translateY(0) rotate(45deg) scale(1); }
   50% { transform: translateY(15px) rotate(45deg) scale(1.1); }
+}
+
+.dark-mode .honey-drop {
+  border: 1px solid #FFFFFF;
 }
 </style>

@@ -65,3 +65,7 @@ minio:
   access-key: ${MINIO_ACCESS_KEY:minio_access_key}
   secret-key: ${MINIO_SECRET_KEY:minio_secret_key}
   bucket-name: ${MINIO_BUCKET:okkul}
+
+ai:
+  server:
+    url: ${AI_SERVER_ENDPOINT:https://ai.dev.okkul.site}

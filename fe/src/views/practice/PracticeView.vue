@@ -111,7 +111,9 @@ const fetchExistingSurveys = async () => {
 
 // 특정 설문 상세 조회
 const fetchSurveyDetails = async (surveyId) => {
+  console.log("11 설문 ID:", surveyId);
   try {
+    console.log("22 설문 ID:", surveyId);
     const response = await surveysApi.getSurveyById(surveyId);
     const data = response.data;
     
@@ -132,14 +134,20 @@ const fetchSurveyDetails = async (surveyId) => {
       4: { name: categoryNames[4], topics: [] }
     };
 
-    // 1. 기본 토픽 (selectedTopics) 및 중복 제거
+    // 1. 기본 토픽 (selectedTopics) 분류
     (data.selectedTopics || []).forEach(t => {
-      const catId = t.categoryId || 1; // 기본값 여가
+      let catId = t.categoryId || 1; // 기본값 여가
       
-      // 배경 정보와 겹칠 수 있는 항목 제외 (단순 문자열 매칭 등)
+      // 배경 정보와 겹칠 수 있는 항목 강제 이동 (단순 문자열 매칭 등)
       const lowerName = t.topicName.toLowerCase();
-      if (lowerName.includes('직장인') || lowerName.includes('학생') || lowerName.includes('거주')) {
-        return;
+      if (
+        lowerName.includes('직장인') || 
+        lowerName.includes('학생') || 
+        lowerName.includes('거주') ||
+        lowerName.includes('무직') ||
+        lowerName.includes('구직')
+      ) {
+        catId = 0; // 배경 정보로 강제 할당
       }
 
       if (groups[catId]) {
@@ -150,20 +158,8 @@ const fetchSurveyDetails = async (surveyId) => {
       }
     });
 
-    // 2. Background 정보 가공 (배경 정보 섹션으로 강제 할당)
-    if (data.occupation) {
-      groups[0].topics.push({ topicId: -1, name: `직업: ${data.occupation}`, type: 'background' });
-    }
-    if (data.residence) {
-      groups[0].topics.push({ topicId: -2, name: `거주: ${data.residence}`, type: 'background' });
-    }
-    if (data.student !== undefined) {
-      groups[0].topics.push({ 
-        topicId: -3, 
-        name: data.student ? "학생 신분" : "직장인/비학생", 
-        type: 'background' 
-      });
-    }
+    // 2. Background 정보 가공
+    // 사용자 피드백에 따라 설문 토픽 위주로만 표시
 
     // 빈 그룹 제거
     const finalGroups = Object.values(groups).filter(g => g.topics.length > 0);
@@ -209,6 +205,12 @@ const selectTopic = (topic) => {
 const goToQuestionPage = () => {
   if (!selectedTopic.value) return;
   
+  console.log('[PracticeView] Navigating to PracticeQuestionView', {
+    type: selectedType.value?.id,
+    topic: selectedTopic.value.topicId,
+    surveyId: activeSurveyId.value
+  });
+  
   router.push({
     name: 'practice-question',
     query: { 
@@ -251,9 +253,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="practice-page" :class="{ 'dark-mode': isDarkMode }">
-    
-    <div v-if="currentStep === 'type'" class="container">
+  <div class="page-container">
+    <main v-if="currentStep === 'type'" class="page-content">
       <h1 class="page-title">유형별 연습</h1>
       <div class="types-grid">
         <div 
@@ -276,9 +277,9 @@ onMounted(async () => {
           </div>
         </div>
       </div>
-    </div>
+    </main>
 
-    <div v-else-if="currentStep === 'topic-check'" class="container">
+    <main v-else-if="currentStep === 'topic-check'" class="page-content">
       <h1 class="page-title">연습 주제 선택</h1>
       
       <div class="condition-card">
@@ -306,7 +307,7 @@ onMounted(async () => {
       >
         선택한 주제로 연습 시작
       </button>
-    </div>
+    </main>
 
     <SurveySelectModal
       :isVisible="showSurveySelectModal"
@@ -321,39 +322,81 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.practice-page { min-height: 100vh; background: #f8fafc; padding: 60px 20px; }
-.container { max-width: 1100px; margin: 0 auto; }
-.page-title { text-align: center; font-size: 32px; font-weight: 900; margin-bottom: 40px; }
+.page-container {
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+.page-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 64px;
+}
+
+@media (max-width: 1024px) {
+  .page-content {
+    padding: 24px 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-content {
+    padding: 16px 24px;
+  }
+}
+
+.page-title {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  margin-bottom: 32px;
+  text-align: center;
+}
 
 .types-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
 .type-card { 
-  background: white; border-radius: 24px; padding: 40px 20px; text-align: center; border: 2px solid #e2e8f0; 
-  cursor: pointer; position: relative; transition: all 0.3s; height: 320px; display: flex; flex-direction: column; align-items: center;
+  background: var(--bg-secondary);
+  border: var(--border-primary);
+  border-radius: var(--border-radius);
+  padding: 40px 20px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  height: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: var(--shadow-sm);
 }
-.type-card:hover { border-color: #FFD700; transform: translateY(-5px); }
+.type-card:hover { 
+  transform: translate(-0.05em, -0.05em);
+  box-shadow: var(--shadow-md);
+}
 .type-icon { font-size: 50px; margin-bottom: 15px; }
-.type-name { font-size: 22px; font-weight: 800; margin-bottom: 10px; }
-.type-desc { font-size: 14px; color: #64748b; }
+.type-name { font-size: 22px; font-weight: 900; margin-bottom: 10px; color: var(--text-primary); }
+.type-desc { font-size: 14px; color: var(--text-secondary); }
 
 .hover-details { 
-  position: absolute; inset: 0; background: rgba(255, 255, 255, 0.96); border-radius: 24px; 
+  position: absolute; inset: 0; background: var(--bg-secondary); border-radius: var(--border-radius); 
   padding: 20px; display: flex; flex-direction: column; justify-content: center; z-index: 10;
 }
-.diff-box { font-size: 12px; text-align: left; color: #1e293b; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-.info-text { font-size: 12px; color: #64748b; line-height: 1.5; text-align: left; }
+.diff-box { font-size: 12px; text-align: left; color: var(--text-primary); margin-bottom: 10px; border-bottom: var(--border-thin); padding-bottom: 10px; }
+.info-text { font-size: 12px; color: var(--text-secondary); line-height: 1.5; text-align: left; }
 
 /* Topic Selection Styles */
 .condition-card {
-  background: white;
-  border-radius: 24px;
+  background: var(--bg-secondary);
+  border: var(--border-primary);
+  border-radius: var(--border-radius);
   padding: 40px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-md);
 }
 
 .section-label {
   font-size: 18px;
-  font-weight: 800;
-  color: #1e293b;
+  font-weight: 900;
+  color: var(--text-primary);
   margin-bottom: 8px;
 }
 
@@ -372,26 +415,28 @@ onMounted(async () => {
 
 .topic-btn {
   padding: 10px 20px;
-  border-radius: 50px;
-  border: 2px solid #e2e8f0;
-  background: #fff;
-  color: #64748b;
+  border-radius: var(--border-radius);
+  border: var(--border-secondary);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
 }
 
 .topic-btn:hover {
-  border-color: #FFD700;
-  color: #d97706;
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
+  background: var(--primary-color);
+  color: #000000;
 }
 
 .topic-btn.active {
-  background: #fffef0;
-  border-color: #FFD700;
-  color: #d97706;
-  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+  background: var(--primary-color);
+  color: #000000;
+  box-shadow: var(--shadow-md);
 }
 
 .section-divider {
@@ -425,35 +470,29 @@ onMounted(async () => {
 .info-value {
   font-size: 16px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .start-btn { 
   display: block; width: 100%; max-width: 400px; margin: 40px auto 0; padding: 20px; 
-  background: #FFD700; border: none; border-radius: 16px; 
-  font-size: 18px; font-weight: 800; color: #1e293b;
+  background: var(--primary-color); border: var(--border-primary); border-radius: var(--border-radius); 
+  font-size: 18px; font-weight: 900; color: #000000;
   cursor: pointer; transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+  box-shadow: var(--shadow-md);
 }
 
 .start-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  background: #ffc800;
+  transform: translate(-0.05em, -0.05em);
+  box-shadow: var(--shadow-lg);
 }
 
 .start-btn:disabled {
-  background: #cbd5e1;
-  color: #94a3b8;
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
   cursor: not-allowed;
   box-shadow: none;
+  transform: none;
 }
 
-/* 다크모드 간단 대응 */
-.dark-mode .type-card { background: #1e293b; border-color: #334155; color: white; }
-.dark-mode .hover-details { background: rgba(30, 41, 59, 0.98); }
-.dark-mode .condition-card { background: #1e293b; }
-.dark-mode .section-label, .dark-mode .info-value { color: #f1f5f9; }
-.dark-mode .topic-btn { background: #0f172a; border-color: #334155; color: #94a3b8; }
-.dark-mode .topic-btn.active { background: #422006; border-color: #FFD700; color: #fbbf24; }
-.dark-mode .info-item { background: #0f172a; }
+
 </style>

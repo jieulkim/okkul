@@ -1,18 +1,17 @@
 <script setup>
 import { ref, computed, onUnmounted, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
-import { Practices } from "@/api/Practices";
-import { Surveys } from "@/api/Surveys";
+import { practicesApi, surveysApi } from "@/api";
+import { useAuthStore } from "@/stores/auth";
+
+const route = useRoute();
+const authStore = useAuthStore();
+const userId = computed(() => authStore.user?.id);
 
 // ============================================
 // Props 정의 (부모 컴포넌트에서 받을 데이터)
 // ============================================
 const props = defineProps({
-  // 사용자 정보
-  userId: {
-    type: Number,
-    required: true,
-  },
   // 연습 세션 정보
   practiceSession: {
     type: Object,
@@ -62,18 +61,30 @@ const currentTopic = ref(null); // 선택된 topic_id
 const isTopicExpanded = ref(false);
 const localTopics = ref([]); // Props or Mock topics
 
-// 표시할 주제 목록 (12개씩 페이징)
-const displayedTopics = computed(() => {
-  const source =
-    localTopics.value.length > 0 ? localTopics.value : props.availableTopics;
-  return isTopicExpanded.value ? source : source.slice(0, 12);
-});
-
 // 주제 선택 핸들러
 const selectTopic = (topicId) => {
   currentTopic.value = topicId;
   emit("topic-changed", topicId);
 };
+
+// 표시할 주제 목록 (선택된 주제를 맨 앞으로, 12개씩 페이징)
+const displayedTopics = computed(() => {
+  const source =
+    localTopics.value.length > 0 ? localTopics.value : props.availableTopics;
+  
+  // 전체 목록 복사
+  let sorted = [...source];
+  
+  if (currentTopic.value) {
+    const index = sorted.findIndex(t => (t.topic_id || t.topicId) === currentTopic.value);
+    if (index > -1) {
+      const selected = sorted.splice(index, 1)[0];
+      sorted.unshift(selected);
+    }
+  }
+
+  return isTopicExpanded.value ? sorted : sorted.slice(0, 12);
+});
 
 // ============================================
 // 2. 질문 관리 (question_bank 테이블 기반)
@@ -127,6 +138,20 @@ let recognition = null;
 let timerInterval = null;
 let audioRecorder = null;
 let audioChunks = [];
+const recordedBlob = ref(null);
+const recordedDuration = ref(0);
+const isAnalyzing = ref(false);
+
+// 오디오 지속 시간 측정 유틸리티
+const getDuration = (blob) => {
+  return new Promise((resolve) => {
+    const audio = new Audio();
+    audio.src = URL.createObjectURL(blob);
+    audio.addEventListener('loadedmetadata', () => {
+      resolve(audio.duration); // 초 단위
+    });
+  });
+};
 
 // 저장된 답변 불러오기
 watch(
@@ -181,22 +206,41 @@ const initRecognition = () => {
 const initAudioRecording = async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    audioRecorder = new MediaRecorder(stream);
+    
+    // 브라우저 호환성을 고려하되, 전송 시 mp3로 취급하기 위해 최적의 타입 선택
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+      ? 'audio/webm;codecs=opus' 
+      : 'audio/webm';
+      
+    audioRecorder = new MediaRecorder(stream, { mimeType });
     audioChunks = [];
 
     audioRecorder.ondataavailable = (event) => {
-      audioChunks.push(event.data);
+      if (event.data.size > 0) {
+        audioChunks.push(event.data);
+      }
     };
 
-    audioRecorder.onstop = () => {
-      const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-      // 여기서 audioBlob을 서버로 전송하여 저장
-      // Practice_answers 테이블의 english_record_url에 저장
+    audioRecorder.onstop = async () => {
+      // 녹음 중지 시 Blob 생성 및 저장
+      const blob = new Blob(audioChunks, { type: mimeType });
+      recordedBlob.value = blob;
+      
+      // 지속 시간 측정
+      const duration = await getDuration(blob);
+      recordedDuration.value = Math.round(duration);
+      
+      console.log("녹음 완료:", {
+        size: blob.size,
+        duration: recordedDuration.value,
+        type: blob.type
+      });
     };
 
     audioRecorder.start();
   } catch (e) {
     console.error("오디오 녹음 초기화 실패:", e);
+    alert("마이크 접근 권한이 필요합니다.");
   }
 };
 
@@ -213,6 +257,8 @@ const toggleRecording = async () => {
     initRecognition();
     await initAudioRecording();
 
+    recordedBlob.value = null;
+    recordedDuration.value = 0;
     sttResult.value = "";
     recordingTime.value = 0;
 
@@ -244,15 +290,16 @@ const overallFeedback = ref("");
 
 // API 호출: 답변 분석 요청
 const analyze = async () => {
-  if (!currentQuestion.value) return;
+  if (!currentQuestion.value || !recordedBlob.value) {
+    return alert("먼저 답변을 녹음해주세요.");
+  }
 
   try {
-    const practicesApi = new Practices();
+    isAnalyzing.value = true;
 
-    // 1. Audio Blob 생성
-    const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-    const audioFile = new File([audioBlob], "recording.wav", {
-      type: "audio/wav",
+    // 1. Audio Blob으로부터 mp3 파일 객체 생성
+    const audioFile = new File([recordedBlob.value], "recording.mp3", {
+      type: "audio/mpeg",
     });
 
     // 2. JSON 데이터 준비
@@ -305,6 +352,8 @@ const analyze = async () => {
   } catch (error) {
     console.error("분석 요청 실패:", error);
     alert("분석에 실패했습니다. 다시 시도해주세요.");
+  } finally {
+    isAnalyzing.value = false;
   }
 };
 
@@ -339,10 +388,6 @@ const highlightFromCard = (index) => {
 // ============================================
 // 5. 초기화 및 정리
 // ============================================
-// ============================================
-// 5. 초기화 및 정리
-// ============================================
-const route = useRoute(); // import useRoute from 'vue-router' needed
 
 onMounted(async () => {
   // 1. 라우터 쿼리 파라미터 확인
@@ -353,8 +398,10 @@ onMounted(async () => {
   // 2. 주제 데이터 로드 (surveyId가 있으면 해당 설문 토픽 우선)
   if (surveyId) {
     try {
-      const surveysApi = new Surveys();
+      console.log("[PracticeQuestionView] loading survey details. ID:", surveyId);
+      console.log("[PracticeQuestionView] Calling surveysApi.getSurveyById...");
       const response = await surveysApi.getSurveyById(surveyId);
+      console.log("[PracticeQuestionView] surveysApi.getSurveyById success:", response.status);
       if (response.data && response.data.selectedTopics) {
         localTopics.value = response.data.selectedTopics.map((t) => ({
           topic_id: t.topicId,
@@ -389,7 +436,6 @@ onMounted(async () => {
   ) {
     if (surveyId && queryTopicId) {
       try {
-        const practicesApi = new Practices();
         // 연습 세션 시작
         const startRes = await practicesApi.startPractice({
           surveyId,
@@ -446,8 +492,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="practice-container">
-    <!-- 주제 선택 (Topic 테이블 기반) -->
+  <div class="page-container">
     <nav class="topic-section">
       <div class="topic-grid" :class="{ expanded: isTopicExpanded }">
         <button
@@ -464,7 +509,8 @@ onUnmounted(() => {
       </button>
     </nav>
 
-    <div class="main-grid">
+    <main class="page-content">
+      <div class="main-grid">
       <section class="input-area">
         <!-- 질문 표시 (question_bank 테이블 기반) -->
         <div class="question-container" v-if="currentQuestion">
@@ -490,7 +536,7 @@ onUnmounted(() => {
         <!-- 한글 스크립트 입력 -->
         <div class="card">
           <div class="label-row">
-            <label class="input-label">📝 한글로 써 보세요</label>
+            <label class="input-label">한글로 써 보세요</label>
             <span class="count"
               >{{ koreanScript.length }} / {{ maxChars }}</span
             >
@@ -506,7 +552,7 @@ onUnmounted(() => {
         <!-- 영어 답변 녹음 -->
         <div class="card">
           <div class="label-row">
-            <label class="input-label">🎙️ 영어로 대답해보세요</label>
+            <label class="input-label">영어로 대답해보세요</label>
             <div class="mic-group">
               <span v-if="isRecording" class="timer">
                 {{ Math.floor(recordingTime / 60) }}:{{
@@ -531,7 +577,16 @@ onUnmounted(() => {
 
         <!-- AI 분석 버튼 -->
         <div class="analyze-btn-wrapper">
-          <button class="analyze-btn" @click="analyze">AI 분석하기</button>
+          <div v-if="recordedDuration > 0 && !isRecording" class="recording-status">
+            <span>녹음 완료 ({{ Math.floor(recordedDuration / 60) }}:{{ (recordedDuration % 60).toString().padStart(2, '0') }})</span>
+          </div>
+          <button 
+            class="analyze-btn" 
+            @click="analyze" 
+            :disabled="isAnalyzing || !recordedBlob || isRecording"
+          >
+            {{ isAnalyzing ? '분석 중...' : 'AI 분석하기' }}
+          </button>
         </div>
       </section>
 
@@ -553,21 +608,10 @@ onUnmounted(() => {
         </div>
 
         <div class="feedback-card">
-          <h3 class="result-title">오꿀 피드백</h3>
+          <h3 class="result-title">오꿀쌤 피드백</h3>
 
           <div class="okkul-left-align">
-            <div
-              class="okkul-mini-container"
-              :class="{ 'jump-anim': selectedSentenceIndex !== null }"
-            >
-              <div class="platypus-body">
-                <div class="platypus-hat"></div>
-                <div class="platypus-eye left"></div>
-                <div class="platypus-eye right"></div>
-                <div class="platypus-bill"></div>
-                <div class="platypus-arm-right wave"></div>
-              </div>
-            </div>
+            <img src="/okkul.svg" alt="Okkul" style="width: 100px; height: 100px;" />
           </div>
 
           <div v-if="currentTab === 'sentence'">
@@ -632,15 +676,33 @@ onUnmounted(() => {
           </div>
         </div>
       </section>
-    </div>
+      </div>
+    </main>
   </div>
 </template>
 
 <style scoped>
-.practice-container {
-  max-width: 1000px;
-  margin: 40px auto;
-  padding: 0 20px;
+.page-container {
+  min-height: 100vh;
+  background: var(--bg-primary);
+}
+
+.page-content {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 64px;
+}
+
+@media (max-width: 1024px) {
+  .page-content {
+    padding: 24px 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-content {
+    padding: 16px 24px;
+  }
 }
 
 /* 질문 영역 스타일 */
@@ -667,17 +729,23 @@ onUnmounted(() => {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 2px solid #000;
-  background: #fff;
+  border: var(--border-secondary);
+  background: var(--primary-color);
+  color: #000;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 2px 2px 0 #000;
+  box-shadow: var(--shadow-sm);
+}
+.dark-mode .audio-btn {
+  background: var(--primary-color);
+  color: #000;
+  border-color: #FFFFFF;
 }
 .audio-btn:active {
-  transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0 #000;
+  transform: translate(0.02em, 0.02em);
+  box-shadow: none;
 }
 .toggle-q-btn {
   background: none;
@@ -689,12 +757,14 @@ onUnmounted(() => {
   text-decoration: underline;
 }
 .question-text-card {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 15px;
+  background: var(--bg-secondary);
+  border: var(--border-primary);
+  border-radius: var(--border-radius);
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-md);
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 900;
   line-height: 1.5;
 }
 
@@ -707,7 +777,7 @@ onUnmounted(() => {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
-  max-height: 96px;
+  max-height: 120px;
   overflow: hidden;
   transition: max-height 0.3s ease;
 }
@@ -717,38 +787,40 @@ onUnmounted(() => {
 
 .tab-btn {
   width: 100%;
-  height: 43px;
-  padding: 0 8px;
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
-  background: #fff;
+  height: 48px;
+  padding: 0 12px;
+  border-radius: var(--border-radius);
+  border: var(--border-secondary);
+  background: var(--bg-secondary);
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 900;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-sizing: border-box;
-  color: #64748b;
+  transition: all 0.2s ease;
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-sm);
 }
 .tab-btn.active {
-  background: #ffd700;
-  border-color: #000;
-  box-shadow: 2px 2px 0 #000;
-  color: #000;
+  background: var(--primary-color);
+  color: #000000;
+  box-shadow: var(--shadow-md);
+  transform: translate(-0.02em, -0.02em);
 }
 .expand-btn {
   display: block;
   margin: 15px auto 0;
-  background: none;
-  border: none;
-  color: #64748b;
+  background: var(--bg-tertiary);
+  border: var(--border-thin);
+  border-radius: var(--border-radius);
+  padding: 8px 24px;
+  font-weight: 900;
   cursor: pointer;
-  font-weight: bold;
-  text-decoration: underline;
+  box-shadow: var(--shadow-sm);
 }
 
 /* 2. 레이아웃 및 카드 */
@@ -758,11 +830,10 @@ onUnmounted(() => {
   gap: 30px;
 }
 .card {
-  background: #fff;
-  border-radius: 20px;
-  padding: 20px;
-  border: 1px solid #e2e8f0;
-  margin-bottom: 20px;
+  background: var(--bg-secondary);
+  border-radius: 24px;
+  padding: 32px;
+  border: 2px solid var(--border-primary);
 }
 .label-row {
   display: flex;
@@ -776,24 +847,30 @@ onUnmounted(() => {
 }
 textarea {
   width: 100%;
-  height: 120px;
-  border: none;
-  background: #f8fafc;
-  padding: 15px;
-  border-radius: 12px;
-  resize: none;
-  box-sizing: border-box;
-  font-size: 15px;
+  min-height: 120px;
+  border: var(--border-secondary);
+  border-radius: var(--border-radius);
+  padding: 16px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 900;
+  background: var(--bg-tertiary);
+  resize: vertical;
 }
 
+textarea:focus {
+  outline: none;
+  background: var(--bg-secondary);
+}
 /* 3. STT 박스 */
 .stt-box {
   min-height: 100px;
-  background: #f8fafc;
-  border: 2px dashed #ffd700;
-  border-radius: 12px;
+  background: var(--bg-tertiary);
+  border: 2px dashed var(--primary-color);
+  border-radius: var(--border-radius);
   padding: 15px;
-  font-size: 15px;
+  font-size: var(--font-size-base);
+  color: var(--text-primary);
 }
 
 .recording-border {
@@ -801,16 +878,23 @@ textarea {
   border-color: #ef4444;
 }
 .mic-btn {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  border: none;
-  background: #f8fafc;
+  border: var(--border-secondary);
+  background: var(--primary-color);
+  color: #000;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #64748b;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+.dark-mode .mic-btn {
+  background: var(--primary-color);
+  color: #000;
+  border-color: #FFFFFF;
 }
 .mic-group {
   display: flex;
@@ -825,94 +909,9 @@ textarea {
 .mic-btn.recording {
   background: #ef4444;
   color: white;
-}
-
-/* 4. 오꿀이 스타일*/
-.okkul-left-align {
-  display: flex;
-  justify-content: flex-start;
-  margin: 15px 0;
-}
-.okkul-mini-container {
-  width: 65px;
-  height: 65px;
-  position: relative;
-  animation: float 3s infinite ease-in-out;
-}
-.platypus-body {
-  position: relative;
-  width: 65px;
-  height: 65px;
-  background: #c59358;
-  border: 3px solid #000;
-  border-radius: 50%;
-}
-.platypus-hat {
-  position: absolute;
-  top: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 28px;
-  height: 12px;
-  background: #333;
-  border: 2.5px solid #000;
-  border-radius: 4px;
-}
-.platypus-eye {
-  position: absolute;
-  top: 26px;
-  width: 6px;
-  height: 6px;
-  background: #000;
-  border-radius: 50%;
-}
-.platypus-eye.left {
-  left: 18px;
-}
-.platypus-eye.right {
-  right: 18px;
-}
-.platypus-bill {
-  position: absolute;
-  top: 34px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 34px;
-  height: 12px;
-  background: #333;
-  border: 2.5px solid #000;
-  border-radius: 12px;
-}
-.platypus-arm-right {
-  position: absolute;
-  right: -20px;
-  top: 32px;
-  width: 20px;
-  height: 9px;
-  background: #c59358;
-  border: 2.5px solid #000;
-  border-radius: 10px;
-  transform-origin: left center;
-}
-.wave {
-  animation: wave-motion 0.8s infinite alternate ease-in-out;
-}
-@keyframes wave-motion {
-  from {
-    transform: rotate(10deg);
-  }
-  to {
-    transform: rotate(-50deg);
-  }
-}
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
+  animation: pulse 1.5s infinite;
+  box-shadow: none;
+  transform: scale(0.95);
 }
 
 /* 5. 분석 결과 섹션 */
@@ -922,26 +921,28 @@ textarea {
   margin-bottom: -1px;
 }
 .bookmark {
-  padding: 10px 20px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  padding: 12px 24px;
+  background: var(--bg-tertiary);
+  border: var(--border-secondary);
   border-bottom: none;
   border-radius: 12px 12px 0 0;
+  font-weight: 900;
   cursor: pointer;
-  font-size: 14px;
-  font-weight: bold;
-  color: #64748b;
+  transition: all 0.2s;
+  color: var(--text-secondary);
 }
 .bookmark.active {
-  background: #fff;
-  border-bottom: 2px solid #fff;
-  z-index: 2;
+  background: var(--primary-color);
+  color: #000000;
+  padding-top: 8px;
+  transform: translateY(-4px);
 }
 .feedback-card {
-  background: #fff;
-  border-radius: 0 20px 20px 20px;
-  padding: 25px;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-secondary);
+  border: var(--border-primary);
+  border-radius: 0 24px 24px 24px;
+  padding: 32px;
+  box-shadow: var(--shadow-lg);
 }
 .result-title {
   font-size: 22px;
@@ -952,12 +953,12 @@ textarea {
   margin-bottom: 10px;
 }
 .report-box {
-  background: #f8fafc;
-  padding: 20px;
-  border-radius: 15px;
+  background: var(--bg-tertiary);
+  padding: 24px;
+  border-radius: var(--border-radius);
+  border: var(--border-thin);
   line-height: 1.8;
-  border: 1px solid #e2e8f0;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 .badge {
   font-size: 10px;
@@ -966,29 +967,32 @@ textarea {
   margin-right: 5px;
   font-weight: bold;
 }
-.badge.orig {
-  background: #f8fafc;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
-}
-.badge.impr {
-  background: #fff7ed;
-  color: #ea580c;
-}
+.badge.orig { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
+.badge.impr { background: #dcfce7; color: #16a34a; border: 1px solid #86efac; }
 
 .highlighted {
   background: #ffd700;
   font-weight: 700;
   color: #000;
 }
+.report-span.highlighted {
+  background: var(--primary-color);
+  color: #000000;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 900;
+  border: 1px solid #000;
+}
+.dark-mode .report-span.highlighted {
+  border-color: #FFF;
+}
 .detail-item {
-  padding: 15px;
-  border-radius: 16px;
-  border: 1px solid #e2e8f0;
-  margin-bottom: 10px;
+  padding: 20px;
+  background: var(--bg-tertiary);
+  border: var(--border-thin);
+  border-radius: var(--border-radius);
   cursor: pointer;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s;
 }
 .sentence-row {
   margin-bottom: 6px;
@@ -1000,16 +1004,28 @@ textarea {
 }
 
 .selected-card {
-  border: 2px solid #ffd700;
+  border: 2px solid var(--primary-color);
   background: #fffef0;
+}
+.detail-item.selected-card {
+  border-color: var(--primary-color);
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-sm);
+  transform: translateX(5px);
+}
+
+.dark-mode .selected-card {
+  background: #422006;
+  border-color: var(--primary-color);
 }
 
 .overall-box {
-  background: #f8fafc;
+  background: var(--bg-tertiary);
   padding: 25px;
   border-radius: 15px;
-  border-left: 5px solid #ffd700;
+  border-left: 5px solid var(--primary-color);
   line-height: 1.6;
+  color: var(--text-primary);
 }
 
 /* 페이지네이션 */
@@ -1020,30 +1036,29 @@ textarea {
   gap: 15px;
   margin-top: 20px;
   padding-top: 15px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--border-primary);
 }
 .page-btn {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 2px solid #000;
-  background: #fff;
+  border: 2px solid var(--text-primary);
+  background: var(--bg-secondary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 2px 2px 0 #000;
+  box-shadow: 2px 2px 0 var(--text-primary);
   transition: all 0.2s;
+  color: var(--text-primary);
 }
 .page-btn:hover:not(:disabled) {
-  background: #ffd700;
-  border-color: #000;
+  background: var(--primary-color);
   color: #000;
-  box-shadow: 2px 2px 0 #000;
 }
 .page-btn:active:not(:disabled) {
   transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0 #000;
+  box-shadow: 1px 1px 0 var(--text-primary);
 }
 .page-btn:disabled {
   opacity: 0.3;
@@ -1055,159 +1070,77 @@ textarea {
   font-weight: 700;
   min-width: 50px;
   text-align: center;
+  color: var(--text-primary);
 }
 
-/* AI 분석 버튼 */
 .analyze-btn-wrapper {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
   margin-top: 10px;
 }
+.recording-status {
+  background: var(--bg-tertiary);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #10b981;
+  border: 1px solid #10b981;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.recording-status::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+  border-radius: 50%;
+}
 .analyze-btn {
-  width: 180px;
-  padding: 14px;
-  background: #ffd700;
-  border: 2px solid #000;
-  border-radius: 50px;
-  font-weight: 800;
+  width: auto;
+  min-width: 240px;
+  padding: 12px 32px;
+  background: var(--primary-color);
+  color: #000000;
+  border: var(--border-primary);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-lg);
+  font-weight: 900;
   cursor: pointer;
-  box-shadow: 0 4px 0 #000;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-md);
+}
+
+.analyze-btn:hover:not(:disabled) {
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
+}
+
+.analyze-btn:disabled {
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Dark Mode Overrides and Extra Global Styles */
+:global(.dark-mode) .tab-btn.active {
+  background: #422006;
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+:global(.dark-mode) .analyze-btn {
+  border-color: #f1f5f9;
+  box-shadow: 0 4px 0 #f1f5f9;
   color: #000;
 }
-.analyze-btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 #000;
-}
-</style>
 
-<style>
-/* Dark Mode Styles - Unscoped to work globally */
-.dark-mode .practice-container {
-  color: #f1f5f9;
-}
-
-/* 질문 영역 다크모드 */
-.dark-mode .q-number {
-  color: #f1f5f9;
-}
-.dark-mode .audio-btn {
-  border-color: #f1f5f9;
-  background: #1e293b;
-  box-shadow: 2px 2px 0 #f1f5f9;
-  color: #f1f5f9;
-}
-.dark-mode .audio-btn:active {
-  box-shadow: 1px 1px 0 #f1f5f9;
-}
-.dark-mode .toggle-q-btn {
-  color: #94a3b8;
-}
-.dark-mode .question-text-card {
-  background: #0f172a;
-  border-color: #334155;
-  color: #f1f5f9;
-}
-
-/* 주제 선택 다크모드 */
-.dark-mode .tab-btn {
-  border-color: #334155;
-  background: #1e293b;
-  color: #94a3b8;
-}
-.dark-mode .expand-btn {
-  color: #94a3b8;
-}
-
-/* 카드 다크모드 */
-.dark-mode .card {
-  background: #1e293b;
-  border-color: #334155;
-}
-.dark-mode .input-label {
-  color: #f1f5f9;
-}
-.dark-mode textarea {
-  background: #0f172a;
-  color: #f1f5f9;
-}
-.dark-mode textarea::placeholder {
-  color: #94a3b8;
-}
-
-/* STT 박스 다크모드 */
-.dark-mode .stt-box {
-  background: rgba(255, 215, 0, 0.05);
-  color: #f1f5f9;
-}
-.dark-mode .mic-btn {
-  background: #0f172a;
-  color: #94a3b8;
-}
-
-/* 분석 결과 다크모드 */
-.dark-mode .bookmark {
-  background: #0f172a;
-  border-color: #334155;
-  color: #94a3b8;
-}
-.dark-mode .bookmark.active {
-  background: #1e293b;
-  border-bottom: 2px solid #1e293b;
-  color: #f1f5f9;
-}
-.dark-mode .feedback-card {
-  background: #1e293b;
-  border-color: #334155;
-}
-.dark-mode .result-title {
-  color: #f1f5f9;
-}
-.dark-mode .report-box {
-  background: #0f172a;
-  border-color: #334155;
-  color: #f1f5f9;
-}
-.dark-mode .badge.orig {
-  background: #0f172a;
-  color: #94a3b8;
-  border-color: #334155;
-}
-.dark-mode .badge.impr {
-  background: #431407;
-  color: #fb923c;
-}
-.dark-mode .detail-item {
-  border-color: #334155;
-  background: #1e293b;
-}
-.dark-mode .sentence-row {
-  color: #f1f5f9;
-}
-.dark-mode .reason-text {
-  color: #94a3b8;
-}
-.dark-mode .selected-card {
-  background: #422006;
-}
-.dark-mode .overall-box {
-  background: #0f172a;
-  color: #f1f5f9;
-}
-
-/* 페이지네이션 다크모드 */
-.dark-mode .pagination {
-  border-color: #334155;
-}
-.dark-mode .page-btn {
-  border-color: #f1f5f9;
-  background: #1e293b;
-  box-shadow: 2px 2px 0 #f1f5f9;
-  color: #f1f5f9;
-}
-.dark-mode .page-btn:active:not(:disabled) {
-  box-shadow: 1px 1px 0 #f1f5f9;
-}
-.dark-mode .page-info {
-  color: #f1f5f9;
+:global(.dark-mode) .analyze-btn:active {
+  box-shadow: 0 2px 0 #f1f5f9;
 }
 </style>

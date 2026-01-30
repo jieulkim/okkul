@@ -1,14 +1,20 @@
 <script setup>
 import { ref, computed, inject, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
+const router = useRouter()
 
-// 사용자 프로필 데이터 (전역 상태 주입)
+import { useAuthStore } from '@/stores/auth'
+
+// 사용자 프로필 데이터
 const userProfile = inject('userProfile')
 
-// 다크모드 상태 주입
+// 다크모드 상태
 const isDarkMode = inject('isDarkMode', ref(false))
 
-const authStore = inject('authStore')
-const isLoggedIn = computed(() => !!authStore?.user)
+const authStore = useAuthStore()
+import { useSurveyStore } from '@/stores/survey'
+const surveyStore = useSurveyStore()
+const isLoggedIn = computed(() => !!authStore.user)
 
 // 다크모드 변경 감지
 watch(isDarkMode, (newVal) => {
@@ -26,22 +32,9 @@ onMounted(() => {
   }
 })
 
-// 프로필 이미지 업로드
-const profileImageInput = ref(null)
-
-const handleProfileImageUpload = (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      userProfile.value.profileImage = e.target.result
-    }
-    reader.readAsDataURL(file)
-  }
-}
-
-const triggerImageUpload = () => {
-  profileImageInput.value?.click()
+// 마이페이지 이동
+const goToMyPage = () => {
+  router.push('/mypage')
 }
 
 // 최근 성적 데이터
@@ -104,37 +97,54 @@ const getStatusColor = (status) => {
 </script>
 
 <template>
-  <div class="home-container">
-    <main class="main-content">
+  <div class="page-container">
+    <main class="page-content">
       <!-- 로그인 상태일 때 (대시보드) -->
       <div v-if="isLoggedIn" class="dashboard-grid">
         <!-- 왼쪽 컬럼 -->
         <div class="left-column">
-          <!-- 웰컴 배너 -->
-          <section class="welcome-banner">
-            <h1>{{ userProfile.nickname || '사용자' }}님, 오늘도 <span class="highlight">꿀</span>처럼 달콤한 성과를 만들어요! 🍯</h1>
-            <p class="subtitle">오꿀과 함께 목표 등급 달성까지 달려봐요!</p>
+          <!-- 웰컴 배너 / 학습 시작 섹션 -->
+          <section class="welcome-banner" :class="{ 'no-history': recentActivities.length === 0 }">
+            <div class="welcome-header">
+              <div class="welcome-text">
+                <h1 v-if="authStore.user?.nickname">{{ authStore.user.nickname }}님, 오늘도 달콤한 성과를 만들어요!</h1>
+                <h1 v-else>오늘도 달콤한 성과를 만들어요!</h1>
+                <p class="subtitle">오꿀쌤과 함께 목표 등급 달성까지 달려봐요!</p>
+              </div>
+              <img src="/okkul.svg" alt="Okkul" class="okkul-img" />
+            </div>
             
-            <div class="action-buttons">
-              <router-link to="/exam" class="btn-primary" style="z-index: 10;">
-                <span class="material-icons-outlined btn-icon">play_circle_filled</span>
-                <div class="btn-text">
-                  <span class="title">실전 모의고사 시작</span>
-                  <span class="sub">15문항, 약 40분 소요</span>
-                </div>
-              </router-link>
-              
-              <router-link to="/practice" class="btn-secondary" style="z-index: 10;">
-                <span class="material-icons-outlined btn-icon">category</span>
-                <div class="btn-text">
-                  <span class="title">유형별 집중 연습</span>
-                  <span class="sub">약점 보완 테마별 학습</span>
-                </div>
-              </router-link>
+            <div class="action-buttons-container">
+              <div class="action-buttons">
+                <!-- 실전 모의고사 -->
+                <router-link 
+                  :to="surveyStore && surveyStore.surveyData ? '/survey/level?from=exam' : '/survey?from=exam'" 
+                  class="action-card primary"
+                >
+                  <div class="card-icon">
+                    <span class="material-icons">play_circle_filled</span>
+                  </div>
+                  <div class="card-info">
+                    <span class="card-title">실전 모의고사 시작</span>
+                    <span class="card-sub">15문항, 약 40분 소요</span>
+                  </div>
+                </router-link>
+                
+                <!-- 유형별 연습 -->
+                <router-link to="/practice" class="action-card secondary">
+                  <div class="card-icon">
+                    <span class="material-icons">category</span>
+                  </div>
+                  <div class="card-info">
+                    <span class="card-title">유형별 집중 연습</span>
+                    <span class="card-sub">약점 보완 테마별 학습</span>
+                  </div>
+                </router-link>
+              </div>
             </div>
           </section>
 
-          <!-- 최근 성적 추이 (기존 코드 유지) ... -->
+          <!-- 최근 성적 추이 -->
           <section class="stats-card">
             <div class="card-header">
               <h3>최근 성적 추이</h3>
@@ -191,45 +201,38 @@ const getStatusColor = (status) => {
           </section>
         </div>
         
-        <!-- 오른쪽 컬럼 (기존 코드 유지) ... -->
+        <!-- 오른쪽 컬럼 -->
         <div class="right-column">
           <!-- 프로필 관리 카드 -->
           <section class="profile-card">
             <h3>프로필 관리</h3>
             
             <div class="profile-edit">
-              <div class="profile-image-section" @click="triggerImageUpload">
-                <div class="profile-preview">
+              <div class="profile-image-section" @click="goToMyPage">
+                <div class="profile-avatar">
                   <img 
-                    v-if="userProfile.profileImage" 
-                    :src="userProfile.profileImage" 
-                    alt="프로필"
+                    v-if="authStore.user?.profileImageUrl" 
+                    :src="authStore.user.profileImageUrl" 
+                    alt="프로필" 
+                    class="avatar-img" 
                   />
-                  <span v-else class="profile-placeholder">
-                    {{ userProfile.nickname?.[0]?.toUpperCase() || 'U' }}
-                  </span>
+                  <img 
+                    v-else 
+                    src="/default-profile.png" 
+                    alt="기본 프로필" 
+                    class="avatar-img fallback" 
+                  />
                   <div class="upload-overlay">
-                    <span class="material-icons-outlined">photo_camera</span>
+                    <span class="material-icons-outlined">settings</span>
                   </div>
                 </div>
-                <input 
-                  ref="profileImageInput"
-                  type="file" 
-                  accept="image/*"
-                  @change="handleProfileImageUpload"
-                  style="display: none"
-                />
               </div>
     
-              <div class="profile-info">
+              <div class="profile-info" @click="goToMyPage" style="cursor: pointer;">
                 <div class="info-row">
                   <label>닉네임</label>
-                  <span>{{ userProfile.nickname }}</span>
+                  <span>{{ authStore.user?.nickname || '사용자' }}</span>
                 </div>
-                <!-- <div class="info-row">
-                  <label>이름</label>
-                  <span>{{ userProfile.name }}</span>
-                </div> -->
               </div>
             </div>
           </section>
@@ -267,22 +270,31 @@ const getStatusColor = (status) => {
         </div>
       </div>
 
-      <!-- 비로그인 상태일 때 (랜딩 페이지) -->
+      <!-- 비로그인 상태 -->
       <div v-else class="landing-hero">
         <div class="hero-content">
-          <span class="badge">AI기반 OPIc 트레이닝 서비스</span>
-          <h1 class="hero-title">
-            당신의 OPIc 목표,<br/>
-            <span class="highlight">오꿀</span>과 함께 달콤하게 달성하세요! 🍯
-          </h1>
+          <span class="badge">AI 기반 OPIc 트레이닝</span>
+          
+          <div class="hero-title-wrapper">
+            <h1 class="hero-title">
+              당신의 OPIc 목표,<br/>
+              <span class="highlight-text">오꿀쌤</span>과 함께 달성하세요!
+            </h1>
+            <div class="okkul-wrapper">
+              <img src="/okkul.svg" alt="Okkul" class="okkul-img" style="width: 120px; height: 120px;" />
+            </div>
+          </div>
+          
           <p class="hero-desc">
             최신 AI 기술로 분석하는 내 영어 실력.<br/>
             실전 모의고사부터 취약 유형 집중 연습까지 한 번에.
           </p>
+          
           <div class="hero-actions">
             <router-link to="/login" class="hero-btn-primary">시작하기</router-link>
           </div>
         </div>
+        
         <div class="hero-features">
           <div class="feature-card">
             <div class="f-icon">🎯</div>
@@ -308,129 +320,360 @@ const getStatusColor = (status) => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Material+Icons+Outlined&display=swap');
 
-.home-container { 
+/* 컨테이너 및 레이아웃 */
+.page-container { 
   min-height: 100vh; 
-  background: linear-gradient(to bottom, #fafafa 0%, #f5f5f5 100%);
+  background: var(--bg-primary);
   transition: background 0.3s ease;
-  overflow: hidden;
 }
 
-.dark-mode .home-container {
-  background: linear-gradient(to bottom, #0f172a 0%, #1e293b 100%);
-}
-
-.landing-hero {
-  padding: 60px 0;
-  text-align: center;
-  max-width: 1000px;
+.page-content {
+  max-width: 1400px;
   margin: 0 auto;
+  padding: 32px 64px;
+}
+
+@media (max-width: 1024px) {
+  .page-content {
+    padding: 24px 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-content {
+    padding: 16px 24px;
+  }
+}
+
+/* 랜딩 페이지 */
+.landing-hero { 
+  padding: 80px 0; 
+  text-align: center;
 }
 
 .badge {
   display: inline-block;
-  padding: 6px 16px;
-  background: #fff7ed;
-  color: #ea580c;
-  border-radius: 50px;
+  padding: 8px 16px;
+  background: var(--primary-color);
+  color: #000000;
+  border-radius: var(--border-radius);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 900;
+  margin-bottom: 32px;
+  border: var(--border-secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.dark-mode .badge {
+  background: var(--primary-color);
+  color: #000000;
+  border-color: #FFFFFF;
+}
+
+.hero-title-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
   margin-bottom: 24px;
 }
 
 .hero-title {
-  font-size: 56px;
+  font-size: 3.5rem;
   font-weight: 900;
-  color: #1e293b;
+  color: var(--text-primary);
   line-height: 1.2;
-  margin-bottom: 24px;
+  margin: 0;
 }
 
 .dark-mode .hero-title {
   color: #f1f5f9;
 }
 
+.highlight-text {
+  color: var(--primary-color);
+  position: relative;
+  display: inline-block;
+}
+
+.okkul-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .hero-desc {
-  font-size: 20px;
+  font-size: 1.25rem;
   color: #64748b;
-  line-height: 1.6;
+  line-height: 1.8;
   margin-bottom: 48px;
+}
+
+.dark-mode .hero-desc {
+  color: #94a3b8;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 80px;
 }
 
 .hero-btn-primary {
   padding: 18px 48px;
-  background: #FFD700;
+  background: var(--primary-color);
   color: #000;
-  border-radius: 50px;
-  font-size: 20px;
-  font-weight: 800;
   text-decoration: none;
-  box-shadow: 0 10px 30px rgba(255, 215, 0, 0.4);
-  transition: all 0.3s;
+  border: var(--border-primary);
+  border-radius: var(--border-radius);
+  font-weight: 900;
+  font-size: 1.125rem;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-md);
 }
 
 .hero-btn-primary:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 15px 40px rgba(255, 215, 0, 0.5);
+  transform: translate(-0.05em, -0.05em);
+  box-shadow: var(--shadow-lg);
+}
+
+.dark-mode .hero-btn-primary {
+  background: var(--primary-color);
+  color: #000;
+  border-color: #FFFFFF;
 }
 
 .hero-features {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-  margin-top: 100px;
+  gap: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .feature-card {
-  background: white;
-  padding: 40px;
-  border-radius: 24px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-  transition: transform 0.3s;
-}
-
-.dark-mode .feature-card {
-  background: #1e293b;
+  padding: 40px 32px;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
+  text-align: center;
+  transition: all 0.2s ease;
+  border: var(--border-primary);
+  box-shadow: var(--shadow-md);
 }
 
 .feature-card:hover {
-  transform: translateY(-10px);
+  transform: translate(-0.05em, -0.05em);
+  box-shadow: var(--shadow-lg);
 }
 
-.f-icon { font-size: 40px; margin-bottom: 20px; }
-.feature-card h3 { font-size: 20px; font-weight: 800; margin-bottom: 12px; }
-.feature-card p { font-size: 15px; color: #64748b; line-height: 1.5; }
-
-.main-content { 
-  max-width: 1400px; 
-  margin: 0 auto; 
-  padding: 40px 32px; 
+.dark-mode .feature-card {
+  background: var(--bg-secondary);
+  border-color: #FFFFFF;
 }
 
-.dashboard-grid { 
-  display: grid; 
-  grid-template-columns: 1fr 420px; 
-  gap: 28px; 
+.dark-mode .feature-card:hover {
+  box-shadow: var(--shadow-lg);
 }
 
-@media (max-width: 1200px) {
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
+.f-icon {
+  font-size: 3rem;
+  margin-bottom: 20px;
 }
 
-section { 
-  background: white; 
-  border-radius: 20px; 
-  border: 1px solid #f1f5f9; 
-  padding: 28px; 
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-  margin-bottom: 24px;
-  transition: all 0.3s ease;
+.feature-card h3 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 12px;
 }
 
-.dark-mode section {
-  background: #1e293b;
-  border-color: #334155;
+.dark-mode .feature-card h3 {
+  color: #f1f5f9;
+}
+
+.feature-card p {
+  font-size: 1rem;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.dark-mode .feature-card p {
+  color: #94a3b8;
+}
+
+/* 대시보드 */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 32px;
+}
+
+.left-column, .right-column {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* 웰컴 배너 */
+.welcome-banner {
+  background: var(--bg-secondary);
+  padding: 40px;
+  border-radius: var(--border-radius);
+  border: var(--border-primary);
+  box-shadow: var(--shadow-md);
+}
+
+.dark-mode .welcome-banner {
+  background: var(--bg-secondary);
+  border-color: #FFFFFF;
+}
+
+.welcome-text {
+  flex: 1;
+}
+
+.welcome-banner h1 {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+
+.okkul-img {
+  width: 180px;
+  height: auto;
+  transition: transform 0.3s ease;
+}
+
+.okkul-img:hover {
+  transform: scale(1.05) rotate(5deg);
+}
+
+.subtitle {
+  font-size: 1.25rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.action-buttons-container {
+  margin-top: 40px;
+  width: 100%;
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.action-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 30px;
+  border-radius: 24px;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 4px solid #000000;
+  box-shadow: 8px 8px 0 #000000;
+}
+
+.action-card.primary {
+  background: var(--primary-color);
+  color: #000;
+}
+
+.action-card.secondary {
+  background: #FFFFFF;
+  color: #000;
+}
+
+.action-card:hover {
+  transform: translate(-4px, -4px);
+  box-shadow: 12px 12px 0 #000000;
+}
+
+.action-card:active {
+  transform: translate(2px, 2px);
+  box-shadow: 4px 4px 0 #000000;
+}
+
+.card-icon {
+  width: 60px;
+  height: 60px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-card.primary .card-icon {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.card-icon .material-icons {
+  font-size: 32px;
+}
+
+.card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.card-title {
+  font-size: 1.5rem;
+  font-weight: 900;
+}
+
+.card-sub {
+  font-size: 0.95rem;
+  opacity: 0.8;
+  font-weight: 600;
+}
+
+/* Dark Mode Overrides */
+.dark-mode .action-card {
+  border-color: #FFFFFF;
+  box-shadow: 8px 8px 0 #FFFFFF;
+}
+
+.dark-mode .action-card.secondary {
+  background: var(--bg-secondary);
+  color: #FFFFFF;
+}
+
+.dark-mode .action-card.secondary .card-icon {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode .action-card:hover {
+  box-shadow: 12px 12px 0 #FFFFFF;
+}
+
+.dark-mode .action-card:active {
+  box-shadow: 4px 4px 0 #FFFFFF;
+}
+
+/* 카드 공통 스타일 */
+.stats-card, .recent-activities, .profile-card, .ai-analysis-card {
+  background: var(--bg-secondary);
+  padding: 32px;
+  border-radius: var(--border-radius);
+  border: var(--border-primary);
+  box-shadow: var(--shadow-md);
+  transition: all 0.2s ease;
+}
+
+.dark-mode .stats-card,
+.dark-mode .recent-activities,
+.dark-mode .profile-card,
+.dark-mode .ai-analysis-card {
+  background: var(--bg-secondary);
+  border-color: #FFFFFF;
 }
 
 .card-header {
@@ -441,9 +684,9 @@ section {
 }
 
 .card-header h3 {
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .dark-mode .card-header h3 {
@@ -451,181 +694,73 @@ section {
 }
 
 .header-meta {
-  font-size: 13px;
+  font-size: 0.875rem;
   color: #94a3b8;
 }
 
 .header-link {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: #FFD700;
-  font-weight: 600;
   text-decoration: none;
+  font-weight: 700;
 }
 
-.welcome-banner h1 { 
-  font-size: 32px; 
-  font-weight: 900; 
-  margin-bottom: 12px;
-  color: #0f172a;
-  line-height: 1.3;
+.header-link:hover {
+  text-decoration: underline;
 }
 
-.dark-mode .welcome-banner h1 {
-  color: #f1f5f9;
+/* 차트 영역 */
+.chart-area {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  height: 200px;
+  padding: 16px 0;
+  margin-bottom: 16px;
 }
 
-.highlight { 
-  color: #FFD700;
-  text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
-}
-
-.subtitle {
-  color: #64748b;
-  font-size: 15px;
-  margin-bottom: 32px;
-}
-
-.dark-mode .subtitle {
-  color: #94a3b8;
-}
-
-.action-buttons { 
-  display: grid; 
-  grid-template-columns: 1fr 1fr; 
-  gap: 16px; 
-}
-
-@media (max-width: 768px) {
-  .action-buttons {
-    grid-template-columns: 1fr;
-  }
-}
-
-.btn-primary, .btn-secondary {
-  display: flex; 
-  align-items: center; 
-  gap: 16px;
-  padding: 24px; 
-  border-radius: 16px; 
-  cursor: pointer; 
-  border: none; 
-  transition: all 0.2s;
-  text-decoration: none;
-  color: inherit;
-}
-
-.btn-primary { 
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-  box-shadow: 0 8px 24px rgba(255, 215, 0, 0.25);
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(255, 215, 0, 0.35);
-}
-
-.btn-secondary { 
-  background: white; 
-  border: 2px solid #FFD700;
-}
-
-.dark-mode .btn-secondary {
-  background: #2d3748;
-  border-color: #FFD700;
-}
-
-.btn-secondary:hover {
-  background: #fffef0;
-  transform: translateY(-2px);
-}
-
-.dark-mode .btn-secondary:hover {
-  background: #374151;
-}
-
-.btn-icon {
-  font-size: 32px;
-  color: #1e293b;
-  font-family: 'Material Icons Outlined';
-}
-
-.dark-mode .btn-secondary .btn-icon {
-  color: #FFD700;
-}
-
-.btn-text { 
-  text-align: left; 
-  display: flex; 
-  flex-direction: column;
-  gap: 4px;
-}
-
-.btn-text .title { 
-  font-weight: 800; 
-  font-size: 16px;
-  color: #0f172a;
-}
-
-.dark-mode .btn-secondary .btn-text .title {
-  color: #f1f5f9;
-}
-
-.btn-text .sub { 
-  font-size: 13px; 
-  color: #64748b;
-}
-
-.dark-mode .btn-secondary .btn-text .sub {
-  color: #94a3b8;
-}
-
-.chart-area { 
-  height: 200px; 
-  display: flex; 
-  align-items: flex-end; 
-  justify-content: space-between; 
-  padding: 0 20px;
-  gap: 12px;
-}
-
-.bar { 
+.bar {
   flex: 1;
-  background: #f1f5f9; 
-  border-radius: 8px 8px 0 0; 
+  width: 40px; /* 명시적 너비 추가 */
+  max-width: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   position: relative;
-  transition: all 0.3s ease;
+  background: rgba(0, 0, 0, 0.05); /* 바 배경 추가 */
+  border-radius: 8px 8px 0 0;
 }
 
 .dark-mode .bar {
-  background: #334155;
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.bar:hover {
-  transform: translateY(-4px);
+.fill {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-tertiary);
+  border: 2px solid #000;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.fill { 
-  position: absolute; 
-  bottom: 0; 
-  width: 100%; 
-  height: 100%; 
+.dark-mode .fill {
+  border-color: #FFF;
+}
+
+.fill.active {
   background: linear-gradient(to top, #FFD700, #FFA500);
-  opacity: 0.4; 
-  border-radius: inherit;
-  transition: opacity 0.3s;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
 }
 
-.fill.active { 
-  opacity: 1;
-  box-shadow: 0 -4px 12px rgba(255, 215, 0, 0.4);
+.dark-mode .fill {
+  background: linear-gradient(to top, #334155, #475569);
 }
 
 .score-label {
   position: absolute;
   top: -24px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 12px;
+  font-size: 0.875rem;
   font-weight: 700;
   color: #64748b;
 }
@@ -634,15 +769,19 @@ section {
   color: #94a3b8;
 }
 
-.chart-labels { 
-  display: flex; 
-  justify-content: space-between; 
-  margin-top: 12px; 
-  color: #94a3b8; 
-  font-size: 13px;
+.fill.active + .score-label {
+  color: #FFD700;
+}
+
+.chart-labels {
+  display: flex;
+  justify-content: space-around;
+  font-size: 0.875rem;
+  color: #94a3b8;
   font-weight: 600;
 }
 
+/* 활동 목록 */
 .activity-list {
   display: flex;
   flex-direction: column;
@@ -654,18 +793,18 @@ section {
   gap: 16px;
   padding: 20px;
   background: #f8fafc;
-  border-radius: 12px;
-  transition: all 0.2s;
+  border-radius: 16px;
+  transition: all 0.3s ease;
   cursor: pointer;
-}
-
-.dark-mode .activity-item {
-  background: #0f172a;
 }
 
 .activity-item:hover {
   transform: translateX(4px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.dark-mode .activity-item {
+  background: var(--bg-primary);
 }
 
 .dark-mode .activity-item:hover {
@@ -698,9 +837,9 @@ section {
 }
 
 .activity-header h4 {
-  font-size: 15px;
+  font-size: 1rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .dark-mode .activity-header h4 {
@@ -708,12 +847,12 @@ section {
 }
 
 .activity-date {
-  font-size: 12px;
+  font-size: 0.875rem;
   color: #94a3b8;
 }
 
 .activity-detail {
-  font-size: 13px;
+  font-size: 0.875rem;
   color: #64748b;
   margin-bottom: 8px;
 }
@@ -728,7 +867,7 @@ section {
 }
 
 .score-badge, .word-badge {
-  font-size: 11px;
+  font-size: 0.75rem;
   padding: 4px 10px;
   border-radius: 6px;
   font-weight: 600;
@@ -754,6 +893,102 @@ section {
   color: #4ade80;
 }
 
+/* 프로필 카드 */
+.profile-edit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.profile-image-section {
+  cursor: pointer;
+  position: relative;
+}
+
+.profile-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  border: 4px solid #FFD700;
+  box-shadow: 0 8px 24px rgba(255, 215, 0, 0.3);
+  position: relative;
+}
+
+.dark-mode .profile-avatar {
+  background: var(--bg-tertiary);
+  border-color: #FFD700;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.upload-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  border-radius: 50%;
+}
+
+.profile-image-section:hover .upload-overlay {
+  opacity: 1;
+}
+
+.upload-overlay .material-icons-outlined {
+  color: white;
+  font-size: 2rem;
+  font-family: 'Material Icons Outlined';
+}
+
+.profile-info {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.dark-mode .info-row {
+  background: var(--bg-primary);
+}
+
+.info-row label {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.info-row span {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.dark-mode .info-row span {
+  color: #f1f5f9;
+}
+
+/* AI 등급 분석 */
 .grade-circle { 
   position: relative; 
   width: 200px; 
@@ -802,23 +1037,20 @@ section {
 }
 
 .label {
-  font-size: 11px;
+  font-size: 0.75rem;
   color: #94a3b8;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
 .grade { 
-  font-size: 48px; 
+  font-size: 3rem; 
   font-weight: 900;
-  background: linear-gradient(135deg, #FFD700, #FFA500);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #FFD700;
 }
 
 .percent {
-  font-size: 13px;
+  font-size: 0.875rem;
   color: #64748b;
   font-weight: 600;
 }
@@ -837,7 +1069,7 @@ section {
 }
 
 .dark-mode .grade-stats {
-  background: #0f172a;
+  background: var(--bg-primary);
 }
 
 .stat {
@@ -845,15 +1077,15 @@ section {
 }
 
 .stat p {
-  font-size: 13px;
+  font-size: 0.875rem;
   color: #94a3b8;
   margin-bottom: 8px;
 }
 
 .stat strong {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 900;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .dark-mode .stat strong {
@@ -877,16 +1109,16 @@ section {
   width: 100%;
   padding: 12px;
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .dark-mode .detail-btn {
-  background: #0f172a;
+  background: var(--bg-primary);
   border-color: #334155;
   color: #f1f5f9;
 }
@@ -897,101 +1129,41 @@ section {
   color: #000;
 }
 
-.profile-edit {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 24px;
+/* 반응형 */
+@media (max-width: 1024px) {
+  .main-content {
+    padding: 24px 32px;
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-features {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-title {
+    font-size: 2.5rem;
+  }
+
+  .hero-title-wrapper {
+    flex-direction: column;
+    gap: 24px;
+  }
 }
 
-.profile-image-section {
-  cursor: pointer;
-  position: relative;
-}
+@media (max-width: 768px) {
+  .main-content {
+    padding: 16px 24px;
+  }
 
-.profile-preview {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-  border: 4px solid #fff;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
-  position: relative;
-}
+  .action-buttons {
+    grid-template-columns: 1fr;
+  }
 
-.dark-mode .profile-preview {
-  border-color: #1e293b;
-}
-
-.profile-preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.profile-placeholder {
-  font-size: 48px;
-  font-weight: 900;
-  color: #000;
-}
-
-.upload-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.profile-image-section:hover .upload-overlay {
-  opacity: 1;
-}
-
-.upload-overlay .material-icons-outlined {
-  color: white;
-  font-size: 32px;
-  font-family: 'Material Icons Outlined';
-}
-
-.profile-info {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.info-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 12px;
-  background: #f8fafc;
-  border-radius: 8px;
-}
-
-.dark-mode .info-row {
-  background: #0f172a;
-}
-
-.info-row label {
-  font-size: 13px;
-  color: #94a3b8;
-  font-weight: 600;
-}
-
-.info-row span {
-  font-size: 14px;
-  color: #1e293b;
-  font-weight: 700;
-}
-
-.dark-mode .info-row span {
-  color: #f1f5f9;
+  .hero-title {
+    font-size: 2rem;
+  }
 }
 </style>

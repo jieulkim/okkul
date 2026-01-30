@@ -11,6 +11,8 @@ import site.okkul.be.domain.qustion.entity.QuestionType;
 
 import java.util.Optional;
 
+import java.util.Optional;
+
 /**
  * @author 김남주
  */
@@ -55,5 +57,22 @@ public interface QuestionSetRepository extends JpaRepository<QuestionSet, Long> 
 	Optional<QuestionSet> findRandomByLevelAndTopic(Integer level, Long topicId, QuestionType questionType);
 
 	Page<QuestionSet> findByLevel(Integer level, Pageable pageable);
+
+    /**
+     * 난이도, 소재, 문제유형에 따른 세트문제 1개 랜덤 조회
+     * @param level    난이도
+     * @param topicId  토픽 ID
+     * @param typeId   문제 유형 ID
+     * @return QuestionSet (Optional)
+     *
+     * MySQL: RAND()
+     * PostgreSQL: RANDOM()
+     */
+    @Query(value = "SELECT * FROM question_set qs " +
+            "WHERE qs.level = :level " +
+            "AND qs.topic_id = :topicId " +
+            "AND qs.type_id = :typeId " +
+            "ORDER BY RANDOM() LIMIT 1", nativeQuery = true)
+    Optional<QuestionSet> findRandomByLevelAndTopicAndType(@Param("level") int level, @Param("topicId") long topicId, @Param("typeId") long typeId);
 
 }

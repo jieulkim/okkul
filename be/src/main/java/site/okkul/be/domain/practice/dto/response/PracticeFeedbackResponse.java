@@ -14,9 +14,7 @@ public class PracticeFeedbackResponse {
     @Schema(description = "연습 ID", example = "1")
     private Long practiceId;
 
-    @Schema(description = "문제 ID", example = "101")
-    private Long questionId;
+    @Schema(description = "피드백 ID", example = "1")
+    private Long feedbackId;
 
-    @Schema(description = "AI 피드백 결과")
-    private PracticeAIFeedbackResult feedbackResult;
 }

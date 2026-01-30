@@ -1,0 +1,68 @@
+<svg width="150" height="150" viewBox="-15 -15 150 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    /* 둥둥 떠있는 애니메이션 */
+    .okkul { 
+      animation: float 4s infinite ease-in-out; 
+      transform-origin: center; 
+    }
+    
+    /* 눈 깜빡임 */
+    .eye { 
+      animation: blink 5s infinite; 
+      transform-origin: center; 
+      transform-box: fill-box; 
+    }
+    .eye-right { animation-delay: 0.3s; }
+    
+    /* 오른팔 어깨 축 고정 웨이브 */
+    .arm-right-wave { 
+      transform-origin: left center; 
+      transform-box: fill-box; 
+      animation: wave-motion 1.5s infinite ease-in-out; 
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    @keyframes blink {
+      0%, 96%, 100% { transform: scaleY(1); }
+      98% { transform: scaleY(0.1); }
+    }
+    @keyframes wave-motion {
+      0%, 100% { transform: rotate(15deg); }
+      50% { transform: rotate(-10deg); }
+    }
+  </style>
+
+  <g class="okkul">
+    <path d="M10 60C10 32.3858 32.3858 10 60 10C87.6142 10 110 32.3858 110 60C110 86.5 87.6142 108 60 108C32.3858 108 10 86.5 10 60Z" 
+          fill="url(#body_grad)" stroke="#8D6E63" stroke-width="1.5"/>
+
+    <ellipse cx="25" cy="62" rx="8" ry="4" fill="#FFAB91" fill-opacity="0.4" filter="url(#blur)"/>
+    <ellipse cx="95" cy="62" rx="8" ry="4" fill="#FFAB91" fill-opacity="0.4" filter="url(#blur)"/>
+
+    <path d="M35 12C35 3 38 3 42 3H78C82 3 85 3 85 12V18H35V12Z" fill="#6D4C41" stroke="#5D4037" stroke-width="1.5"/>
+
+    <circle class="eye eye-left" cx="35" cy="48" r="5" fill="#3E2723"/>
+    <circle class="eye eye-right" cx="85" cy="48" r="5" fill="#3E2723"/>
+
+    <rect x="34" y="62" width="52" height="24" rx="12" fill="#FFD180" stroke="#8D6E63" stroke-width="1.5"/>
+    <circle cx="52" cy="74" r="1.5" fill="#A1887F" fill-opacity="0.3"/>
+    <circle cx="68" cy="74" r="1.5" fill="#A1887F" fill-opacity="0.3"/>
+
+    <rect x="-5" y="62" width="26" height="14" rx="7" transform="rotate(-20 8 69)" fill="#FFF9C4" stroke="#8D6E63" stroke-width="1.5"/>
+
+    <rect class="arm-right-wave" x="99" y="62" width="26" height="14" rx="7" fill="#FFF9C4" stroke="#8D6E63" stroke-width="1.5"/>
+  </g>
+
+  <defs>
+    <linearGradient id="body_grad" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFF9C4"/>
+      <stop offset="100%" stop-color="#F9F1A5"/>
+    </linearGradient>
+    <filter id="blur" x="0" y="0" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
+    </filter>
+  </defs>
+</svg>

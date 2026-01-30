@@ -29,14 +29,13 @@ services:
     networks:
       - server-tools_default
 
-ai-service:
+  ai-service:
     image: ai:${TAG}
     container_name: okkul-ai-${TAG}
     restart: always
     networks:
-      server-tools_default:
-        aliases:
-          - okkul-ai-develop  # http://okkul-ai-develop:8000으로 호출 가능
+      - server-tools_default
+
 
 networks:
   server-tools_default:

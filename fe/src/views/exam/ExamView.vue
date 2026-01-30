@@ -97,46 +97,44 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="exam-page" :class="{ 'dark-mode': isDarkMode }">
-    <div class="background-content">
-      <div class="container">
-        <div class="hero-section">
-          <h1 class="main-title">실전 모의고사</h1>
-          <p class="subtitle">
-            실제 OPIc 시험과 동일한 환경에서 15개 문항을 풀어보세요
-          </p>
+  <div class="page-container">
+    <main class="page-content">
+      <div class="hero-section">
+        <h1 class="page-title">실전 모의고사</h1>
+        <p class="subtitle">
+          실제 OPIc 시험과 동일한 환경에서 15개 문항을 풀어보세요
+        </p>
 
-          <!-- 시작하기 버튼 -->
-          <button @click="openSurveyModal" class="start-exam-btn">
-            <span class="btn-icon">🚀</span>
-            시험 시작하기
-          </button>
+        <!-- 시작하기 버튼 -->
+        <button @click="openSurveyModal" class="start-exam-btn">
+          <span class="btn-icon">🚀</span>
+          시험 시작하기
+        </button>
 
-          <div class="features-grid">
-            <div class="feature-card" @click="openSurveyModal">
-              <div class="feature-icon">📝</div>
-              <h3>실전 시뮬레이션</h3>
-              <p>실제 시험과 동일한 15문항 구성</p>
-            </div>
-            <div class="feature-card" @click="openSurveyModal">
-              <div class="feature-icon">🎯</div>
-              <h3>난이도 자동 조정</h3>
-              <p>7번 문제 후 난이도 재설정</p>
-            </div>
-            <div class="feature-card" @click="openSurveyModal">
-              <div class="feature-icon">🤖</div>
-              <h3>AI 분석</h3>
-              <p>문법, 어휘, 유창성 등 종합 평가</p>
-            </div>
-            <div class="feature-card" @click="openSurveyModal">
-              <div class="feature-icon">📊</div>
-              <h3>상세 피드백</h3>
-              <p>문항별 강점과 약점 분석</p>
-            </div>
+        <div class="features-grid">
+          <div class="feature-card" @click="openSurveyModal">
+            <div class="feature-icon">📝</div>
+            <h3>실전 시뮬레이션</h3>
+            <p>실제 시험과 동일한 15문항 구성</p>
+          </div>
+          <div class="feature-card" @click="openSurveyModal">
+            <div class="feature-icon">🎯</div>
+            <h3>난이도 자동 조정</h3>
+            <p>7번 문제 후 난이도 재설정</p>
+          </div>
+          <div class="feature-card" @click="openSurveyModal">
+            <div class="feature-icon">🤖</div>
+            <h3>AI 분석</h3>
+            <p>문법, 어휘, 유창성 등 종합 평가</p>
+          </div>
+          <div class="feature-card" @click="openSurveyModal">
+            <div class="feature-icon">📊</div>
+            <h3>상세 피드백</h3>
+            <p>문항별 강점과 약점 분석</p>
           </div>
         </div>
       </div>
-    </div>
+    </main>
 
     <div v-if="showResumeModal" class="modal-overlay">
       <div
@@ -173,7 +171,6 @@ onMounted(async () => {
           <button
             @click="discardExam"
             class="cancel-btn"
-            :class="{ 'dark-mode-btn': isDarkMode }"
           >
             진행 중 시험 삭제
           </button>
@@ -195,38 +192,43 @@ onMounted(async () => {
 <style scoped>
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap");
 
-.exam-page {
+.page-container {
   min-height: 100vh;
-  background: #f8fafc;
-  font-family: "Noto Sans KR", sans-serif;
+  background: var(--bg-primary);
 }
 
-.background-content {
-  padding: 80px 20px;
-}
-
-.container {
-  max-width: 1200px;
+.page-content {
+  max-width: 1400px;
   margin: 0 auto;
+  padding: 32px 64px;
+}
+
+@media (max-width: 1024px) {
+  .page-content {
+    padding: 24px 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-content {
+    padding: 16px 24px;
+  }
 }
 
 .hero-section {
   text-align: center;
 }
 
-.main-title {
-  font-size: 48px;
+.page-title {
+  font-size: 2.5rem;
   font-weight: 900;
-  margin-bottom: 16px;
-  background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--text-primary);
+  margin-bottom: 32px;
 }
 
 .subtitle {
-  font-size: 18px;
-  color: #64748b;
+  font-size: 1.125rem;
+  color: var(--text-secondary);
   margin-bottom: 40px;
 }
 
@@ -235,21 +237,21 @@ onMounted(async () => {
   align-items: center;
   gap: 12px;
   padding: 20px 48px;
-  background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
-  color: #1e293b;
-  border: none;
-  border-radius: 16px;
+  background: var(--primary-color);
+  color: #000000;
+  border: var(--border-primary);
+  border-radius: var(--border-radius);
   font-size: 20px;
   font-weight: 900;
   cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 8px 20px rgba(255, 215, 0, 0.3);
+  transition: all 0.2s;
+  box-shadow: var(--shadow-md);
   margin-bottom: 60px;
 }
 
 .start-exam-btn:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 30px rgba(255, 215, 0, 0.4);
+  transform: translate(-0.05em, -0.05em);
+  box-shadow: var(--shadow-lg);
 }
 
 .start-exam-btn .btn-icon {
@@ -264,20 +266,19 @@ onMounted(async () => {
 }
 
 .feature-card {
-  background: white;
-  border-radius: 20px;
+  background: var(--bg-secondary);
+  border: var(--border-primary);
+  border-radius: var(--border-radius);
   padding: 32px 24px;
   text-align: center;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s;
-  border: 2px solid #e2e8f0;
+  transition: all 0.2s ease;
   cursor: pointer;
+  box-shadow: var(--shadow-sm);
 }
 
 .feature-card:hover {
-  transform: translateY(-5px);
-  border-color: #ffd700;
-  box-shadow: 0 10px 20px -5px rgba(255, 215, 0, 0.2);
+  transform: translate(-0.05em, -0.05em);
+  box-shadow: var(--shadow-md);
 }
 
 .feature-icon {
@@ -287,14 +288,14 @@ onMounted(async () => {
 
 .feature-card h3 {
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 900;
   margin-bottom: 8px;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .feature-card p {
   font-size: 14px;
-  color: #64748b;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
@@ -310,11 +311,12 @@ onMounted(async () => {
 }
 
 .modal-card {
-  background: white;
-  border-radius: 24px;
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius);
   max-width: 500px;
   width: 90%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: var(--border-primary);
+  box-shadow: var(--shadow-lg);
 }
 
 .resume-modal .modal-header {
@@ -324,16 +326,17 @@ onMounted(async () => {
 
 .modal-header h3 {
   font-size: 24px;
-  font-weight: 700;
+  font-weight: 900;
   margin-bottom: 8px;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .resume-info {
   padding: 24px 32px;
-  background: #f8fafc;
+  background: var(--bg-tertiary);
   margin: 0 32px 24px;
-  border-radius: 12px;
+  border-radius: var(--border-radius);
+  border: var(--border-thin);
 }
 
 .info-row {
@@ -354,7 +357,7 @@ onMounted(async () => {
 
 .value {
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
 }
 
 .modal-footer {
@@ -375,13 +378,15 @@ button {
 }
 
 .primary-btn {
-  background: #ffd700;
-  color: #1e293b;
+  background: var(--primary-color);
+  color: #000000;
+  border: var(--border-secondary);
+  font-weight: 900;
 }
 
 .primary-btn:hover {
-  background: #ffc800;
-  transform: translateY(-2px);
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-sm);
 }
 
 .secondary-btn {
@@ -405,46 +410,22 @@ button {
 }
 
 .dark-mode {
-  background: #0f172a;
+  background: var(--bg-primary);
   color: #f1f5f9;
 }
 
 .dark-mode .feature-card {
-  background: #1e293b;
-  border-color: #334155;
-}
-
-.dark-mode .feature-card h3 {
-  color: #f1f5f9;
-}
-
-.dark-mode .feature-card p {
-  color: #94a3b8;
-}
-
-.dark-mode .start-exam-btn {
-  color: #0f172a;
+  background: var(--bg-secondary);
+  border-color: #FFFFFF;
 }
 
 .dark-mode-card {
-  background: #1e293b;
-  color: #f1f5f9;
-}
-
-.dark-mode-card .modal-header h3 {
-  color: #f1f5f9;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: #FFFFFF;
 }
 
 .dark-mode-card .resume-info {
-  background: #0f172a;
-}
-
-.dark-mode-card .value {
-  color: #f1f5f9;
-}
-
-.dark-mode-btn {
-  background: #334155;
-  color: #f1f5f9;
+  background: var(--bg-tertiary);
 }
 </style>

@@ -2,12 +2,16 @@ package site.okkul.be.domain.practice.dto.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
+@Builder
+@NoArgsConstructor
 @AllArgsConstructor
 @Schema(description = "유형별 연습 모드 질문 상세 정보")
-public class PracticeQuestion {
+public class PracticeQuestionInfo {
 
     @Schema(description = "문제 ID", example = "1201")
     private Long questionId;

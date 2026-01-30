@@ -57,4 +57,8 @@ public class Question {
 		this.order = order;
 		this.updatedAt = Instant.now();
 	}
+
+	public void assignTo(QuestionSet questionSet) {
+		this.questionSet = questionSet;
+	}
 }

@@ -12,13 +12,12 @@
 
 import {
   CompleteExamData,
-  ExamStartRequest,
-  GetExamResultData,
-  GetExamStatusData,
-  GetRemainingQuestionsData,
+  ExamCreateRequest,
+  ExamQuestionAnswerRequest,
+  GetExamInfoData,
   StartExamData,
   SubmitAnswerData,
-  SubmitAnswerPayload,
+  UpdateAdjustedDifficultyData,
 } from "./data-contracts";
 import { ContentType, HttpClient, RequestParams } from "./http-client";
 
@@ -26,62 +25,21 @@ export class Exam<
   SecurityDataType = unknown,
 > extends HttpClient<SecurityDataType> {
   /**
-   * @description 난이도 재조정 포인트(7번 이후)에서 나머지 문항 리스트를 한꺼번에 가져옵니다.
-   *
-   * @tags Exam
-   * @name GetRemainingQuestions
-   * @summary 나머지 문항 조회
-   * @request POST:/exam/{examId}/questions/current
-   */
-  getRemainingQuestions = (
-    examId: number,
-    query: {
-      /** @format int32 */
-      adjustedDifficulty: number;
-    },
-    params: RequestParams = {},
-  ) =>
-    this.request<GetRemainingQuestionsData, any>({
-      path: `/exam/${examId}/questions/current`,
-      method: "POST",
-      query: query,
-      ...params,
-    });
-  /**
    * @description 시험 세션을 생성하고 초기 문항(1~7번)을 반환합니다.
    *
    * @tags Exam
    * @name StartExam
-   * @summary 모의고사 시작
-   * @request POST:/exam/start
+   * @summary 모의고사 생성
+   * @request POST:/exam
+   * @secure
    */
-  startExam = (data: ExamStartRequest, params: RequestParams = {}) =>
+  startExam = (data: ExamCreateRequest, params: RequestParams = {}) =>
     this.request<StartExamData, any>({
-      path: `/exam/start`,
+      path: `/exam`,
       method: "POST",
       body: data,
+      secure: true,
       type: ContentType.Json,
-      ...params,
-    });
-  /**
-   * @description 사용자의 음성 녹음 파일(mp3/m4a 등)을 서버로 업로드합니다.
-   *
-   * @tags Exam
-   * @name SubmitAnswer
-   * @summary 음성 답변 제출
-   * @request POST:/exam/exam/{examId}/questions/{answerId}/answer
-   */
-  submitAnswer = (
-    examId: number,
-    answerId: number,
-    data: SubmitAnswerPayload,
-    params: RequestParams = {},
-  ) =>
-    this.request<SubmitAnswerData, any>({
-      path: `/exam/exam/${examId}/questions/${answerId}/answer`,
-      method: "POST",
-      body: data,
-      type: ContentType.FormData,
       ...params,
     });
   /**
@@ -90,40 +48,80 @@ export class Exam<
    * @tags Exam
    * @name CompleteExam
    * @summary 시험 최종 종료
-   * @request POST:/exam/exam/{examId}/complete
+   * @request POST:/exam/{examId}/complete
+   * @secure
    */
   completeExam = (examId: number, params: RequestParams = {}) =>
     this.request<CompleteExamData, any>({
-      path: `/exam/exam/${examId}/complete`,
+      path: `/exam/${examId}/complete`,
       method: "POST",
+      secure: true,
       ...params,
     });
   /**
-   * @description 결과 페이지 진입 전, AI 분석이 완료되었는지 확인(Polling)합니다.
+   * @description 사용자의 음성 녹음 파일(mp3/m4a 등)을 서버로 업로드합니다.
    *
    * @tags Exam
-   * @name GetExamStatus
-   * @summary AI 분석 진행 상태 조회
-   * @request GET:/exam/exam/{examId}/status
+   * @name SubmitAnswer
+   * @summary 답변 제출
+   * @request POST:/exam/{examId}/answers/{questionOrder}
+   * @secure
    */
-  getExamStatus = (examId: number, params: RequestParams = {}) =>
-    this.request<GetExamStatusData, any>({
-      path: `/exam/exam/${examId}/status`,
-      method: "GET",
+  submitAnswer = (
+    examId: number,
+    questionOrder: number,
+    data: ExamQuestionAnswerRequest,
+    params: RequestParams = {},
+  ) =>
+    this.request<SubmitAnswerData, any>({
+      path: `/exam/${examId}/answers/${questionOrder}`,
+      method: "POST",
+      body: data,
+      secure: true,
+      type: ContentType.FormData,
       ...params,
     });
   /**
-   * @description 전체 문항의 답변, STT 스크립트 및 AI 피드백 결과를 조회합니다.
+   * @description 난이도 재조정 포인트(7번 이후)에서 난이도를 조정하고 나머지 문항 리스트를 가져옵니다.
    *
    * @tags Exam
-   * @name GetExamResult
-   * @summary 시험 결과 조회
-   * @request GET:/exam/exam/{examId}/result
+   * @name UpdateAdjustedDifficulty
+   * @summary 난이도 조정 및 나머지 문제 생성
+   * @request PATCH:/exam/{examId}/adjust-level
+   * @secure
    */
-  getExamResult = (examId: number, params: RequestParams = {}) =>
-    this.request<GetExamResultData, any>({
-      path: `/exam/exam/${examId}/result`,
+  updateAdjustedDifficulty = (
+    examId: number,
+    query: {
+      /**
+       * 시험 난이도 (new)
+       * @format int32
+       */
+      adjustedDifficulty: number;
+    },
+    params: RequestParams = {},
+  ) =>
+    this.request<UpdateAdjustedDifficultyData, any>({
+      path: `/exam/${examId}/adjust-level`,
+      method: "PATCH",
+      query: query,
+      secure: true,
+      ...params,
+    });
+  /**
+   * @description 시험 정보를 조회합니다
+   *
+   * @tags Exam
+   * @name GetExamInfo
+   * @summary 시험 정보 조회(시험 상태 + 문제 Set + 문제들)
+   * @request GET:/exam/{examId}
+   * @secure
+   */
+  getExamInfo = (examId: number, params: RequestParams = {}) =>
+    this.request<GetExamInfoData, any>({
+      path: `/exam/${examId}`,
       method: "GET",
+      secure: true,
       ...params,
     });
 }

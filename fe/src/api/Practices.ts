@@ -72,20 +72,12 @@ export class Practices<
    */
   savePracticeSession = (
     practiceId: number,
-    query: {
-      /**
-       * AI 사용여부
-       * @example false
-       */
-      ai: boolean;
-    },
     data: SavePracticeSessionPayload,
     params: RequestParams = {},
   ) =>
     this.request<SavePracticeSessionData, any>({
       path: `/practices/${practiceId}/feedback`,
       method: "POST",
-      query: query,
       body: data,
       secure: true,
       type: ContentType.FormData,

@@ -2,16 +2,16 @@
 -- [필수] 기초 데이터(Seed Data) 삽입
 -- ========================================================
 
--- (1) 문제 유형 (기본값)
--- 7가지 OPIc 문제 유형 적재
-INSERT INTO question_type(type_code, description)
-VALUES ('INTRODUCTION', '자기소개'),
-       ('COMBO2', '두문제 콤보 - order 1 묘사 > order 2 묘사, 루틴, 비교 중 하나'),
-       ('COMBO3', '세문제 콤보 - order 1 묘사 > order 2 묘사, 루틴, 비교 중 하나, order 3 과거 경험'),
-       ('RP1', '롤플레이 한문제 - 정보 요청'),
-       ('RP2', '롤플레이 두문제 - order 1 묘사 > order 2 이전 질문 관련 eva에게 질문하기'),
-       ('RP3', '롤플레이 세문제 - order 1 정보 요청 > order 2 대안 제시 > order 3 관련 과거 경험'),
-       ('AD2', '어드밴스 두문제 - order 1 비교, 묘사, 루틴 > order 2 이전 관련 이슈, 뉴스, 의견 등');
+-- -- (1) 문제 유형 (기본값)
+-- -- 7가지 OPIc 문제 유형 적재
+-- INSERT INTO question_type(type_code, description)
+-- VALUES ('INTRODUCTION', '자기소개'),
+--        ('COMBO2', '두문제 콤보 - order 1 묘사 > order 2 묘사, 루틴, 비교 중 하나'),
+--        ('COMBO3', '세문제 콤보 - order 1 묘사 > order 2 묘사, 루틴, 비교 중 하나, order 3 과거 경험'),
+--        ('RP1', '롤플레이 한문제 - 정보 요청'),
+--        ('RP2', '롤플레이 두문제 - order 1 묘사 > order 2 이전 질문 관련 eva에게 질문하기'),
+--        ('RP3', '롤플레이 세문제 - order 1 정보 요청 > order 2 대안 제시 > order 3 관련 과거 경험'),
+--        ('AD2', '어드밴스 두문제 - order 1 비교, 묘사, 루틴 > order 2 이전 관련 이슈, 뉴스, 의견 등');
 
 
 -- ============================================================

@@ -35,7 +35,7 @@ public class QuestionSetController implements QuestionSetControllerDocs {
 	@Override
 	@GetMapping
 	public ResponseEntity<PagedModel<QuestionSetResponse>> getQuestionSets(
-			@ParameterObject @PageableDefault(sort = "id") Pageable pageable
+			@ParameterObject @PageableDefault(size=10,sort = "id") Pageable pageable
 	) {
 		return ResponseEntity.ok(
 				new PagedModel<>(questionSetService.findAll(pageable)

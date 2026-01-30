@@ -295,7 +295,8 @@ const itemsPerPage = 2;
 
 // 피드백 데이터 (API 응답으로 채워질 예정)
 const feedbackData = ref([]);
-const overallFeedback = ref("");
+const overallFeedback = ref([]);
+const aiImprovedAnswer = ref("");
 const feedbackError = ref(null);
 
 const pollForFeedback = (practiceAnswerId) => {
@@ -316,12 +317,21 @@ const pollForFeedback = (practiceAnswerId) => {
         }));
 
         // 종합 피드백 매핑
-        const overall = [
-          `주제 적합성: ${result.relevanceFeedback || "피드백 없음"}`,
-          `논리성: ${result.logicFeedback || "피드백 없음"}`,
-          `유창성: ${result.fluencyFeedback || "피드백 없음"}`,
-        ].join("\n\n");
-        overallFeedback.value = overall;
+        overallFeedback.value = [
+          { 
+            label: "주제 적합성", 
+            text: result.relevanceFeedback || "피드백 없음" 
+          },
+          { 
+            label: "논리성", 
+            text: result.logicFeedback || "피드백 없음" 
+          },
+          { 
+            label: "유창성", 
+            text: result.fluencyFeedback || "피드백 없음" 
+          },
+        ];
+        aiImprovedAnswer.value = result.aiImprovedAnswer || "";
 
         isAnalyzed.value = true;
         currentPage.value = 0;
@@ -732,7 +742,19 @@ onUnmounted(() => {
           </div>
 
           <div v-if="currentTab === 'overall'" class="overall-section">
-            <div class="overall-box">{{ overallFeedback }}</div>
+            <div
+              v-for="(feedback, index) in overallFeedback"
+              :key="index"
+              class="overall-item"
+            >
+              <h4 class="overall-label">{{ feedback.label }}</h4>
+              <p class="overall-text">{{ feedback.text }}</p>
+            </div>
+
+            <div v-if="aiImprovedAnswer" class="improved-answer-item">
+              <h4 class="improved-answer-label">AI 추천 답변</h4>
+              <p class="improved-answer-text">{{ aiImprovedAnswer }}</p>
+            </div>
           </div>
         </div>
       </section>
@@ -1197,14 +1219,54 @@ textarea:focus {
   transform: translateX(8px);
 }
 
-.overall-box {
+.overall-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.overall-item {
   background: var(--bg-tertiary);
-  padding: 30px;
+  padding: 24px;
   border-radius: 16px;
   border-left: 6px solid var(--primary-color);
-  line-height: 1.7;
+}
+
+.overall-label {
   font-size: 1.1rem;
+  font-weight: 700;
   color: var(--text-primary);
+  margin: 0 0 12px 0;
+}
+
+.overall-text {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.improved-answer-item {
+  background: var(--primary-light);
+  padding: 24px;
+  border-radius: 16px;
+  border: 2px solid var(--primary-color);
+}
+
+.improved-answer-label {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #8B7300; /* A color that fits with the primary-light background */
+  margin: 0 0 12px 0;
+}
+
+.improved-answer-text {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #3a3a3a; /* A darker color for readability */
+  margin: 0;
+  white-space: pre-wrap;
 }
 
 /* 페이지네이션 */

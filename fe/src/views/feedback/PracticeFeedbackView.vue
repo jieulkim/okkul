@@ -377,7 +377,7 @@ const selectCorrection = (index) => {
 
 .highlighted-word {
   background: var(--primary-light);
-  color: #8B7300;
+  color: #E65100;
   padding: 2px 6px;
   border-radius: 6px;
   font-weight: 700;

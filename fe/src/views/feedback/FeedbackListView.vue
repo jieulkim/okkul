@@ -200,7 +200,7 @@ const goToDetail = (item) => {
 
 .back-link:hover {
   background: var(--bg-tertiary);
-  color: var(--primary-color);
+  color: #FBC02D;
 }
 
 .page-title {
@@ -270,14 +270,28 @@ const goToDetail = (item) => {
   margin-bottom: 32px;
 }
 
+
 .category-footer {
   margin-top: auto;
   display: flex;
   align-items: center;
   gap: 8px;
-  color: var(--primary-color);
+  color: #FBC02D; /* 옆 아이콘과 동일한 색상 */
   font-weight: 700;
   font-size: 1rem;
+}
+
+/* ... */
+
+.card-footer {
+  margin-top: auto;
+  padding-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #FBC02D; /* 옆 아이콘과 동일한 색상 */
 }
 
 /* 피드백 리스트 스타일 */
@@ -308,13 +322,13 @@ const goToDetail = (item) => {
   left: 0;
   width: 4px;
   height: 100%;
-  background: var(--primary-color);
+  background: #FBC02D;
 }
 
 .feedback-card:hover {
   transform: translateY(-8px);
   box-shadow: var(--shadow-lg);
-  border-color: var(--primary-color);
+  border-color: #FBC02D;
 }
 
 .card-title {
@@ -368,7 +382,7 @@ const goToDetail = (item) => {
   justify-content: space-between;
   font-weight: 700;
   font-size: 0.9rem;
-  color: var(--primary-color);
+  color: #FBC02D;
 }
 
 .no-data {

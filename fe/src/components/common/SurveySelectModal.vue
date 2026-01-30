@@ -232,13 +232,15 @@ const getTopicsSummary = (topics) => {
 }
 
 .modal-card {
-  background: var(--bg-secondary);
-  border-radius: var(--border-radius);
+  background: #FFFFFF; /* 배경을 불투명한 흰색으로 고정 */
+  border-radius: var(--radius-lg);
   max-width: 600px;
   width: 90%;
-  border: var(--border-primary);
-  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(0,0,0,0.1); /* 미세한 테두리 */
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2); /* 강한 그림자로 팝업 느낌 강조 */
   padding-bottom: 20px;
+  position: relative; /* z-index 적용을 위해 */
+  z-index: 1001;
 }
 
 .dark-mode-card {

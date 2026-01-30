@@ -25,14 +25,9 @@ const practiceTypes = [
     id: 'INTRO',
     name: '자기소개',
     icon: 'person',
-    description: '자신을 소개하는 문제입니다.',
+    description: '자신을 소개하는 문제입니다. 편하게 시작해보세요.',
     details: {
-      difficulty: {
-        '1-2': '난이도 1-2: 1번 문제로 출제됩니다.',
-        '3-4': '난이도 3-4: 1번 문제로 출제됩니다.',
-        '5-6': '난이도 5-6: 1번 문제로 출제됩니다.'
-      },
-      info: '기본적인 자기소개로 시작하며, 모든 난이도에서 첫 번째 문제로 출제됩니다.'
+      info: '기본적인 자기소개로 시작하며, 모든 난이도에서 첫 번째 문제로 출제됩니다. 평가에는 큰 영향을 주지 않습니다.'
     }
   },
   {
@@ -41,12 +36,7 @@ const practiceTypes = [
     icon: 'track_changes',
     description: '묘사, 루틴, 과거경험 등이 결합된 연속 문제입니다.',
     details: {
-      difficulty: {
-        '1-2': '난이도 1-2: 총 10문제 (콤보1~5, 각 2문제씩)',
-        '3-4': '난이도 3-4: 총 9문제 (콤보1~3, 각 3문제씩)',
-        '5-6': '난이도 5-6: 총 9문제 (콤보1~3, 각 3문제씩)'
-      },
-      info: '선택한 주제에 대해 묘사(현재), 루틴/비교, 과거경험 등을 연속으로 답변합니다. 묘사 → 루틴/비교 → 과거경험 순서로 난이도가 상승합니다.'
+      info: '선택한 주제에 대해 묘사(현재), 루틴/비교, 과거경험 등을 답변합니다. 묘사 → 루틴/비교 → 과거경험 순서로 난이도가 상승합니다.'
     }
   },
   {
@@ -55,12 +45,7 @@ const practiceTypes = [
     icon: 'theater_comedy',
     description: '실제 상황을 가정한 문제 해결 유형입니다.',
     details: {
-      difficulty: {
-        '1-2': '난이도 1-2: 2문제 (정보요청 + Eva에게 질문)',
-        '3-4': '난이도 3-4: 5문제 (정보요청 + 대안제시 + 과거경험 + 묘사 + 질문)',
-        '5-6': '난이도 5-6: 3문제 (정보요청 + 대안제시 + 관련 과거경험)'
-      },
-      info: '정보요청(난이도 낮음) → 대안제시(난이도 높음) → 관련 과거경험(난이도 높음) 순으로 출제됩니다. 실제 상황에서의 문제해결 능력을 평가합니다.'
+      info: '정보요청 → 대안제시 → 관련 과거경험 위주로 출제됩니다. 실제 상황에서의 문제해결 능력을 평가합니다.'
     }
   },
   {
@@ -69,12 +54,7 @@ const practiceTypes = [
     icon: 'rocket_launch',
     description: 'AL 등급을 위한 고난이도 문제입니다.',
     details: {
-      difficulty: {
-        '1-2': '난이도 1-2: 출제되지 않음',
-        '3-4': '난이도 3-4: 출제되지 않음',
-        '5-6': '난이도 5-6: 2문제 (비교/묘사/루틴 + 관련 이슈/의견)'
-      },
-      info: '난이도 5-6에서만 출제됩니다. 주제 관련 이슈, 뉴스, 의견 등을 구체적인 예시와 함께 설명해야 하는 고난이도 문제입니다.'
+      info: '난이도 5-6에서만 출제됩니다. 마지막 문제로 출제되며 주제 관련 이슈, 뉴스, 의견 등을 구체적인 예시와 함께 설명해야 하는 고난이도 문제입니다.'
     }
   }
 ]
@@ -271,10 +251,7 @@ onMounted(async () => {
           <h2 class="type-name">{{ type.name }}</h2>
           <p class="type-desc">{{ type.description }}</p>
           
-          <div v-if="hoveredType === type.id" class="hover-details">
-             <div class="diff-box">
-               <p v-for="(txt, lv) in type.details.difficulty" :key="lv">{{ txt }}</p>
-             </div>
+          <div class="hover-details">
              <p class="info-text">{{ type.details.info }}</p>
           </div>
         </div>
@@ -369,17 +346,26 @@ onMounted(async () => {
   text-align: center;
   cursor: pointer;
   position: relative;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  height: 340px;
+  transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  /* 고정 높이 대신 최소 높이 사용 */
+  min-height: 340px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* 내용이 추가되면 아래로 늘어날 수 있도록 상단 정렬 */
+  justify-content: flex-start;
   box-shadow: var(--shadow-sm);
+  /* 내용 넘침은 보여주되, 카드 자체의 둥근 모서리는 유지 */
+  overflow: hidden;
 }
 
 .type-card:hover { 
   transform: translateY(-8px);
-  box-shadow: var(--shadow-lg);
+  /* 글라스모피즘 효과 적용 */
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
   border-color: var(--primary-color);
 }
 
@@ -388,6 +374,8 @@ onMounted(async () => {
   display: flex;
   justify-content: center;
   align-items: center;
+  /* 아이콘 크기 고정 */
+  flex-shrink: 0;
 }
 
 .type-icon .material-icons {
@@ -400,49 +388,79 @@ onMounted(async () => {
   font-weight: 800; 
   margin-bottom: 12px; 
   color: var(--text-primary); 
+  flex-shrink: 0;
 }
 
 .type-desc { 
   font-size: 0.95rem; 
   color: var(--text-secondary); 
   line-height: 1.5;
+  margin-bottom: 10px;
+  flex-shrink: 0;
 }
 
 .hover-details { 
-  position: absolute; 
-  inset: 0; 
-  background: var(--bg-secondary); 
-  border-radius: 24px; 
-  padding: 32px; 
-  display: flex; 
-  flex-direction: column; 
-  justify-content: center; 
-  z-index: 10;
-  border: 2px solid var(--primary-color);
-  animation: fadeIn 0.2s ease;
+  /* 절대 위치 제거: 문서 흐름에 따라 아래에 배치 */
+  position: relative; 
+  width: 100%;
+  
+  /* 초기 상태: 숨김 */
+  max-height: 0;
+  padding: 0 16px; /* 좌우 여백 약간 줄임 */
+  margin-top: 0;
+  opacity: 0;
+  overflow: hidden;
+  
+  /* 스타일: 배경 및 그림자 제거하여 하나의 카드처럼 보이게 함 */
+  background: transparent;
+  border-top: 1px solid var(--border-primary); /* 상단 구분선만 유지 */
+  
+  /* 애니메이션 분리: 공간 확장은 즉각적으로, 글자는 천천히 등장 */
+  transition: max-height 0.5s cubic-bezier(0.1, 0, 0.1, 0.1), 
+              padding 0.5s cubic-bezier(0.1, 0, 0.1, 0.1), 
+              margin 0.5s cubic-bezier(0.1, 0, 0.1, 0.1), 
+              /* 글자는 0.2초 기다렸다가 1.5초 동안 아주 천천히 나타남 */
+              opacity 1s ease 0.1s, 
+              transform 1s ease 0.1s;
+  transform: translateY(20px);
+  
+  /* 내부 텍스트 정렬 */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
+/* 호버 시 펼쳐짐 */
+.type-card:hover .hover-details {
+  max-height: 500px;
+  padding-top: 24px; /* 상단 여백 추가 */
+  padding-bottom: 16px;
+  margin-top: 16px;
+  opacity: 1;
+  transform: translateY(0);
+  /* box-shadow 제거 */
 }
 
 .diff-box { 
-  font-size: 0.8125rem; 
+  font-size: 0.9rem; 
   text-align: left; 
-  color: var(--text-primary); 
+  color: #1a1a1a;  /* 글씨 진하게 */
+  font-weight: 700; /* 글씨 두껍게 */
   margin-bottom: 16px; 
   border-bottom: 1px solid var(--border-primary); 
   padding-bottom: 16px; 
 }
 
 .diff-box p {
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+  line-height: 1.5;
 }
 
 .info-text { 
-  font-size: 0.8125rem; 
-  color: var(--text-secondary); 
+  font-size: 0.85rem; 
+  color: #333333; /* 글씨 진하게 */
+  font-weight: 600; /* 글씨 두껍게 */
   line-height: 1.6; 
   text-align: left; 
 }

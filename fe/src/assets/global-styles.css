@@ -1,458 +1,412 @@
-/* 오꿀 프로젝트 전역 스타일 - Neobrutalism Theme */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;400;500;600;700&family=Outfit:wght@300;400;500;700;900&display=swap');
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
+
+/* ==========================================================================
+   HONEYJAM DESIGN SYSTEM - "Soft Pastel & Clean"
+   Refined for White BG & Pastel Yellow Key Color
+   ========================================================================== */
+
 :root {
-  /* 메인 컬러 */
-  --primary-color: #FFD700;
-  --primary-hover: #FFC400;
-  --primary-light: #FFF9C4;
-  
-  /* 라이트모드 배경 */
-  --bg-primary: #F8F9FA;
-  --bg-secondary: #FFFFFF;
-  --bg-tertiary: #F1F3F5;
-  
-  /* 라이트모드 텍스트 */
-  --text-primary: #212529;
-  --text-secondary: #495057;
-  --text-tertiary: #868E96;
-  
-  /* 모던 테두리 */
-  --border-primary: 1px solid rgba(0, 0, 0, 0.1);
-  --border-secondary: 1px solid rgba(0, 0, 0, 0.05);
-  --border-thin: 1px solid rgba(0, 0, 0, 0.03);
-  
-  /* 모던 그림자 (Soft Shadows) */
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.12);
-  
-  /* 레이아웃 */
-  --container-padding: clamp(1rem, 5vw, 4rem);
+  /* ... (Color Palette 생략 - 변경 없음) ... */
+  /* Gentle Yellow Tones */
+  --honey-50: #FFFEF0;
+  --honey-100: #FFFDE7;
+  --honey-200: #FFF9C4;
+  --honey-300: #FFF59D;
+  --honey-400: #FFF176;
+  --honey-500: #FFEE58;
+  --honey-600: #FDD835;
+
+  --honey-gradient-start: #FFF59D;
+  --honey-gradient-end: #FFD54F;
+
+  --accent-purple: #B39DDB;
+  --accent-cyan: #80DEEA;
+  --accent-pink: #F48FB1;
+  --accent-green: #A5D6A7;
+
+  --glass-bg-light: rgba(255, 255, 255, 0.6);
+  --glass-border-light: rgba(255, 255, 255, 0.8);
+  --glass-shadow-light: 0 8px 32px 0 rgba(200, 200, 200, 0.15);
+
+  --glass-bg-dark: rgba(30, 30, 30, 0.6);
+  --glass-border-dark: rgba(255, 255, 255, 0.05);
+
+  /* --- Text Colors --- */
+  --text-primary: #2C2C2C;
+  --text-secondary: #5D5D5D;
+  --text-tertiary: #8D8D8D;
+
+  /* Theming Variables */
+  --bg-color: #FFFFFF;
+  --bg-subtle: #FFFEF5;
+
+  --text-main: var(--text-primary);
+  --text-sub: var(--text-secondary);
+  --text-muted: var(--text-tertiary);
+
+  --primary-color: var(--honey-300);
+  --primary-hover: var(--honey-400);
+
+  --primary-gradient: linear-gradient(135deg, var(--honey-gradient-start), var(--honey-gradient-end));
+
+  --card-bg: rgba(255, 255, 255, 0.85);
+  --card-border: 1px solid #F0F0F0;
+  --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
+
+  /* Font Families - Pretendard Updated */
+  --font-heading: 'Pretendard Variable', 'Pretendard', 'Outfit', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+  --font-body: 'Pretendard Variable', 'Pretendard', 'DM Sans', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+
+  /* Layout */
   --max-width: 1400px;
-  --border-radius: 12px;
-  
-  /* 반응형 폰트 크기 */
-  --font-size-base: clamp(0.9rem, 1vw + 0.5rem, 1rem);
-  --font-size-lg: clamp(1.1rem, 1.2vw + 0.6rem, 1.25rem);
-  --font-size-xl: clamp(1.5rem, 2vw + 1rem, 2.5rem);
+  --header-height: 70px;
+  --radius-sm: 10px;
+  --radius-md: 20px;
+  --radius-lg: 32px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ========== 다크모드 컬러 ========== */
+/* Dark Mode */
 .dark-mode {
-  /* 다크모드 배경 */
-  --bg-primary: #121212;
-  --bg-secondary: #1E1E1E;
-  --bg-tertiary: #2C2C2C;
-  
-  /* 다크모드 텍스트 */
-  --text-primary: #F8F9FA;
-  --text-secondary: #DEE2E6;
-  --text-tertiary: #ADB5BD;
-  
-  /* 다크모드 테두리 (은은하게) */
-  --border-primary: 1px solid rgba(255, 255, 255, 0.1);
-  --border-secondary: 1px solid rgba(255, 255, 255, 0.05);
-  --border-thin: 1px solid rgba(255, 255, 255, 0.03);
-  
-  /* 다크모드 그림자 */
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.6);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.7);
+  --bg-color: #121212;
+  --bg-subtle: #1A1A1A;
+  --text-main: #FFFFFF;
+  --text-sub: #E0E0E0;
+  --text-muted: #A0A0A0;
+
+  --card-bg: rgba(30, 30, 30, 0.7);
+  --card-border: 1px solid rgba(255, 255, 255, 0.1);
+  --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
-/* ========== 전역 리셋 ========== */
+/* ==========================================================================
+   Global Resets & Base Styles
+   ========================================================================== */
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  background: var(--bg-primary);
+  font-family: var(--font-body);
+  background: var(--bg-color);
+  color: var(--text-main);
+  line-height: 1.6;
+  font-size: 16px;
+  font-weight: 400;
+  overflow-x: hidden;
+  transition: background-color 0.3s var(--ease-smooth), color 0.3s var(--ease-smooth);
+}
+
+/* Subtle Animated Background Grain/Gradient */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(circle at 10% 20%, rgba(255, 245, 157, 0.15), transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(255, 224, 130, 0.1), transparent 40%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--text-main);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+  transition: color 0.2s var(--ease-smooth);
+}
+
+::selection {
+  background: var(--honey-200);
+  /* Pastel highlight */
   color: var(--text-primary);
-  font-size: var(--font-size-base);
-  transition: background 0.2s ease, color 0.2s ease;
-  line-height: 1.5;
 }
 
-/* ========== 페이지 컨테이너 ========== */
-.page-container {
-  min-height: 100vh;
-  background: var(--bg-primary);
+/* ==========================================================================
+   Component: Buttons (Soft & Rounded)
+   ========================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+  transition: all 0.2s var(--ease-spring);
+  cursor: pointer;
+  border: none;
+  position: relative;
+  overflow: hidden;
+  text-transform: capitalize;
 }
 
-.page-content {
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding: 32px var(--container-padding);
+.btn:active {
+  transform: scale(0.97);
 }
 
-/* ========== 공통 카드 스타일 (Modern) ========== */
+/* Primary Button: Pastel Gradient */
+.btn-primary {
+  background: var(--primary-gradient);
+  color: #3E2723;
+  /* Dark Brown/Black for contrast on pastel */
+  box-shadow: 0 4px 15px rgba(255, 213, 79, 0.25);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 213, 79, 0.35);
+  filter: brightness(1.02);
+}
+
+/* Secondary Button: Subtle Surface */
+.btn-secondary {
+  background: white;
+  color: var(--text-main);
+  border: 1px solid #E0E0E0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+}
+
+.dark-mode .btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #F9F9F9;
+  border-color: #D6D6D6;
+  transform: translateY(-1px);
+}
+
+/* Ghost Button */
+.btn-ghost {
+  background: transparent;
+  color: var(--text-sub);
+}
+
+.btn-ghost:hover {
+  color: var(--text-main);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+/* ==========================================================================
+   Component: Cards (Clean & Soft)
+   ========================================================================== */
+
 .card {
-  background: var(--bg-secondary);
-  border: var(--border-primary);
-  border-radius: var(--border-radius);
-  padding: 32px;
-  box-shadow: var(--shadow-md);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+  padding: 40px;
+  transition: transform 0.3s var(--ease-smooth), box-shadow 0.3s var(--ease-smooth), border-color 0.3s;
 }
 
 .card:hover {
   transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.06);
+  border-color: var(--honey-200);
 }
 
-/* ========== 버튼 스타일 (Modern Soft) ========== */
-.btn {
-  background: var(--primary-color);
-  font-family: inherit;
-  padding: 0.8em 1.6em;
+/* ==========================================================================
+   Component: Inputs & Forms
+   ========================================================================== */
+
+.label {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
   font-weight: 600;
-  font-size: var(--font-size-base);
-  border: none;
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-sm);
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  justify-content: center;
-  color: #212529;
-  position: relative;
-  overflow: hidden;
-}
-
-.btn:hover:not(:disabled) {
-  background: var(--primary-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-}
-
-.btn:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: var(--shadow-sm);
-}
-
-/* 3D 틸트 효과 제거 및 모던한 컨테이너로 변경 */
-.btn-container {
-  display: inline-flex;
-  gap: 12px;
-}
-
-/* 이전 3D 컨테이너는 이제 비어있거나 불필요하게 됨 */
-.btn-3d-container {
-  display: inline-block;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  filter: grayscale(0.5);
-}
-
-.btn-primary {
-  background: var(--primary-color);
-  color: #000000;
-}
-
-.btn-secondary {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-}
-
-.btn-ghost {
-  background: transparent;
   color: var(--text-secondary);
-  border: var(--border-secondary);
+  margin-bottom: 8px;
+  margin-left: 6px;
 }
 
-/* ========== 입력 필드 스타일 (Modern) ========== */
-.input {
+.input,
+.textarea,
+.select {
   width: 100%;
-  padding: 12px 16px;
-  border: var(--border-primary);
-  border-radius: var(--border-radius);
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  font-size: 16px;
-  font-weight: 500;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
-  transition: all 0.2s ease;
+  padding: 16px 24px;
+  background: #FAFAFA;
+  border: 1px solid #EAEAEA;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--text-main);
+  transition: all 0.2s var(--ease-smooth);
 }
 
-.input:focus {
-  outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 4px var(--primary-light);
+.dark-mode .input {
+  background: #2C2C2C;
+  border-color: #333;
 }
 
 .input::placeholder {
-  color: var(--text-tertiary);
+  color: #BDBDBD;
 }
 
-/* Select 스타일 */
-select.input {
-  cursor: pointer;
+.input:focus,
+.textarea:focus,
+.select:focus {
+  outline: none;
+  background: #FFFFFF;
+  border-color: var(--honey-300);
+  box-shadow: 0 0 0 4px rgba(255, 241, 118, 0.2);
 }
 
-/* Textarea 스타일 */
-textarea.input {
-  resize: vertical;
-  min-height: 100px;
+.dark-mode .input:focus {
+  background: #333;
 }
 
-/* ========== 레이블 스타일 ========== */
-.label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 900;
-  color: var(--text-primary);
-  margin-bottom: 8px;
+/* ==========================================================================
+   Layout & Typography
+   ========================================================================== */
+
+.page-container {
+  min-height: 100vh;
+  padding: var(--header-height) 20px 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.page-content {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+.page-title {
+  font-family: var(--font-heading);
+  font-size: 3.5rem;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+}
+
+.page-title span.highlight {
+  position: relative;
+  z-index: 1;
+}
+
+.page-title span.highlight::after {
+  content: "";
+  position: absolute;
+  bottom: 0.1em;
+  left: 0;
+  width: 100%;
+  height: 0.35em;
+  background: var(--honey-200);
+  z-index: -1;
+  border-radius: 4px;
+}
+
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.gap-sm {
+  gap: 12px;
+}
+
+.gap-md {
+  gap: 24px;
+}
+
+.gap-lg {
+  gap: 40px;
+}
+
+/* Badge */
+.badge {
+  display: inline-flex;
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
-/* ========== 페이지 타이틀 ========== */
-.page-title {
-  font-size: var(--font-size-xl);
-  font-weight: 900;
-  color: var(--text-primary);
-  margin-bottom: 2rem;
-  text-transform: uppercase;
-  letter-spacing: -0.02em;
-}
-
-/* ========== 뱃지 스타일 (Modern Soft) ========== */
-.badge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  border: none;
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-}
-
 .badge-primary {
-  background: var(--primary-light);
-  color: #8B7300;
+  background: var(--honey-100);
+  color: #F9A825;
+  border: 1px solid var(--honey-200);
 }
 
-.dark-mode .badge-primary {
-  background: rgba(255, 215, 0, 0.2);
-  color: var(--primary-color);
-}
-
-/* ========== 반응형 ========== */
-@media (max-width: 1024px) {
-  :root {
-    --container-padding: 32px;
-  }
-  
-  .page-content {
-    padding: 24px var(--container-padding);
-  }
-  
-  .page-title {
-    font-size: 2rem;
-  }
-  
-  .card {
-    padding: 24px;
-  }
-}
-
-@media (max-width: 768px) {
-  :root {
-    --container-padding: 24px;
-  }
-  
-  .page-content {
-    padding: 16px var(--container-padding);
-  }
-  
-  .page-title {
-    font-size: 1.75rem;
-  }
-  
-  .card {
-    padding: 20px;
-  }
-  
-  .btn {
-    font-size: 16px;
-  }
-}
-
-/* ========== 스크롤바 스타일 ========== */
-::-webkit-scrollbar {
-  width: 12px;
-  height: 12px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--bg-primary);
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 10px;
-  border: 3px solid var(--bg-primary);
-}
-
-.dark-mode ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--primary-color);
-}
-
-/* ========== 애니메이션 ========== */
+/* Animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
   }
+
   to {
     opacity: 1;
-    transform: translateY(0);
   }
 }
 
 .fade-in {
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn 0.5s ease-out forwards;
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
 }
 
-.slide-in {
-  animation: slideIn 0.3s ease-out;
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-@keyframes bounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
+::-webkit-scrollbar-thumb {
+  background: #D6D6D6;
+  border-radius: 10px;
 }
 
-.bounce {
-  animation: bounce 0.5s ease;
-}
-
-/* ========== Material Icons ========== */
-.material-icons-outlined {
-  font-family: 'Material Icons Outlined';
-  font-weight: normal;
-  font-style: normal;
-  font-size: 24px;
-  display: inline-block;
-  line-height: 1;
-  text-transform: none;
-  letter-spacing: normal;
-  word-wrap: normal;
-  white-space: nowrap;
-  direction: ltr;
-}
-
-/* ========== 로딩 스피너 (Neobrutalism) ========== */
-.loading-spinner {
-  display: inline-block;
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--text-primary);
-  border-top-color: var(--primary-color);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* ========== Empty State ========== */
-.empty-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: var(--text-secondary);
-  border: var(--border-secondary);
-  border-radius: var(--border-radius);
-  background: var(--bg-secondary);
-  box-shadow: var(--shadow-sm);
-}
-
-.empty-state .icon {
-  font-size: 4rem;
-  margin-bottom: 16px;
-  opacity: 0.7;
-}
-
-.empty-state h3 {
-  font-size: 1.25rem;
-  font-weight: 900;
-  color: var(--text-primary);
-  margin-bottom: 8px;
-  text-transform: uppercase;
-}
-
-.empty-state p {
-  font-size: 0.95rem;
-  color: var(--text-secondary);
-}
-
-/* ========== 유틸리티 클래스 ========== */
-.text-center { text-align: center; }
-.text-left { text-align: left; }
-.text-right { text-align: right; }
-.flex { display: flex; }
-.flex-col { flex-direction: column; }
-.items-center { align-items: center; }
-.justify-center { justify-content: center;}
-.gap-sm { gap: 8px; }
-.gap-md { gap: 16px; }
-.gap-lg { gap: 24px; }
-.gap-xl { gap: 32px; }
-.mt-sm { margin-top: 8px; }
-.mt-md { margin-top: 16px; }
-.mt-lg { margin-top: 24px; }
-.mt-xl { margin-top: 32px;}
-.mb-sm { margin-bottom: 8px; }
-.mb-md { margin-bottom: 16px; }
-.mb-lg { margin-bottom: 24px; }
-.mb-xl { margin-bottom: 32px; }
-
-/* ========== Neobrutalism 특수 효과 ========== */
-.neo-border {
-  border: var(--border-primary);
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-md);
-}
-
-.neo-hover:hover {
-  transform: translate(-0.05em, -0.05em);
-  box-shadow: var(--shadow-lg);
-}
-
-.neo-active:active {
-  transform: translate(0.05em, 0.05em);
-  box-shadow: var(--shadow-sm);
+::-webkit-scrollbar-thumb:hover {
+  background: #C0C0C0;
 }

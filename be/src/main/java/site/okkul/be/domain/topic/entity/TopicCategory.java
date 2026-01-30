@@ -33,5 +33,5 @@ public class TopicCategory {
 	private String categoryName;
 
 	@OneToMany(mappedBy = "category", cascade = CascadeType.ALL)
-	private List<Topic> topics = new ArrayList<>();
+	private List<Topic> topics;
 }

@@ -65,6 +65,13 @@ public class HistoryController implements HistoryControllerDocs {
     @Override
     @GetMapping("/practices")
     public ResponseEntity<PagedModel<PracticeHistorySummary>> getPracticeHistories(
+            @ParameterObject
+            @PageableDefault(
+                    page = 0,
+                    size = 10,
+                    sort = "startedAt",
+                    direction = Sort.Direction.DESC
+            )
             Pageable pageable,
             @AuthenticationPrincipal UserDetails user
     ) {
@@ -76,9 +83,10 @@ public class HistoryController implements HistoryControllerDocs {
     }
 
     @Override
+    @GetMapping("/practices/{practiceId}")
     public ResponseEntity<PracticeHistoryDetailResponse> getPracticeHistoryDetail(
             Long practiceId,
-            UserDetails user) {
+            @AuthenticationPrincipal UserDetails user) {
         PracticeHistoryDetailResponse response = historyService.getPracticeHistoryDetail(Long.parseLong(user.getUsername()), practiceId);
 
         return ResponseEntity.ok(response);

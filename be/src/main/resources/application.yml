@@ -49,6 +49,9 @@ spring:
 server:
   forward-headers-strategy: framework
 
+springdoc:
+  override-with-generic-response: false
+
 # 어플리케이션 설정
 app:
   frontend:

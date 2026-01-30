@@ -183,7 +183,7 @@ async def analyze_voice_text(request: AnalysisRequest):
 
 # --- 라우터 등록 ---
 from exam_feedback import router as exam_router
-from question_feedback import router as question_router
+from total_feedback import router as total_router
 
 app.include_router(exam_router, prefix="/v1")
-app.include_router(question_router, prefix="/v1")
+app.include_router(total_router, prefix="/v1")

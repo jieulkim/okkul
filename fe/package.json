@@ -8,10 +8,10 @@
   },
   "scripts": {
     "dev": "vite",
-    "dev:dev": "vite --mode dev",
+    "dev:dev": "vite --mode develop",
     "dev:mock": "vite --mode mock",
     "dev:cicd": "vite --mode cicd",
-    "dev:prod": "vite --mode prod",
+    "dev:prod": "vite --mode master",
     "build": "vite build",
     "preview": "vite preview",
     "test:unit": "vitest",

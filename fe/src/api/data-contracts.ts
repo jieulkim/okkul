@@ -166,27 +166,6 @@ export interface SurveyCreateResponse {
   surveyId?: number;
 }
 
-/** 질문 유형 */
-export interface QuestionTypeRequest {
-  /**
-   * 유형 코드
-   * @example "RP1"
-   */
-  typeCode?: string;
-  /**
-   * 설명
-   * @example "롤플레잉"
-   */
-  description?: string;
-}
-
-export interface QuestionType {
-  /** @format int64 */
-  id?: number;
-  typeCode?: string;
-  description?: string;
-}
-
 /** 문항 세트 생성/수정 요청 */
 export interface QuestionSetRequest {
   /**
@@ -340,64 +319,84 @@ export interface PracticeAnswerIdResponse {
   practiceAnswerId?: number;
 }
 
-/** 질문 상세 정보 */
-export interface QuestionResponse {
-  /**
-   * 문항 매핑 ID (답변 제출 시 식별자로 사용)
-   * @format int64
-   * @example 1201
-   */
-  answerId?: number;
-  /**
-   * 질문 순서
-   * @format int32
-   * @example 1
-   */
-  questionOrder?: number;
-  /**
-   * 질문 텍스트 (화면 표시용)
-   * @example "Let's start the interview. Tell me about yourself."
-   */
-  questionText?: string;
-  /**
-   * 질문 음성 파일 경로 (S3 등 스토리지 URL)
-   * @example "https://cdn.okkul.site/audio/q1.mp3"
-   */
-  audioUrl?: string;
-}
-
-/** 모의고사 시작 요청 데이터 */
-export interface ExamStartRequest {
-  /**
-   * 선택한 시험 세트의 고유 ID
-   * @format int64
-   * @example 101
-   */
-  examSetId: number;
+/** 시험 생성 요청 객체 */
+export interface ExamCreateRequest {
   /**
    * DB에 저장된 사용자의 설문조사 완료 데이터 ID
    * @format int64
+   * @min 1
+   * @max 6
    * @example 5001
    */
   surveyId: number;
 }
 
-/** 모의고사 시작 응답 데이터 */
-export interface ExamStartResponse {
+/** 모의고사용 문제 정보 */
+export interface ExamDetailResponse {
   /**
-   * 생성된 모의고사 ID
+   * 시험 ID
+   * @format int64
+   */
+  id?: number;
+  /**
+   * 처음 선택한 난이도
+   * @format int32
+   * @example 5
+   */
+  initialDifficulty?: number;
+  /**
+   * 변경한 난이도
+   * @format int32
+   * @example 6
+   */
+  adjustedDifficulty?: number;
+  /**
+   * 생성시간
+   * @format date-time
+   */
+  createdAt?: string;
+  /** 현재 할당된 문제들 */
+  questions?: QuestionResponse[];
+}
+
+/** 사용자에게 반환되는 퀘스트(문제) 정보 */
+export interface QuestionResponse {
+  /**
+   * 문제 ID
    * @format int64
    * @example 1
    */
-  examId?: number;
+  questionId?: number;
   /**
-   * 전체 문항 수
-   * @format int32
-   * @example 15
+   * 문제 텍스트
+   * @example "다음 중 올바른 것은 무엇인가요?"
    */
-  totalQuestions?: number;
-  /** 초기 문항 리스트 (1~7번) */
-  questions?: QuestionResponse[];
+  questionText?: string;
+  /**
+   * 문제에 대한 오디오 파일 URL
+   * @example "https://example.com/audio/1.mp3"
+   */
+  audioUrl?: string;
+  /**
+   * 모의고사 문제 순서 (Answer 저장 시 복합키로 활용됨)
+   * @format int32
+   * @example 1
+   */
+  order?: number;
+}
+
+/** 답변 저장요청 객체 */
+export interface ExamQuestionAnswerRequest {
+  /** @format binary */
+  file?: File;
+  /** STT 텍스트 */
+  sttText?: string;
+  /**
+   * 답변 길이(초)
+   * @format int32
+   * @example 45
+   */
+  duration?: number;
 }
 
 /** 토큰 재발급 요청 */
@@ -613,11 +612,6 @@ export interface PageMetadata {
   totalPages?: number;
 }
 
-export interface PagedModelQuestionType {
-  content?: QuestionType[];
-  page?: PageMetadata;
-}
-
 export interface PagedModelQuestionSetResponse {
   content?: QuestionSetResponse[];
   page?: PageMetadata;
@@ -718,157 +712,306 @@ export interface SentenceCorrection {
   sentenceOrder?: number;
 }
 
-/** AI 분석 진행 상태 응답 */
-export interface ExamStatusResponse {
-  /**
-   * 현재 분석 완료된 문항 수
-   * @format int32
-   * @example 12
-   */
-  completedQuestions?: number;
-  /**
-   * 전체 문항 수
-   * @format int32
-   * @example 15
-   */
-  totalQuestions?: number;
-  /**
-   * 예상 남은 시간 (초)
-   * @format int32
-   * @example 10
-   */
-  estimatedRemainingSeconds?: number;
-  allAnalyzed?: boolean;
+export interface PagedModelPracticeHistorySummary {
+  content?: PracticeHistorySummary[];
+  page?: PageMetadata;
 }
 
-/** 오각형 차트 데이터 (각 0~100점 기준) */
-export interface CategoryScoresResponse {
+/** 유형별 연습 히스토리 목록 조회용 요약 정보 */
+export interface PracticeHistorySummary {
   /**
-   * 문법 점수
-   * @format int32
-   * @example 80
+   * 연습 ID (PK)
+   * @format int64
+   * @example 101
    */
-  grammar?: number;
+  practiceId?: number;
   /**
-   * 어휘 점수
-   * @format int32
-   * @example 75
+   * 연습 시작 일시
+   * @format date-time
    */
-  vocabulary?: number;
+  startedAt?: string;
   /**
-   * 논리 점수
-   * @format int32
-   * @example 90
+   * 선택한 토픽 ID
+   * @format int64
+   * @example 50
    */
-  logic?: number;
+  topicId?: number;
+  /** 선택한 토픽 이름 */
+  topic?: string;
   /**
-   * 유창성 점수
-   * @format int32
-   * @example 85
+   * 문제 유형 ID
+   * @format int64
+   * @example 3
    */
-  fluency?: number;
-  /**
-   * 주제 적합성 점수
-   * @format int32
-   * @example 70
-   */
-  relevance?: number;
+  typeId?: number;
+  /** 문제 유형 */
+  typeName?: string;
 }
 
-/** 모의고사 최종 결과 응답 데이터 */
-export interface ExamResultResponse {
+/** AI 피드백 상세 정보 */
+export interface PracticeAiFeedback {
+  /**
+   * 피드백 상태
+   * @example "COMPLETED"
+   */
+  status?: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+  /**
+   * AI가 제안한 더 좋은 답변
+   * @example "I enjoy traveling."
+   */
+  improvedAnswer?: string;
+  /**
+   * 유창성 피드백
+   * @example "전반적으로 자연스럽습니다."
+   */
+  fluencyFeedback?: string;
+  /**
+   * 논리성 피드백
+   * @example "주장이 명확합니다."
+   */
+  logicFeedback?: string;
+  /**
+   * 적합성 피드백
+   * @example "주제에 맞는 답변입니다."
+   */
+  relevanceFeedback?: string;
+  /** 문장별 상세 피드백 리스트 */
+  sentenceDetails?: PracticeSentenceFeedbackResponse[];
+}
+
+/** 사용자 답변 정보 (스크립트 및 녹음) */
+export interface PracticeAnswer {
+  /**
+   * 한글 스크립트
+   * @example "저는 여행을 좋아합니다."
+   */
+  koreanScript?: string;
+  /**
+   * 영어 스크립트 (STT)
+   * @example "I like travel."
+   */
+  englishScript?: string;
+  /**
+   * 녹음 파일 URL
+   * @example "https://s3.aws.../record.mp3"
+   */
+  recordUrl?: string;
+}
+
+/** 연습 문항별 상세 사이클 정보 (질문 -> 답변 -> 피드백) */
+export interface PracticeCycleDetail {
+  /**
+   * 시도 순서 (1차 시도, 2차 시도...)
+   * @format int32
+   * @example 1
+   */
+  attemptOrder?: number;
+  /** 사용자 답변 정보 (스크립트 및 녹음) */
+  userAnswer?: PracticeAnswer;
+  /** AI 피드백 상세 정보 */
+  feedback?: PracticeAiFeedback;
+}
+
+/** 유형별 연습 히스토리 상세 조회 응답 (메타데이터 + 전체 문답 사이클) */
+export interface PracticeHistoryDetailResponse {
+  /**
+   * 연습 세션 ID
+   * @format int64
+   * @example 101
+   */
+  practiceId?: number;
+  /**
+   * 토픽 ID
+   * @format int64
+   * @example 50
+   */
+  topicId?: number;
+  /**
+   * 선택한 토픽 이름
+   * @example "영화보기"
+   */
+  topicTitle?: string;
+  /**
+   * 문제 유형 ID
+   * @format int64
+   * @example 3
+   */
+  typeId?: number;
+  /**
+   * 문제 유형 코드
+   * @example "COMBO3"
+   */
+  typeName?: string;
+  /**
+   * 연습 시작 일시
+   * @format date-time
+   * @example "2024-05-21T05:30:00Z"
+   */
+  startedAt?: string;
+  /** 질문별 상세 내역 리스트 */
+  questions?: PracticeQuestionDetail[];
+}
+
+/** 연습 내의 개별 질문 정보와 답변 시도 리스트 */
+export interface PracticeQuestionDetail {
+  /**
+   * 문항 ID
+   * @format int64
+   * @example 7
+   */
+  questionId?: number;
+  /**
+   * 질문 순서 (Q1, Q2...)
+   * @format int32
+   * @example 1
+   */
+  questionOrder?: number;
+  /**
+   * 질문 내용
+   * @example "당신이 가장 좋아하는 공원에 대해 묘사해주세요."
+   */
+  questionText?: string;
+  /** 해당 질문에 대한 답변 시도(Cycles) 리스트 */
+  attempts?: PracticeCycleDetail[];
+}
+
+/** 문장별 상세 피드백 리스트 */
+export interface PracticeSentenceFeedbackResponse {
+  /**
+   * 타겟 문장 (원본 전체)
+   * @example "I enjoy to travel."
+   */
+  targetSentence?: string;
+  /**
+   * 대상 텍스트
+   * @example "to travel"
+   */
+  targetSegment?: string;
+  /**
+   * 개선 텍스트
+   * @example "traveling"
+   */
+  correctedSegment?: string;
+  /**
+   * 피드백 텍스트
+   * @example "동명사를 사용하는 것이 더 자연스럽습니다."
+   */
+  comment?: string;
+}
+
+export interface ExamHistorySummary {
+  /** @format int64 */
+  examId?: number;
+  /** @format date-time */
+  createdAt?: string;
+  /** @format date-time */
+  endAt?: string;
+  /** @format int32 */
+  initialDifficulty?: number;
+  /** @format int32 */
+  adjustedDifficulty?: number;
+  grade?: string;
+}
+
+export interface PagedModelExamHistorySummary {
+  content?: ExamHistorySummary[];
+  page?: PageMetadata;
+}
+
+/** 모의고사 히스토리 상세 응답 데이터 */
+export interface ExamHistoryDetailResponse {
+  /** @format int64 */
+  examId?: number;
+  /** @format date-time */
+  createdAt?: string;
+  /** @format date-time */
+  endAt?: string;
+  /** 모의고사 총체 리포트 */
+  examReport?: ExamReport;
+}
+
+/** 모의고사 총체 리포트 */
+export interface ExamReport {
+  totalScore?: number;
+  grade?: string;
+  avgGrammar?: number;
+  avgVocab?: number;
+  avgLogic?: number;
+  avgFluency?: number;
+  avgRelevance?: number;
+  comment?: string;
+  strengthTypes?: string[];
+  weaknessTypes?: string[];
+  /** @format date-time */
+  createdAt?: string;
+}
+
+/** 항목별 피드백 */
+export interface CategoryFeedback {
+  /** 주제 적합성 피드백 */
+  relevanceFeedback?: string;
+  /** 논리성 피드백 */
+  logicFeedback?: string;
+  /** 유창성 피드백 */
+  fluencyFeedback?: string;
+}
+
+/** 모의고사 문항(답변) 상세 피드백 응답 */
+export interface ExamAnswerResponse {
   /**
    * 모의고사 ID
    * @format int64
-   * @example 550
+   * @example 12
    */
   examId?: number;
   /**
-   * 시험 제목
-   * @example "2024-03-21 실전 대비 모의고사"
+   * 답변 ID
+   * @format int64
+   * @example 301
    */
-  title?: string;
+  answerId?: number;
   /**
-   * 시험 응시 일시
-   * @format date-time
-   */
-  createdAt?: string;
-  /** 시험 총체적 분석 리포트 */
-  summary?: ExamSummaryResponse;
-  /** 문항별 상세 분석 결과 리스트 */
-  questionResults?: QuestionResultDetailResponse[];
-}
-
-/** 시험 총체적 분석 리포트 */
-export interface ExamSummaryResponse {
-  /**
-   * 전체 점수 (0-100)
-   * @format double
-   * @example 85.5
-   */
-  totalScore?: number;
-  /**
-   * 예측 등급
-   * @example "IH"
-   */
-  grade?: string;
-  /** 오각형 차트 데이터 (각 0~100점 기준) */
-  categoryScores?: CategoryScoresResponse;
-  /** 전체 총평 내용 */
-  comment?: string;
-  /** 전체적인 강점 유형 */
-  strengths?: string;
-  /** 전체적인 약점 유형 */
-  weakness?: string;
-}
-
-/** 영역별 상세 피드백 정보 */
-export interface FeedbackSetResponse {
-  /**
-   * 영역 점수 (1-5 또는 0-100)
-   * @format int32
-   * @example 4
-   */
-  score?: number;
-  /**
-   * 영역별 맞춤 피드백 내용
-   * @example "과거 시제 활용이 매우 정확했습니다."
-   */
-  feedback?: string;
-}
-
-/** 문항별 상세 분석 결과 */
-export interface QuestionResultDetailResponse {
-  /**
-   * 출제 순서
+   * 시험 내 문항 순서
    * @format int32
    * @example 3
    */
   questionOrder?: number;
-  /** 질문 텍스트 */
-  questionText?: string;
-  /** 사용자 답변 음성 URL */
-  audioUrl?: string;
-  /**
-   * 답변 길이(초)
-   * @format int32
-   * @example 45
-   */
-  duration?: number;
-  /** 사용자 답변 STT 결과 */
+  /** STT로 변환된 원본 답변 스크립트 */
   sttScript?: string;
-  /** AI가 제안하는 교정 스크립트 (오꿀쌤의 교정 스크립트) */
-  enhancedScript?: string;
-  /** 영역별 상세 피드백 정보 */
-  grammar?: FeedbackSetResponse;
-  /** 영역별 상세 피드백 정보 */
-  vocabulary?: FeedbackSetResponse;
-  /** 영역별 상세 피드백 정보 */
-  logic?: FeedbackSetResponse;
-  /** 영역별 상세 피드백 정보 */
-  fluency?: FeedbackSetResponse;
-  /** 영역별 상세 피드백 정보 */
-  relevance?: FeedbackSetResponse;
+  /** AI 개선 답변 텍스트 */
+  improvedAnswer?: string;
+  /** 항목별 피드백 */
+  categoryFeedback?: CategoryFeedback;
+  sentenceFeedbacks?: SentenceFeedback[];
+  /**
+   * 답변 생성 일시
+   * @format date-time
+   */
+  createdAt?: string;
+}
+
+/** 문장 단위 교정 피드백 */
+export interface SentenceFeedback {
+  /**
+   * 문장 피드백 ID
+   * @format int64
+   * @example 9001
+   */
+  feedbackId?: number;
+  /** 원본 문장 */
+  targetSentence?: string;
+  /** 문제 구간 */
+  targetSegment?: string;
+  /** 교정된 표현 */
+  correctedSegment?: string;
+  /** 피드백 텍스트 */
+  comment?: string;
+  /**
+   * 문장 순서
+   * @format int32
+   * @example 1
+   */
+  sentenceOrder?: number;
 }
 
 export type UpdateTargetLevelData = UserResponse;
@@ -888,10 +1031,6 @@ export type UpdateNicknameData = UserResponse;
 export type GetSurveyListData = SurveyListResponse;
 
 export type CreateSurveyData = SurveyCreateResponse;
-
-export type GetQuestionTypesData = PagedModelQuestionType;
-
-export type CreateQuestionTypeData = QuestionType;
 
 export type GetQuestionSetsData = PagedModelQuestionSetResponse;
 
@@ -913,26 +1052,13 @@ export interface SavePracticeSessionPayload {
 
 export type SavePracticeSessionData = PracticeAnswerIdResponse;
 
-export type GetRemainingQuestionsData = QuestionResponse[];
-
-export type StartExamData = ExamStartResponse;
-
-export interface SubmitAnswerPayload {
-  /** @format binary */
-  file: File;
-}
-
-export type SubmitAnswerData = any;
+export type StartExamData = ExamDetailResponse;
 
 export type CompleteExamData = any;
 
+export type SubmitAnswerData = any;
+
 export type ReissueData = AccessTokenResponse;
-
-export type GetQuestionTypeData = QuestionType;
-
-export type DeleteQuestionTypeData = any;
-
-export type UpdateQuestionTypeData = QuestionType;
 
 export type GetQuestionSetData = QuestionSetResponse;
 
@@ -943,6 +1069,8 @@ export type UpdateQuestionSetData = QuestionSetResponse;
 export type DeleteQuestionData = any;
 
 export type UpdateQuestionData = QuestionDetailResponse;
+
+export type UpdateAdjustedDifficultyData = ExamDetailResponse;
 
 export type GetMyInfoData = UserResponse;
 
@@ -956,10 +1084,18 @@ export type GetPracticeProblemData = PracticeQuestionResponse;
 
 export type GetPracticeFeedbackData = PracticeAIFeedbackResult;
 
+export type GetPracticeHistoriesData = PagedModelPracticeHistorySummary;
+
+export type GetPracticeHistoryDetailData = PracticeHistoryDetailResponse;
+
+export type GetExamHistoriesData = PagedModelExamHistorySummary;
+
+export type GetExamHistoryDetailData = ExamHistoryDetailResponse;
+
+export type GetExamAnswerDetailData = ExamAnswerResponse;
+
 export type HealthCheckData = string;
 
 export type HealthCheckError = string;
 
-export type GetExamStatusData = ExamStatusResponse;
-
-export type GetExamResultData = ExamResultResponse;
+export type GetExamInfoData = ExamDetailResponse;

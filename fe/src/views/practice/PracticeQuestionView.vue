@@ -9,6 +9,12 @@ const authStore = useAuthStore();
 const userId = computed(() => authStore.user?.id);
 
 // ============================================
+// Refactored State
+// ============================================
+const practiceIdRef = ref(null); // API로부터 받은 현재 연습 세션 ID
+let pollInterval = null; // 피드백 폴링을 위한 인터벌 ID
+
+// ============================================
 // Props 정의 (부모 컴포넌트에서 받을 데이터)
 // ============================================
 const props = defineProps({
@@ -71,12 +77,14 @@ const selectTopic = (topicId) => {
 const displayedTopics = computed(() => {
   const source =
     localTopics.value.length > 0 ? localTopics.value : props.availableTopics;
-  
+
   // 전체 목록 복사
   let sorted = [...source];
-  
+
   if (currentTopic.value) {
-    const index = sorted.findIndex(t => (t.topic_id || t.topicId) === currentTopic.value);
+    const index = sorted.findIndex(
+      (t) => (t.topic_id || t.topicId) === currentTopic.value,
+    );
     if (index > -1) {
       const selected = sorted.splice(index, 1)[0];
       sorted.unshift(selected);
@@ -147,7 +155,7 @@ const getDuration = (blob) => {
   return new Promise((resolve) => {
     const audio = new Audio();
     audio.src = URL.createObjectURL(blob);
-    audio.addEventListener('loadedmetadata', () => {
+    audio.addEventListener("loadedmetadata", () => {
       resolve(audio.duration); // 초 단위
     });
   });
@@ -206,12 +214,12 @@ const initRecognition = () => {
 const initAudioRecording = async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    
+
     // 브라우저 호환성을 고려하되, 전송 시 mp3로 취급하기 위해 최적의 타입 선택
-    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
-      ? 'audio/webm;codecs=opus' 
-      : 'audio/webm';
-      
+    const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+      ? "audio/webm;codecs=opus"
+      : "audio/webm";
+
     audioRecorder = new MediaRecorder(stream, { mimeType });
     audioChunks = [];
 
@@ -225,15 +233,15 @@ const initAudioRecording = async () => {
       // 녹음 중지 시 Blob 생성 및 저장
       const blob = new Blob(audioChunks, { type: mimeType });
       recordedBlob.value = blob;
-      
+
       // 지속 시간 측정
       const duration = await getDuration(blob);
       recordedDuration.value = Math.round(duration);
-      
+
       console.log("녹음 완료:", {
         size: blob.size,
         duration: recordedDuration.value,
-        type: blob.type
+        type: blob.type,
       });
     };
 
@@ -261,6 +269,7 @@ const toggleRecording = async () => {
     recordedDuration.value = 0;
     sttResult.value = "";
     recordingTime.value = 0;
+    finalTranscriptAccumulated.value = "";
 
     try {
       recognition.start();
@@ -276,7 +285,7 @@ const toggleRecording = async () => {
 };
 
 // ============================================
-// 4. AI 분석 및 피드백 (Type_feedbacks 테이블)
+// 4. AI 분석 및 피드백 (Refactored)
 // ============================================
 const isAnalyzed = ref(false);
 const currentTab = ref("sentence");
@@ -286,90 +295,114 @@ const itemsPerPage = 2;
 
 // 피드백 데이터 (API 응답으로 채워질 예정)
 const feedbackData = ref([]);
-const overallFeedback = ref("");
+const overallFeedback = ref([]);
+const aiImprovedAnswer = ref("");
+const feedbackError = ref(null);
 
-// API 호출: 답변 분석 요청
+const pollForFeedback = (practiceAnswerId) => {
+  pollInterval = setInterval(async () => {
+    try {
+      const res = await practicesApi.getPracticeFeedback(practiceAnswerId);
+      const result = res.data;
+
+      if (result.feedbackStatus === "COMPLETED") {
+        clearInterval(pollInterval);
+        isAnalyzing.value = false;
+
+        // 문장 피드백 매핑
+        feedbackData.value = (result.scriptCorrections || []).map((item) => ({
+          original: item.originalSegment,
+          improved: item.correctedSegment,
+          reason: item.comment || "피드백이 없습니다.",
+        }));
+
+        // 종합 피드백 매핑
+        overallFeedback.value = [
+          { 
+            label: "주제 적합성", 
+            text: result.relevanceFeedback || "피드백 없음" 
+          },
+          { 
+            label: "논리성", 
+            text: result.logicFeedback || "피드백 없음" 
+          },
+          { 
+            label: "유창성", 
+            text: result.fluencyFeedback || "피드백 없음" 
+          },
+        ];
+        aiImprovedAnswer.value = result.aiImprovedAnswer || "";
+
+        isAnalyzed.value = true;
+        currentPage.value = 0;
+        emit("answer-submitted", result);
+      } else if (result.feedbackStatus === "FAILED") {
+        clearInterval(pollInterval);
+        isAnalyzing.value = false;
+        feedbackError.value = "피드백 생성에 실패했습니다. 다시 시도해주세요.";
+      }
+      // PROCESSING 중에는 아무것도 하지 않고 다음 폴링을 기다림
+    } catch (error) {
+      clearInterval(pollInterval);
+      isAnalyzing.value = false;
+      console.error("피드백 조회 실패:", error);
+      feedbackError.value = "피드백을 가져오는 중 오류가 발생했습니다.";
+    }
+  }, 3000); // 3초마다 폴링
+};
+
 const analyze = async () => {
   if (!currentQuestion.value || !recordedBlob.value) {
     return alert("먼저 답변을 녹음해주세요.");
   }
+  if (!practiceIdRef.value) {
+    return alert("연습 세션 ID가 유효하지 않습니다.");
+  }
 
   try {
     isAnalyzing.value = true;
+    isAnalyzed.value = false;
+    feedbackError.value = null;
 
-    // 1. Audio Blob으로부터 mp3 파일 객체 생성
     const audioFile = new File([recordedBlob.value], "recording.mp3", {
       type: "audio/mpeg",
     });
 
-    // 2. JSON 데이터 준비
     const requestData = {
+      questionId: currentQuestion.value.question_id,
       koreanScript: koreanScript.value,
       englishScript: sttResult.value,
     };
 
-    // 3. Payload 생성
     const payload = {
       request: requestData,
       audio: audioFile,
     };
 
-    // 4. API 호출
-    // const response = await practicesApi.savePracticeSession(
-    //   props.practiceSession.practice_id,
-    //   currentQuestion.value.question_id,
-    //   payload,
-    // );
-    const response = {
-      data: {
-        feedbackResult: {
-          scriptCorrections: [
-            {
-              originalSegment: "Hello",
-              correctedSegment: "Hi",
-              comment: "Change 'Hello' to 'Hi' for a more casual greeting.",
-            },
-          ],
-          overallComment: "Your pronunciation is good, but there's room for improvement in intonation.",
-        },
-      },
-    };
+    const response = await practicesApi.savePracticeSession(
+      practiceIdRef.value,
+      payload,
+      // 실제 AI 서버를 사용하려면 주석 해제
+      // {
+      //   headers: {
+      //     "X-Use-Real-AI": "true",
+      //   },
+      // },
+    );
 
-    console.log("분석 결과:", response.data);
-
-    // 5. 결과 처리
-    if (response.data && response.data.feedbackResult) {
-      // API 응답 구조에 맞춰 데이터 매핑
-      // feedbackResult: { scriptCorrections: [], overallComment: "" }
-
-      const result = response.data.feedbackResult;
-
-      // 문장 피드백 매핑
-      feedbackData.value = (result.scriptCorrections || []).map((item) => ({
-        original: item.originalSegment,
-        improved: item.correctedSegment,
-        reason: item.comment || "피드백이 없습니다.",
-      }));
-
-      // 종합 피드백 매핑
-      overallFeedback.value =
-        result.overallComment || "종합 피드백이 없습니다.";
-
-      isAnalyzed.value = true;
-      currentPage.value = 0;
-
-      // 부모 컴포넌트로 알림
-      emit("answer-submitted", response.data);
+    const practiceAnswerId = response.data.practiceAnswerId;
+    if (practiceAnswerId) {
+      pollForFeedback(practiceAnswerId);
     } else {
-      throw new Error("분석 결과 형식이 올바르지 않습니다.");
+      throw new Error("practiceAnswerId를 받지 못했습니다.");
     }
   } catch (error) {
-    console.error("분석 요청 실패:", error);
-    alert("분석에 실패했습니다. 다시 시도해주세요.");
-  } finally {
     isAnalyzing.value = false;
+    console.error("분석 요청 실패:", error);
+    feedbackError.value = "분석 요청에 실패했습니다. 다시 시도해주세요.";
   }
 };
+
 
 // 페이지네이션
 const totalPages = computed(() =>
@@ -400,22 +433,44 @@ const highlightFromCard = (index) => {
 };
 
 // ============================================
-// 5. 초기화 및 정리
+// 5. 초기화 및 정리 (Refactored)
 // ============================================
+
+// Helper function to determine typeId based on type and level
+const getDynamicTypeId = (type, level) => {
+  switch (type) {
+    case "INTRO":
+      return 1;
+    case "COMBO":
+      if (level >= 1 && level <= 2) return 2;
+      if (level >= 3 && level <= 6) return 3;
+      break;
+    case "ROLEPLAY":
+      if (level >= 1 && level <= 2) return Math.random() < 0.5 ? 4 : 5; // 4, 5 중 랜덤
+      if (level >= 3 && level <= 4) return Math.random() < 0.5 ? 5 : 6; // 5, 6 중 랜덤
+      if (level >= 5 && level <= 6) return 6;
+      break;
+    case "ADVANCED":
+      return 7;
+    default:
+      return null; // or a default typeId
+  }
+  return null; // Should not be reached if logic is correct
+};
+
 
 onMounted(async () => {
   // 1. 라우터 쿼리 파라미터 확인
   const queryTopicId = Number(route.query.topic);
-  const queryTypeId = route.query.type;
+  const queryType = route.query.type; // This is a string like "COMBO"
   const surveyId = Number(route.query.surveyId);
+  let surveyLevel = null;
 
   // 2. 주제 데이터 로드 (surveyId가 있으면 해당 설문 토픽 우선)
   if (surveyId) {
     try {
-      console.log("[PracticeQuestionView] loading survey details. ID:", surveyId);
-      console.log("[PracticeQuestionView] Calling surveysApi.getSurveyById...");
       const response = await surveysApi.getSurveyById(surveyId);
-      console.log("[PracticeQuestionView] surveysApi.getSurveyById success:", response.status);
+      surveyLevel = response.data.level;
       if (response.data && response.data.selectedTopics) {
         localTopics.value = response.data.selectedTopics.map((t) => ({
           topic_id: t.topicId,
@@ -432,45 +487,34 @@ onMounted(async () => {
     localTopics.value = [
       { topic_id: 101, topic_name: "영화보기" },
       { topic_id: 102, topic_name: "공원 가기" },
-      { topic_id: 103, topic_name: "카페 투어" },
-      { topic_id: 201, topic_name: "음악 감상하기" },
-      { topic_id: 203, topic_name: "요리하기" },
-      { topic_id: 301, topic_name: "조깅" },
-      { topic_id: 302, topic_name: "걷기" },
-      { topic_id: 401, topic_name: "국내여행" },
-      { topic_id: 402, topic_name: "해외여행" },
-      { topic_id: 501, topic_name: "독서" },
     ];
   }
 
-  // 3. 연습 세션 시작 및 문제 불러오기 (Props가 없을 때)
+  // 3. 연습 세션 시작 및 문제 불러오기
   if (
     !props.currentQuestionSet?.questions ||
     props.currentQuestionSet.questions.length === 0
   ) {
-    if (surveyId && queryTopicId) {
+    if (surveyId && queryTopicId && queryType) {
       try {
-        // 연습 세션 시작
+        const dynamicTypeId = getDynamicTypeId(queryType, surveyLevel);
+        if (!dynamicTypeId) {
+          throw new Error(
+            `Invalid type or level. Could not determine typeId for type: ${queryType}, level: ${surveyLevel}`,
+          );
+        }
+
         const startRes = await practicesApi.startPractice({
           surveyId,
           topicId: queryTopicId,
+          typeId: dynamicTypeId,
         });
-        const practiceId = startRes.data.practiceId;
+        practiceIdRef.value = startRes.data.practiceId;
 
-        // 문제 상세 조회
-        // const problemRes = await practicesApi.getPracticeProblem(practiceId);
-        const problemRes = {
-          data: {
-            questions: [
-              {
-                questionId: 1,
-                questionOrder: 1,
-                questionText: "What is your name?",
-                audioUrl: "https://example.com/audio/1.mp3",
-              },
-            ],
-          },
-        };
+        const problemRes = await practicesApi.getPracticeProblem(
+          practiceIdRef.value,
+        );
+
         if (problemRes.data && problemRes.data.questions) {
           localQuestions.value = problemRes.data.questions.map((q) => ({
             question_id: q.questionId,
@@ -481,13 +525,12 @@ onMounted(async () => {
         }
       } catch (error) {
         console.error("연습 문제 로드 실패:", error);
-        // 실패 시 더미 데이터 추가
         localQuestions.value = [
           {
             question_id: 999,
             order: 1,
             question_text:
-              "Could you tell me a little bit about yourself? Where do you live and what do you do?",
+              "문제를 불러오는데 실패했습니다. 페이지를 새로고침 해주세요.",
             audio_url: "",
           },
         ];
@@ -497,19 +540,17 @@ onMounted(async () => {
 
   // 4. 초기 주제 선택 강조
   if (queryTopicId) {
-    currentTopic.value = Number(queryTopicId); // 숫자 타입으로 강제 변환
+    currentTopic.value = Number(queryTopicId);
   } else if (props.practiceSession.topic_id) {
     currentTopic.value = Number(props.practiceSession.topic_id);
   } else if (localTopics.value.length > 0) {
     currentTopic.value = Number(localTopics.value[0].topic_id);
   }
-
-  // 상단 바 정보 재로드용 강제 반응성 트리거 (필요 시)
-  console.log('[PracticeQuestionView] Initial currentTopic:', currentTopic.value);
 });
 
 onUnmounted(() => {
   if (timerInterval) clearInterval(timerInterval);
+  if (pollInterval) clearInterval(pollInterval);
   if (recognition) recognition.stop();
   if (audioRecorder && audioRecorder.state === "recording") {
     audioRecorder.stop();
@@ -614,6 +655,9 @@ onUnmounted(() => {
             {{ isAnalyzing ? '분석 중...' : 'AI 분석하기' }}
           </button>
         </div>
+        <div v-if="feedbackError" class="error-box">
+          {{ feedbackError }}
+        </div>
       </section>
 
       <!-- 피드백 결과 (Type_feedbacks 테이블 기반) -->
@@ -698,7 +742,19 @@ onUnmounted(() => {
           </div>
 
           <div v-if="currentTab === 'overall'" class="overall-section">
-            <div class="overall-box">{{ overallFeedback }}</div>
+            <div
+              v-for="(feedback, index) in overallFeedback"
+              :key="index"
+              class="overall-item"
+            >
+              <h4 class="overall-label">{{ feedback.label }}</h4>
+              <p class="overall-text">{{ feedback.text }}</p>
+            </div>
+
+            <div v-if="aiImprovedAnswer" class="improved-answer-item">
+              <h4 class="improved-answer-label">AI 추천 답변</h4>
+              <p class="improved-answer-text">{{ aiImprovedAnswer }}</p>
+            </div>
           </div>
         </div>
       </section>
@@ -1163,14 +1219,54 @@ textarea:focus {
   transform: translateX(8px);
 }
 
-.overall-box {
+.overall-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.overall-item {
   background: var(--bg-tertiary);
-  padding: 30px;
+  padding: 24px;
   border-radius: 16px;
   border-left: 6px solid var(--primary-color);
-  line-height: 1.7;
+}
+
+.overall-label {
   font-size: 1.1rem;
+  font-weight: 700;
   color: var(--text-primary);
+  margin: 0 0 12px 0;
+}
+
+.overall-text {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.improved-answer-item {
+  background: var(--primary-light);
+  padding: 24px;
+  border-radius: 16px;
+  border: 2px solid var(--primary-color);
+}
+
+.improved-answer-label {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #8B7300; /* A color that fits with the primary-light background */
+  margin: 0 0 12px 0;
+}
+
+.improved-answer-text {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #3a3a3a; /* A darker color for readability */
+  margin: 0;
+  white-space: pre-wrap;
 }
 
 /* 페이지네이션 */
@@ -1294,5 +1390,16 @@ textarea:focus {
 
 .dark-mode .report-span.highlighted {
   color: #212529;
+}
+
+.error-box {
+  margin-top: 20px;
+  padding: 16px;
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 12px;
+  font-weight: 600;
+  text-align: center;
 }
 </style>

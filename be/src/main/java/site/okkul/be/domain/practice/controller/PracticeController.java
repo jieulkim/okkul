@@ -51,7 +51,6 @@ public class PracticeController implements PracticeControllerDocs {
             value = "/{practiceId}/feedback",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<PracticeAnswerIdResponse> savePracticeSession(
-            @RequestParam Boolean ai,
             @PathVariable Long practiceId,
             @RequestPart("request") PracticeFeedbackRequest request,
             @RequestPart("audio") MultipartFile audioFile,

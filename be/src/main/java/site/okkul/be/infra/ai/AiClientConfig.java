@@ -14,7 +14,7 @@ public class AiClientConfig {
     private String aiServerUrl;
 
     @Bean
-    public AiClient aiClient() {
+    public AiClient realAiClient() {
         // 1. RestClient 생성 (Spring MVC의 현대적인 HTTP 클라이언트)
         RestClient restClient = RestClient.builder()
                 .baseUrl(aiServerUrl)

@@ -18,7 +18,6 @@ import site.okkul.be.domain.qustion.entity.QuestionSet;
 import site.okkul.be.domain.qustion.entity.QuestionType;
 import site.okkul.be.domain.qustion.repository.QuestionRepository;
 import site.okkul.be.domain.qustion.repository.QuestionSetRepository;
-import site.okkul.be.domain.qustion.repository.QuestionTypeRepository;
 import site.okkul.be.domain.survey.entity.Survey;
 import site.okkul.be.domain.survey.repository.SurveyJpaRepository;
 import site.okkul.be.domain.topic.entity.Topic;
@@ -27,6 +26,7 @@ import site.okkul.be.domain.user.entity.OAuthProvider;
 import site.okkul.be.domain.user.entity.User;
 import site.okkul.be.domain.user.repository.UserJpaRepository;
 import site.okkul.be.infra.ai.AiClient;
+import site.okkul.be.infra.ai.AiClientProvider;
 import site.okkul.be.infra.ai.dto.AiFeedbackResponse;
 import site.okkul.be.infra.storage.FileStorageService;
 
@@ -37,7 +37,9 @@ import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 @Slf4j
 @Tag("integration")
@@ -55,8 +57,6 @@ class PracticeServiceIntegrationTest {
     @Autowired
     private TopicJpaRepository topicJpaRepository;
     @Autowired
-    private QuestionTypeRepository questionTypeRepository;
-    @Autowired
     private QuestionSetRepository questionSetRepository;
     @Autowired
     private QuestionRepository questionRepository;
@@ -64,7 +64,7 @@ class PracticeServiceIntegrationTest {
     private PracticeAnswerJpaRepository practiceAnswerRepository;
 
     @MockitoBean
-    private AiClient aiClient;
+    private AiClientProvider aiClientProvider;
     @MockitoBean
     private FileStorageService fileStorageService;
 
@@ -87,8 +87,6 @@ class PracticeServiceIntegrationTest {
         // given: 테스트를 위한 더미 데이터 생성 및 저장
         User user = userJpaRepository.save(User.builder().email("test@okkul.site").provider(OAuthProvider.GOOGLE).providerId("ABC").build());
         Topic topic = topicJpaRepository.findById(101L).orElseThrow(() -> new IllegalArgumentException("존재하지 않는 토픽입니다."));
-        QuestionType questionType = questionTypeRepository.findById(1L).orElseGet(() -> questionTypeRepository.save(QuestionType.builder().typeCode("RP2").description("기본 질문").build()));
-
         Survey survey = surveyJpaRepository.save(Survey.builder().userId(user.getId()).level(3).build());
 
         Question question1 = Question.builder().questionText("Q1. 인공지능이란?").audioUrl("q1.mp3").order(1).build();
@@ -97,7 +95,7 @@ class PracticeServiceIntegrationTest {
         QuestionSet questionSet = QuestionSet.builder()
                 .level(3)
                 .topic(topic)
-                .questionType(questionType)
+                .questionType(QuestionType.COMBO2)
                 .questions(List.of(question1, question2))
                 .build();
 
@@ -107,7 +105,7 @@ class PracticeServiceIntegrationTest {
 
 
         // when: 서비스 메서드 호출
-        PracticeCreateResponse response = practiceService.create(survey.getSurveyId(), topic.getId(), questionType.getId(), user.getId());
+        PracticeCreateResponse response = practiceService.create(survey.getSurveyId(), topic.getId(), QuestionType.COMBO2.getId(), user.getId());
 
 
         // then: 결과 검증
@@ -134,15 +132,19 @@ class PracticeServiceIntegrationTest {
         private User user;
         private Practice practice;
         private Question question;
+        private AiClient mockAiClient;
+
 
         @BeforeEach
         void setup() {
             user = userJpaRepository.save(User.builder().email("user@test.com").provider(OAuthProvider.GOOGLE).providerId("123").build());
             Topic topic = topicJpaRepository.findById(101L).orElseThrow();
-            QuestionType questionType = questionTypeRepository.findById(5L).orElseThrow();
-            QuestionSet questionSet = questionSetRepository.save(QuestionSet.builder().level(5).topic(topic).questionType(questionType).build());
+            QuestionSet questionSet = questionSetRepository.save(QuestionSet.builder().level(5).topic(topic).questionType(QuestionType.COMBO2).build());
             question = questionRepository.save(Question.builder().questionText("Test Question").audioUrl("test.mp3").questionSet(questionSet).build());
-            practice = practiceJpaRepository.save(Practice.builder().user(user).topic(topic).questionSet(questionSet).questionType(questionType).build());
+            practice = practiceJpaRepository.save(Practice.builder().user(user).topic(topic).questionSet(questionSet).questionType(QuestionType.COMBO2).build());
+
+            mockAiClient = mock(AiClient.class);
+            given(aiClientProvider.getClient(anyBoolean())).willReturn(mockAiClient);
         }
 
         @Test
@@ -155,12 +157,12 @@ class PracticeServiceIntegrationTest {
             given(fileStorageService.upload(any(), any())).willReturn("http://storage.com/test.mp3");
 
             var aiResponse = AiFeedbackResponse.builder()
-                .relevance_feedback("Good relevance")
-                .logic_feedback("Good logic")
-                .fluency_feedback("Good fluency")
-                .improved_answer("Improved answer")
-                .build();
-            given(aiClient.requestFeedback(any())).willReturn(aiResponse);
+                    .relevance_feedback("Good relevance")
+                    .logic_feedback("Good logic")
+                    .fluency_feedback("Good fluency")
+                    .improved_answer("Improved answer")
+                    .build();
+            given(mockAiClient.requestFeedback(any())).willReturn(aiResponse);
 
             // when
             Long practiceAnswerId = practiceService.createAnswerAndRequestFeedbackAsync(practice.getPracticeId(), request, audioFile, user.getId());
@@ -169,7 +171,7 @@ class PracticeServiceIntegrationTest {
             await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
                 PracticeAnswer answer = practiceAnswerRepository.findById(practiceAnswerId)
                         .orElseThrow(() -> new AssertionError("PracticeAnswer should exist"));
-                
+
                 assertThat(answer.getFeedbackStatus()).isEqualTo(FeedbackStatus.COMPLETED);
                 assertThat(answer.getRelevanceFeedback()).isEqualTo("Good relevance");
                 assertThat(answer.getImprovedAnswer()).isEqualTo("Improved answer");
@@ -184,7 +186,7 @@ class PracticeServiceIntegrationTest {
             var audioFile = new MockMultipartFile("audio", "test.mp3", "audio/mpeg", "data".getBytes());
 
             given(fileStorageService.upload(any(), any())).willReturn("http://storage.com/test.mp3");
-            given(aiClient.requestFeedback(any())).willThrow(new RuntimeException("AI Server Error"));
+            given(mockAiClient.requestFeedback(any())).willThrow(new RuntimeException("AI Server Error"));
 
             // when
             Long practiceAnswerId = practiceService.createAnswerAndRequestFeedbackAsync(practice.getPracticeId(), request, audioFile, user.getId());

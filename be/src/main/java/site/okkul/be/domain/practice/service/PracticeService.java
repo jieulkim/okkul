@@ -3,6 +3,9 @@ package site.okkul.be.domain.practice.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 import site.okkul.be.domain.practice.dto.request.PracticeFeedbackRequest;
 import site.okkul.be.domain.practice.dto.response.PracticeAIFeedbackResult;
@@ -101,7 +104,18 @@ public class PracticeService {
 
     public Long createAnswerAndRequestFeedbackAsync(Long practiceId, PracticeFeedbackRequest request, MultipartFile audioFile, Long userId) {
         Long practiceAnswerId = practiceAnswerCreator.createAndSaveAnswer(practiceId, request, audioFile);
-        aiFeedbackTrigger.triggerAiFeedback(practiceAnswerId);
+
+        // 웹 스레드에서 헤더 값을 미리 boolean으로 추출
+        boolean useRealAi = java.util.Optional.ofNullable(RequestContextHolder.getRequestAttributes())
+                .filter(ServletRequestAttributes.class::isInstance)
+                .map(ServletRequestAttributes.class::cast)
+                .map(ServletRequestAttributes::getRequest)
+                .map(httpRequest -> "true".equalsIgnoreCase(httpRequest.getHeader("X-Use-Real-AI")))
+                .orElse(false);
+
+        // 비동기 메소드에 원시 타입(boolean) 값을 전달
+        aiFeedbackTrigger.triggerAiFeedback(practiceAnswerId, useRealAi);
+
         return practiceAnswerId;
     }
 

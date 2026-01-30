@@ -9,12 +9,15 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 import site.okkul.be.domain.practice.entity.FeedbackStatus;
 import site.okkul.be.domain.practice.entity.PracticeAnswer;
 import site.okkul.be.domain.practice.entity.PracticeSentenceFeedback;
 import site.okkul.be.domain.practice.mapper.PracticeMapper;
 import site.okkul.be.domain.practice.repository.PracticeAnswerJpaRepository;
 import site.okkul.be.infra.ai.AiClient;
+import site.okkul.be.infra.ai.AiClientProvider;
 import site.okkul.be.infra.ai.dto.AiFeedbackRequest;
 import site.okkul.be.infra.ai.dto.AiFeedbackResponse;
 
@@ -26,7 +29,7 @@ import java.util.List;
 public class AiFeedbackTrigger {
 
     private final PracticeAnswerJpaRepository practiceAnswerRepository;
-    private final AiClient aiClient;
+    private final AiClientProvider aiClientProvider; // AiClient 대신 AiClientProvider 주입
     private final PracticeMapper practiceMapper;
 
     private AiFeedbackTrigger self;
@@ -41,8 +44,8 @@ public class AiFeedbackTrigger {
      */
     @Async
     @Transactional
-    public void triggerAiFeedback(Long practiceAnswerId) {
-        log.info("비동기 피드백 처리 시작. PracticeAnswer ID: {}", practiceAnswerId);
+    public void triggerAiFeedback(Long practiceAnswerId, boolean useRealAi) { // boolean 파라미터 추가
+        log.info("비동기 피드백 처리 시작. PracticeAnswer ID: {}, useRealAi: {}", practiceAnswerId, useRealAi);
 
         // Step 1: 상태 변경을 즉시 커밋
         self.updateStatusToProcessing(practiceAnswerId);
@@ -56,6 +59,9 @@ public class AiFeedbackTrigger {
                 .user_answer(answer.getEnglishScript())
                 .user_korean_script(answer.getKoreanScript())
                 .build();
+        
+        // Provider를 통해 적절한 AI 클라이언트 선택
+        AiClient aiClient = aiClientProvider.getClient(useRealAi);
 
         try {
             log.info("AI Request Body: {}", new ObjectMapper().writeValueAsString(aiRequest));

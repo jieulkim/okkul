@@ -1,5 +1,6 @@
 package site.okkul.be.domain.practice.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -9,56 +10,74 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import site.okkul.be.domain.practice.docs.PracticeControllerDocs;
 import site.okkul.be.domain.practice.dto.request.PracticeFeedbackRequest;
-import site.okkul.be.domain.practice.dto.response.PracticeFeedbackResponse;
-import site.okkul.be.domain.practice.dto.response.PracticeProblemResponse;
-import site.okkul.be.domain.practice.dto.response.PracticeQuestion;
-import site.okkul.be.domain.practice.dto.response.PracticeStartResponse;
-
-import java.time.Instant;
-import java.util.Arrays;
+import site.okkul.be.domain.practice.dto.response.*;
+import site.okkul.be.domain.practice.service.PracticeService;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/practices")
 public class PracticeController implements PracticeControllerDocs {
 
+    private final PracticeService practiceService;
+
     @Override
     @PostMapping
-    public ResponseEntity<PracticeStartResponse> startPractice(
-            @RequestParam long surveyId,
-            @RequestParam long topicId,
+    public ResponseEntity<PracticeCreateResponse> startPractice(
+            @RequestParam Long surveyId,
+            @RequestParam Long topicId,
+            @RequestParam Long typeId,
             @AuthenticationPrincipal UserDetails userDetails) {
-        PracticeStartResponse response = new PracticeStartResponse(
-                1L,
-                Instant.now()
+        return new ResponseEntity<>(
+                practiceService.create(surveyId, topicId, typeId, Long.parseLong(userDetails.getUsername())),
+                HttpStatus.CREATED
         );
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @Override
     @GetMapping("/{practiceId}")
-    public ResponseEntity<PracticeProblemResponse> getPracticeProblem(
-            @PathVariable long practiceId,
+    public ResponseEntity<PracticeQuestionResponse> getPracticeProblem(
+            @PathVariable Long practiceId,
             @AuthenticationPrincipal UserDetails userDetails) {
-        PracticeQuestion q1 = new PracticeQuestion(1L, 1, "Q1. What?", "https://cdn.cloud...");
-        PracticeQuestion q2 = new PracticeQuestion(2L, 2, "Q2. What?", "https://cdn.cloud...");
-        PracticeQuestion q3 = new PracticeQuestion(3L, 3, "Q3. What?", "https://cdn.cloud...");
-        PracticeProblemResponse response = new PracticeProblemResponse(
-                30L,
-                Arrays.asList(q1, q2, q3)
-        );
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        return new ResponseEntity<>(
+                practiceService.getPractice(practiceId, Long.parseLong(userDetails.getUsername())),
+                HttpStatus.OK);
     }
 
+    /**
+     * 답변을 제출하고 AI 피드백을 비동기적으로 요청합니다.
+     */
     @Override
     @PostMapping(
-            value = "/{practiceId}/questions/{questionId}/feedback",
+            value = "/{practiceId}/feedback",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<PracticeFeedbackResponse> savePracticeSession(
-            @PathVariable long practiceId,
-            @PathVariable long questionId,
+    public ResponseEntity<PracticeAnswerIdResponse> savePracticeSession(
+            @RequestParam Boolean ai,
+            @PathVariable Long practiceId,
             @RequestPart("request") PracticeFeedbackRequest request,
             @RequestPart("audio") MultipartFile audioFile,
             @AuthenticationPrincipal UserDetails userDetails) {
-        return null;
+
+        // 서비스는 PracticeAnswer를 생성하고, 백그라운드에서 AI 요청을 트리거한 후, 생성된 answerId를 즉시 반환합니다.
+        Long practiceAnswerId = practiceService.createAnswerAndRequestFeedbackAsync(
+                practiceId, request, audioFile, Long.parseLong(userDetails.getUsername()));
+
+        // 클라이언트에게는 생성된 answerId를 "요청이 접수되었다"는 의미의 202 Accepted 상태와 함께 반환합니다.
+        return new ResponseEntity<>(new PracticeAnswerIdResponse(practiceAnswerId), HttpStatus.ACCEPTED);
+    }
+
+    /**
+     * practiceAnswerId로 피드백 처리 상태와 결과를 조회합니다.
+     */
+    @Override
+    @GetMapping(value = "/feedback/{practiceAnswerId}")
+    public ResponseEntity<PracticeAIFeedbackResult> getPracticeFeedback(
+            @PathVariable Long practiceAnswerId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        
+        // 서비스는 피드백 상태를 확인하고, 상태에 따라 다른 객체(PracticeFeedbackResponse 또는 FeedbackStatusResponse)를 반환합니다.
+        PracticeAIFeedbackResult result = practiceService
+                .getFeedbackResult(practiceAnswerId, Long.parseLong(userDetails.getUsername()));
+        
+        return ResponseEntity.ok(result);
     }
 }

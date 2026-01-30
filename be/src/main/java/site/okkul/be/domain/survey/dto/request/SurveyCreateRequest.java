@@ -1,11 +1,17 @@
 package site.okkul.be.domain.survey.dto.request;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import java.util.List;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Schema(description = "설문조사 생성 요청 DTO")
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class SurveyCreateRequest {
 
     /** ============== Part 1 of 4 =================**/

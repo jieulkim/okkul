@@ -2,16 +2,16 @@
 -- [필수] 기초 데이터(Seed Data) 삽입
 -- ========================================================
 
--- (1) 문제 유형 (기본값)
--- 7가지 OPIc 문제 유형 적재
-INSERT INTO question_type(type_code, description)
-VALUES ('INTRODUCTION', '자기소개'),
-       ('COMBO2', '두문제 콤보 - order 1 묘사 > order 2 묘사, 루틴, 비교 중 하나'),
-       ('COMBO3', '세문제 콤보 - order 1 묘사 > order 2 묘사, 루틴, 비교 중 하나, order 3 과거 경험'),
-       ('RP1', '롤플레이 한문제 - 정보 요청'),
-       ('RP2', '롤플레이 두문제 - order 1 묘사 > order 2 이전 질문 관련 eva에게 질문하기'),
-       ('RP3', '롤플레이 세문제 - order 1 정보 요청 > order 2 대안 제시 > order 3 관련 과거 경험'),
-       ('AD2', '어드밴스 두문제 - order 1 비교, 묘사, 루틴 > order 2 이전 관련 이슈, 뉴스, 의견 등');
+-- -- (1) 문제 유형 (기본값)
+-- -- 7가지 OPIc 문제 유형 적재
+-- INSERT INTO question_type(type_code, description)
+-- VALUES ('INTRODUCTION', '자기소개'),
+--        ('COMBO2', '두문제 콤보 - order 1 묘사 > order 2 묘사, 루틴, 비교 중 하나'),
+--        ('COMBO3', '세문제 콤보 - order 1 묘사 > order 2 묘사, 루틴, 비교 중 하나, order 3 과거 경험'),
+--        ('RP1', '롤플레이 한문제 - 정보 요청'),
+--        ('RP2', '롤플레이 두문제 - order 1 묘사 > order 2 이전 질문 관련 eva에게 질문하기'),
+--        ('RP3', '롤플레이 세문제 - order 1 정보 요청 > order 2 대안 제시 > order 3 관련 과거 경험'),
+--        ('AD2', '어드밴스 두문제 - order 1 비교, 묘사, 루틴 > order 2 이전 관련 이슈, 뉴스, 의견 등');
 
 
 -- ============================================================
@@ -122,19 +122,132 @@ VALUES
 -- ============================================================
 -- 3. 질문 세트 (QuestionSet) 예제 데이터 적재
 -- ============================================================
-INSERT INTO question_set (level, question_cnt, topic_id, type_id, created_at, updated_at)
-VALUES (1, 1, 101, 1, NOW(), NOW()), -- 영화보기, 자기소개
-       (2, 2, 106, 2, NOW(), NOW()), -- 공원가기, 콤보2
-       (3, 3, 202, 3, NOW(), NOW());
--- 음악감상, 콤보3
+INSERT INTO question_set (set_id, level, question_cnt, topic_id, type_id, created_at, updated_at) VALUES
+(1, 4, 3, 101, 1, NOW(), NOW()),
+(2, 4, 3, 101, 2, NOW(), NOW()),
+(3, 4, 3, 101, 3, NOW(), NOW()),
+(4, 4, 3, 102, 1, NOW(), NOW()),
+(5, 4, 3, 102, 2, NOW(), NOW()),
+(6, 4, 3, 102, 3, NOW(), NOW()),
+(7, 4, 3, 201, 1, NOW(), NOW()),
+(8, 4, 3, 201, 2, NOW(), NOW()),
+(9, 5, 3, 201, 3, NOW(), NOW()),
+(10, 5, 3, 202, 1, NOW(), NOW()),
+(11, 5, 3, 202, 2, NOW(), NOW()),
+(12, 5, 3, 202, 3, NOW(), NOW()),
+(13, 5, 3, 301, 1, NOW(), NOW()),
+(14, 5, 3, 301, 2, NOW(), NOW()),
+(15, 5, 3, 301, 3, NOW(), NOW()),
+(16, 5, 3, 101, 1, NOW(), NOW()),
+(17, 5, 3, 101, 2, NOW(), NOW()),
+(18, 6, 3, 101, 3, NOW(), NOW()),
+(19, 6, 3, 102, 1, NOW(), NOW()),
+(20, 6, 3, 102, 2, NOW(), NOW()),
+(21, 6, 3, 102, 3, NOW(), NOW()),
+(22, 6, 3, 201, 1, NOW(), NOW()),
+(23, 6, 3, 201, 2, NOW(), NOW()),
+(24, 6, 3, 201, 3, NOW(), NOW()),
+(25, 6, 3, 202, 1, NOW(), NOW()),
+(26, 6, 3, 202, 2, NOW(), NOW()),
+(27, 6, 3, 202, 3, NOW(), NOW()),
+(28, 6, 3, 301, 1, NOW(), NOW()),
+(29, 5, 3, 301, 2, NOW(), NOW()),
+(30, 6, 3, 301, 3, NOW(), NOW());
+
+ALTER SEQUENCE question_set_set_id_seq RESTART WITH 31;
 
 -- ============================================================
 -- 4. 질문 (Question) 예제 데이터 적재
 -- ============================================================
-INSERT INTO question_bank (question_text, audio_url, order_index, set_id, created_at, updated_at)
-VALUES ('Please tell me about yourself.', 'http://example.com/audio1.mp3', 1, 1, NOW(), NOW()),
-       ('Describe your favorite park.', 'http://example.com/audio2.mp3', 1, 2, NOW(), NOW()),
-       ('What do you usually do at the park?', 'http://example.com/audio3.mp3', 2, 2, NOW(), NOW()),
-       ('What kind of music do you like?', 'http://example.com/audio4.mp3', 1, 3, NOW(), NOW()),
-       ('When do you listen to music?', 'http://example.com/audio5.mp3', 2, 3, NOW(), NOW()),
-       ('Tell me about a memorable experience related to music.', 'http://example.com/audio6.mp3', 3, 3, NOW(), NOW());
+INSERT INTO question_bank (question_text, audio_url, order_index, set_id, created_at, updated_at) VALUES
+('Question 1 for Set: L1-T101-Q1', 'http://example.com/L1-T101-Q1-1.mp3', 1, 1, NOW(), NOW()),
+('Question 2 for Set: L1-T101-Q1', 'http://example.com/L1-T101-Q1-2.mp3', 2, 1, NOW(), NOW()),
+('Question 3 for Set: L1-T101-Q1', 'http://example.com/L1-T101-Q1-3.mp3', 3, 1, NOW(), NOW()),
+('Question 1 for Set: L1-T101-Q2', 'http://example.com/L1-T101-Q2-1.mp3', 1, 2, NOW(), NOW()),
+('Question 2 for Set: L1-T101-Q2', 'http://example.com/L1-T101-Q2-2.mp3', 2, 2, NOW(), NOW()),
+('Question 3 for Set: L1-T101-Q2', 'http://example.com/L1-T101-Q2-3.mp3', 3, 2, NOW(), NOW()),
+('Question 1 for Set: L1-T101-Q3', 'http://example.com/L1-T101-Q3-1.mp3', 1, 3, NOW(), NOW()),
+('Question 2 for Set: L1-T101-Q3', 'http://example.com/L1-T101-Q3-2.mp3', 2, 3, NOW(), NOW()),
+('Question 3 for Set: L1-T101-Q3', 'http://example.com/L1-T101-Q3-3.mp3', 3, 3, NOW(), NOW()),
+('Question 1 for Set: L1-T102-Q1', 'http://example.com/L1-T102-Q1-1.mp3', 1, 4, NOW(), NOW()),
+('Question 2 for Set: L1-T102-Q1', 'http://example.com/L1-T102-Q1-2.mp3', 2, 4, NOW(), NOW()),
+('Question 3 for Set: L1-T102-Q1', 'http://example.com/L1-T102-Q1-3.mp3', 3, 4, NOW(), NOW()),
+('Question 1 for Set: L1-T102-Q2', 'http://example.com/L1-T102-Q2-1.mp3', 1, 5, NOW(), NOW()),
+('Question 2 for Set: L1-T102-Q2', 'http://example.com/L1-T102-Q2-2.mp3', 2, 5, NOW(), NOW()),
+('Question 3 for Set: L1-T102-Q2', 'http://example.com/L1-T102-Q2-3.mp3', 3, 5, NOW(), NOW()),
+('Question 1 for Set: L1-T102-Q3', 'http://example.com/L1-T102-Q3-1.mp3', 1, 6, NOW(), NOW()),
+('Question 2 for Set: L1-T102-Q3', 'http://example.com/L1-T102-Q3-2.mp3', 2, 6, NOW(), NOW()),
+('Question 3 for Set: L1-T102-Q3', 'http://example.com/L1-T102-Q3-3.mp3', 3, 6, NOW(), NOW()),
+('Question 1 for Set: L1-T201-Q1', 'http://example.com/L1-T201-Q1-1.mp3', 1, 7, NOW(), NOW()),
+('Question 2 for Set: L1-T201-Q1', 'http://example.com/L1-T201-Q1-2.mp3', 2, 7, NOW(), NOW()),
+('Question 3 for Set: L1-T201-Q1', 'http://example.com/L1-T201-Q1-3.mp3', 3, 7, NOW(), NOW()),
+('Question 1 for Set: L1-T201-Q2', 'http://example.com/L1-T201-Q2-1.mp3', 1, 8, NOW(), NOW()),
+('Question 2 for Set: L1-T201-Q2', 'http://example.com/L1-T201-Q2-2.mp3', 2, 8, NOW(), NOW()),
+('Question 3 for Set: L1-T201-Q2', 'http://example.com/L1-T201-Q2-3.mp3', 3, 8, NOW(), NOW()),
+('Question 1 for Set: L1-T201-Q3', 'http://example.com/L1-T201-Q3-1.mp3', 1, 9, NOW(), NOW()),
+('Question 2 for Set: L1-T201-Q3', 'http://example.com/L1-T201-Q3-2.mp3', 2, 9, NOW(), NOW()),
+('Question 3 for Set: L1-T201-Q3', 'http://example.com/L1-T201-Q3-3.mp3', 3, 9, NOW(), NOW()),
+('Question 1 for Set: L1-T202-Q1', 'http://example.com/L1-T202-Q1-1.mp3', 1, 10, NOW(), NOW()),
+('Question 2 for Set: L1-T202-Q1', 'http://example.com/L1-T202-Q1-2.mp3', 2, 10, NOW(), NOW()),
+('Question 3 for Set: L1-T202-Q1', 'http://example.com/L1-T202-Q1-3.mp3', 3, 10, NOW(), NOW()),
+('Question 1 for Set: L1-T202-Q2', 'http://example.com/L1-T202-Q2-1.mp3', 1, 11, NOW(), NOW()),
+('Question 2 for Set: L1-T202-Q2', 'http://example.com/L1-T202-Q2-2.mp3', 2, 11, NOW(), NOW()),
+('Question 3 for Set: L1-T202-Q2', 'http://example.com/L1-T202-Q2-3.mp3', 3, 11, NOW(), NOW()),
+('Question 1 for Set: L1-T202-Q3', 'http://example.com/L1-T202-Q3-1.mp3', 1, 12, NOW(), NOW()),
+('Question 2 for Set: L1-T202-Q3', 'http://example.com/L1-T202-Q3-2.mp3', 2, 12, NOW(), NOW()),
+('Question 3 for Set: L1-T202-Q3', 'http://example.com/L1-T202-Q3-3.mp3', 3, 12, NOW(), NOW()),
+('Question 1 for Set: L1-T301-Q1', 'http://example.com/L1-T301-Q1-1.mp3', 1, 13, NOW(), NOW()),
+('Question 2 for Set: L1-T301-Q1', 'http://example.com/L1-T301-Q1-2.mp3', 2, 13, NOW(), NOW()),
+('Question 3 for Set: L1-T301-Q1', 'http://example.com/L1-T301-Q1-3.mp3', 3, 13, NOW(), NOW()),
+('Question 1 for Set: L1-T301-Q2', 'http://example.com/L1-T301-Q2-1.mp3', 1, 14, NOW(), NOW()),
+('Question 2 for Set: L1-T301-Q2', 'http://example.com/L1-T301-Q2-2.mp3', 2, 14, NOW(), NOW()),
+('Question 3 for Set: L1-T301-Q2', 'http://example.com/L1-T301-Q2-3.mp3', 3, 14, NOW(), NOW()),
+('Question 1 for Set: L1-T301-Q3', 'http://example.com/L1-T301-Q3-1.mp3', 1, 15, NOW(), NOW()),
+('Question 2 for Set: L1-T301-Q3', 'http://example.com/L1-T301-Q3-2.mp3', 2, 15, NOW(), NOW()),
+('Question 3 for Set: L1-T301-Q3', 'http://example.com/L1-T301-Q3-3.mp3', 3, 15, NOW(), NOW()),
+('Question 1 for Set: L2-T101-Q1', 'http://example.com/L2-T101-Q1-1.mp3', 1, 16, NOW(), NOW()),
+('Question 2 for Set: L2-T101-Q1', 'http://example.com/L2-T101-Q1-2.mp3', 2, 16, NOW(), NOW()),
+('Question 3 for Set: L2-T101-Q1', 'http://example.com/L2-T101-Q1-3.mp3', 3, 16, NOW(), NOW()),
+('Question 1 for Set: L2-T101-Q2', 'http://example.com/L2-T101-Q2-1.mp3', 1, 17, NOW(), NOW()),
+('Question 2 for Set: L2-T101-Q2', 'http://example.com/L2-T101-Q2-2.mp3', 2, 17, NOW(), NOW()),
+('Question 3 for Set: L2-T101-Q2', 'http://example.com/L2-T101-Q2-3.mp3', 3, 17, NOW(), NOW()),
+('Question 1 for Set: L2-T101-Q3', 'http://example.com/L2-T101-Q3-1.mp3', 1, 18, NOW(), NOW()),
+('Question 2 for Set: L2-T101-Q3', 'http://example.com/L2-T101-Q3-2.mp3', 2, 18, NOW(), NOW()),
+('Question 3 for Set: L2-T101-Q3', 'http://example.com/L2-T101-Q3-3.mp3', 3, 18, NOW(), NOW()),
+('Question 1 for Set: L2-T102-Q1', 'http://example.com/L2-T102-Q1-1.mp3', 1, 19, NOW(), NOW()),
+('Question 2 for Set: L2-T102-Q1', 'http://example.com/L2-T102-Q1-2.mp3', 2, 19, NOW(), NOW()),
+('Question 3 for Set: L2-T102-Q1', 'http://example.com/L2-T102-Q1-3.mp3', 3, 19, NOW(), NOW()),
+('Question 1 for Set: L2-T102-Q2', 'http://example.com/L2-T102-Q2-1.mp3', 1, 20, NOW(), NOW()),
+('Question 2 for Set: L2-T102-Q2', 'http://example.com/L2-T102-Q2-2.mp3', 2, 20, NOW(), NOW()),
+('Question 3 for Set: L2-T102-Q2', 'http://example.com/L2-T102-Q2-3.mp3', 3, 20, NOW(), NOW()),
+('Question 1 for Set: L2-T102-Q3', 'http://example.com/L2-T102-Q3-1.mp3', 1, 21, NOW(), NOW()),
+('Question 2 for Set: L2-T102-Q3', 'http://example.com/L2-T102-Q3-2.mp3', 2, 21, NOW(), NOW()),
+('Question 3 for Set: L2-T102-Q3', 'http://example.com/L2-T102-Q3-3.mp3', 3, 21, NOW(), NOW()),
+('Question 1 for Set: L2-T201-Q1', 'http://example.com/L2-T201-Q1-1.mp3', 1, 22, NOW(), NOW()),
+('Question 2 for Set: L2-T201-Q1', 'http://example.com/L2-T201-Q1-2.mp3', 2, 22, NOW(), NOW()),
+('Question 3 for Set: L2-T201-Q1', 'http://example.com/L2-T201-Q1-3.mp3', 3, 22, NOW(), NOW()),
+('Question 1 for Set: L2-T201-Q2', 'http://example.com/L2-T201-Q2-1.mp3', 1, 23, NOW(), NOW()),
+('Question 2 for Set: L2-T201-Q2', 'http://example.com/L2-T201-Q2-2.mp3', 2, 23, NOW(), NOW()),
+('Question 3 for Set: L2-T201-Q2', 'http://example.com/L2-T201-Q2-3.mp3', 3, 23, NOW(), NOW()),
+('Question 1 for Set: L2-T201-Q3', 'http://example.com/L2-T201-Q3-1.mp3', 1, 24, NOW(), NOW()),
+('Question 2 for Set: L2-T201-Q3', 'http://example.com/L2-T201-Q3-2.mp3', 2, 24, NOW(), NOW()),
+('Question 3 for Set: L2-T201-Q3', 'http://example.com/L2-T201-Q3-3.mp3', 3, 24, NOW(), NOW()),
+('Question 1 for Set: L2-T202-Q1', 'http://example.com/L2-T202-Q1-1.mp3', 1, 25, NOW(), NOW()),
+('Question 2 for Set: L2-T202-Q1', 'http://example.com/L2-T202-Q1-2.mp3', 2, 25, NOW(), NOW()),
+('Question 3 for Set: L2-T202-Q1', 'http://example.com/L2-T202-Q1-3.mp3', 3, 25, NOW(), NOW()),
+('Question 1 for Set: L2-T202-Q2', 'http://example.com/L2-T202-Q2-1.mp3', 1, 26, NOW(), NOW()),
+('Question 2 for Set: L2-T202-Q2', 'http://example.com/L2-T202-Q2-2.mp3', 2, 26, NOW(), NOW()),
+('Question 3 for Set: L2-T202-Q2', 'http://example.com/L2-T202-Q2-3.mp3', 3, 26, NOW(), NOW()),
+('Question 1 for Set: L2-T202-Q3', 'http://example.com/L2-T202-Q3-1.mp3', 1, 27, NOW(), NOW()),
+('Question 2 for Set: L2-T202-Q3', 'http://example.com/L2-T202-Q3-2.mp3', 2, 27, NOW(), NOW()),
+('Question 3 for Set: L2-T202-Q3', 'http://example.com/L2-T202-Q3-3.mp3', 3, 27, NOW(), NOW()),
+('Question 1 for Set: L2-T301-Q1', 'http://example.com/L2-T301-Q1-1.mp3', 1, 28, NOW(), NOW()),
+('Question 2 for Set: L2-T301-Q1', 'http://example.com/L2-T301-Q1-2.mp3', 2, 28, NOW(), NOW()),
+('Question 3 for Set: L2-T301-Q1', 'http://example.com/L2-T301-Q1-3.mp3', 3, 28, NOW(), NOW()),
+('Question 1 for Set: L2-T301-Q2', 'http://example.com/L2-T301-Q2-1.mp3', 1, 29, NOW(), NOW()),
+('Question 2 for Set: L2-T301-Q2', 'http://example.com/L2-T301-Q2-2.mp3', 2, 29, NOW(), NOW()),
+('Question 3 for Set: L2-T301-Q2', 'http://example.com/L2-T301-Q2-3.mp3', 3, 29, NOW(), NOW()),
+('Question 1 for Set: L2-T301-Q3', 'http://example.com/L2-T301-Q3-1.mp3', 1, 30, NOW(), NOW()),
+('Question 2 for Set: L2-T301-Q3', 'http://example.com/L2-T301-Q3-2.mp3', 2, 30, NOW(), NOW()),
+('Question 3 for Set: L2-T301-Q3', 'http://example.com/L2-T301-Q3-3.mp3', 3, 30, NOW(), NOW());
+

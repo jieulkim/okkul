@@ -20,6 +20,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
 
 /**
  * 사용자 엔티티
@@ -106,6 +107,7 @@ public class User {
 	/**
 	 * 생성 일시
 	 */
+	@CreationTimestamp
 	@Column(nullable = false, updatable = false)
 	private Instant createdAt;
 

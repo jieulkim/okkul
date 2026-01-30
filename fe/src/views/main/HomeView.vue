@@ -107,8 +107,7 @@ const getStatusColor = (status) => {
           <section class="welcome-banner" :class="{ 'no-history': recentActivities.length === 0 }">
             <div class="welcome-header">
               <div class="welcome-text">
-                <h1 v-if="authStore.user?.nickname">{{ authStore.user.nickname }}님, 오늘도 달콤한 성과를 만들어요!</h1>
-                <h1 v-else>오늘도 달콤한 성과를 만들어요!</h1>
+                <h1 >{{ authStore.user?.nickname || authStore.user?.name || '사용자' }}님, 오늘도 달콤한 성과를 만들어요!</h1>
                 <p class="subtitle">오꿀쌤과 함께 목표 등급 달성까지 달려봐요!</p>
               </div>
               <img src="/okkul.svg" alt="Okkul" class="okkul-img" />
@@ -118,7 +117,7 @@ const getStatusColor = (status) => {
               <div class="action-buttons">
                 <!-- 실전 모의고사 -->
                 <router-link 
-                  :to="surveyStore && surveyStore.surveyData ? '/survey/level?from=exam' : '/survey?from=exam'" 
+                  to="/exam" 
                   class="action-card primary"
                 >
                   <div class="card-icon">
@@ -210,18 +209,7 @@ const getStatusColor = (status) => {
             <div class="profile-edit">
               <div class="profile-image-section" @click="goToMyPage">
                 <div class="profile-avatar">
-                  <img 
-                    v-if="authStore.user?.profileImageUrl" 
-                    :src="authStore.user.profileImageUrl" 
-                    alt="프로필" 
-                    class="avatar-img" 
-                  />
-                  <img 
-                    v-else 
-                    src="/default-profile.png" 
-                    alt="기본 프로필" 
-                    class="avatar-img fallback" 
-                  />
+                  <img src="/default-profile.png" alt="프로필" class="profile-image" />
                   <div class="upload-overlay">
                     <span class="material-icons-outlined">settings</span>
                   </div>
@@ -231,7 +219,7 @@ const getStatusColor = (status) => {
               <div class="profile-info" @click="goToMyPage" style="cursor: pointer;">
                 <div class="info-row">
                   <label>닉네임</label>
-                  <span>{{ authStore.user?.nickname || '사용자' }}</span>
+                  <span>{{ authStore.user?.nickname || authStore.user?.name || '사용자' }}</span>
                 </div>
               </div>
             </div>
@@ -576,8 +564,8 @@ const getStatusColor = (status) => {
   border-radius: 24px;
   text-decoration: none;
   transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  border: 4px solid #000000;
-  box-shadow: 8px 8px 0 #000000;
+  border: 3px solid #000000;
+  box-shadow: 2px 2px 0 #000000;
 }
 
 .action-card.primary {
@@ -591,13 +579,13 @@ const getStatusColor = (status) => {
 }
 
 .action-card:hover {
-  transform: translate(-4px, -4px);
-  box-shadow: 12px 12px 0 #000000;
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 #000000;
 }
 
 .action-card:active {
-  transform: translate(2px, 2px);
-  box-shadow: 4px 4px 0 #000000;
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 #000000;
 }
 
 .card-icon {
@@ -638,7 +626,7 @@ const getStatusColor = (status) => {
 /* Dark Mode Overrides */
 .dark-mode .action-card {
   border-color: #FFFFFF;
-  box-shadow: 8px 8px 0 #FFFFFF;
+  box-shadow: 2px 2px 0 #FFFFFF;
 }
 
 .dark-mode .action-card.secondary {
@@ -651,11 +639,11 @@ const getStatusColor = (status) => {
 }
 
 .dark-mode .action-card:hover {
-  box-shadow: 12px 12px 0 #FFFFFF;
+  box-shadow: 3px 3px 0 #FFFFFF;
 }
 
 .dark-mode .action-card:active {
-  box-shadow: 4px 4px 0 #FFFFFF;
+  box-shadow: 1px 1px 0 #FFFFFF;
 }
 
 /* 카드 공통 스타일 */
@@ -914,15 +902,22 @@ const getStatusColor = (status) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f1f5f9;
-  border: 4px solid #FFD700;
+  background: var(--bg-tertiary);
+  border: 4px solid var(--bg-secondary);
   box-shadow: 0 8px 24px rgba(255, 215, 0, 0.3);
   position: relative;
 }
 
 .dark-mode .profile-avatar {
   background: var(--bg-tertiary);
-  border-color: #FFD700;
+  border-color: var(--bg-primary);
+}
+
+.profile-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
 }
 
 .avatar-img {

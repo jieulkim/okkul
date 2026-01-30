@@ -99,6 +99,13 @@ export const useAuthStore = defineStore('auth', () => {
         }
     }
 
+    const updateUser = (userData) => {
+        if (userData) {
+            user.value = { ...userData }
+            console.log('[AuthStore] 사용자 정보 업데이트됨:', user.value)
+        }
+    }
+
     const logout = () => {
         user.value = null
         token.value = null
@@ -109,5 +116,5 @@ export const useAuthStore = defineStore('auth', () => {
         window.location.href = '/login'
     }
 
-    return { user, token, loading, isAuthenticated, login, loginAsDev, fetchUser, logout }
+    return { user, token, loading, isAuthenticated, login, loginAsDev, fetchUser, logout, updateUser }
 })

@@ -9,7 +9,7 @@ load_dotenv()
 
 # --- APIRouter 설정 ---
 router = APIRouter(
-    tags=["Exam Report"],
+    tags=["Exam"],
     responses={404: {"description": "Not found"}},
 )
 
@@ -101,15 +101,15 @@ async def generate_exam_report_gemini(all_results: List[ExamQuestionResult]):
 # --- API 엔드포인트 ---
 
 @router.post(
-    "/exam/report", 
+    "/exam/feedback", 
     response_model=ExamReportResponse,
-    summary="모의고사 종합 리포트 생성 (POST 방식)",
-    description="15개 문항의 결과 리스트를 받아 종합 리포트를 생성합니다."
+    summary="모의고사 종합 피드백 생성 (POST)",
+    description="15개 문항의 결과 리스트를 받아 종합 피드백 생성"
 )
 async def create_exam_report(results: List[ExamQuestionResult]):
     """
     Client로부터 15개 문항의 분석 결과 리스트를 받아
-    Gemini를 통해 종합 리포트를 생성하여 반환합니다.
+    Gemini를 통해 종합 피드백을 생성하여 반환합니다.
     (DB 저장 로직 등은 필요에 따라 추가)
     """
     try:

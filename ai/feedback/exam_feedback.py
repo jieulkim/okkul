@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 router = APIRouter(
-    tags=["Exam Analysis"],
+    tags=["Exam"],
 )
 
 GMS_KEY = os.environ.get("GMS_KEY")

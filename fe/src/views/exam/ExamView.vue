@@ -177,15 +177,20 @@ onMounted(async () => {
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap");
 
 .page-container {
-  min-height: 100vh;
+  height: calc(100vh - var(--header-height));
+  overflow: hidden;
   background: var(--bg-color);
-  padding-bottom: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 0;
 }
 
 .page-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 40px 24px;
+  padding: 24px;
+  width: 100%;
 }
 
 .hero-section {
@@ -201,10 +206,10 @@ onMounted(async () => {
 }
 
 .subtitle {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   color: var(--text-sub);
-  margin-bottom: 50px;
-  line-height: 1.6;
+  margin-bottom: 32px;
+  line-height: 1.5;
 }
 
 .highlight {
@@ -239,7 +244,7 @@ onMounted(async () => {
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 10px 25px rgba(255, 215, 0, 0.3);
-  margin-bottom: 80px;
+  margin-bottom: 40px;
 }
 
 .start-exam-btn:hover {
@@ -248,16 +253,20 @@ onMounted(async () => {
 }
 
 .features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 30px;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: 20px;
+  flex-wrap: nowrap; /* 줄바꿈 방지 */
 }
 
 .feature-card {
+  flex: 1; /* 균등 분할 */
+  min-width: 0; /* Flex item overflow 방지 */
   background: #FFF;
   border: 1px solid #F1F5F9;
   border-radius: var(--radius-lg);
-  padding: 40px 30px;
+  padding: 20px 16px;
   text-align: center;
   transition: all 0.3s ease;
   box-shadow: 0 4px 6px rgba(0,0,0,0.02);

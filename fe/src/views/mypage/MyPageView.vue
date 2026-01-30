@@ -184,7 +184,6 @@ onMounted(() => {
 <template>
   <div class="page-container">
     <main class="page-content">
-      <h1 class="page-title">마이페이지</h1>
 
       <div class="mypage-grid">
         <!-- 프로필 카드 -->
@@ -244,7 +243,9 @@ onMounted(() => {
 
         <!-- 학습 통계 카드 -->
         <section class="card stats-section">
-          <h2>학습 통계</h2>
+          <div class="section-header">
+            <h2>학습 통계</h2>
+          </div>
           <div class="stats-grid">
             <div class="stat-item">
               <div class="stat-icon">📝</div>
@@ -353,7 +354,7 @@ onMounted(() => {
 
 .page-container {
   min-height: 100vh;
-  background: var(--bg-primary);
+  background: var(--bg-color);
 }
 
 .page-content {
@@ -389,8 +390,8 @@ onMounted(() => {
 }
 
 .card {
-  background: var(--bg-secondary);
-  border: var(--border-primary);
+  background: #FFFFFF;
+  border: 1px solid #F1F5F9;
   border-radius: 20px;
   padding: 32px;
   box-shadow: var(--shadow-md);
@@ -470,7 +471,7 @@ onMounted(() => {
   padding: 16px;
   background: var(--bg-tertiary);
   border-radius: 12px;
-  border: var(--border-thin);
+  border: 1px solid #F1F5F9;
 }
 
 .info-label {
@@ -505,9 +506,9 @@ onMounted(() => {
   flex-direction: column;
   gap: 24px;
   padding: 24px;
-  background: var(--bg-secondary);
+  background: #FFFFFF;
   border-radius: 16px;
-  border: var(--border-primary);
+  border: 1px solid #F1F5F9;
 }
 
 .form-group {
@@ -584,8 +585,8 @@ onMounted(() => {
 .input {
   width: 100%;
   padding: 12px 16px;
-  background: var(--bg-secondary);
-  border: var(--border-primary);
+  background: #FFFFFF;
+  border: 1px solid #F1F5F9;
   border-radius: 12px;
   color: var(--text-primary);
   font-size: 1rem;
@@ -617,21 +618,32 @@ onMounted(() => {
 
 .stat-item {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px;
+  flex-direction: column; /* 아이콘 위, 텍스트 아래 */
+  align-items: center;    /* 가로 중앙 정렬 */
+  justify-content: center; /* 세로 중앙 정렬 */
+  text-align: center;     /* 텍스트 중앙 정렬 */
+  gap: 10px;
+  padding: 32px 24px;
   background: var(--bg-tertiary);
   border-radius: 16px;
-  border: var(--border-thin);
+  border: 1px solid #F1F5F9;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-item:hover {
+  transform: translateY(-4px);
+  background: #FFFFFF;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.06);
+  border-color: var(--primary-color);
 }
 
 .stat-icon {
   font-size: 2.5rem;
 }
-
 .stat-content {
   display: flex;
   flex-direction: column;
+  align-items: center; /* 텍스트 가로 중앙 정렬 */
   gap: 4px;
 }
 
@@ -651,7 +663,7 @@ onMounted(() => {
 .history-section {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 32px;
 }
 
 .count-badge {
@@ -671,9 +683,8 @@ onMounted(() => {
 .history-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
-
 .history-item {
   display: flex;
   align-items: center;
@@ -681,14 +692,15 @@ onMounted(() => {
   padding: 20px;
   background: var(--bg-tertiary);
   border-radius: 16px;
-  border: var(--border-thin);
+  border: 1px solid #F1F5F9;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .history-item:hover {
-  transform: translateX(4px);
-  background: var(--bg-secondary);
+  transform: translateY(-4px);
+  background: #FFFFFF;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.06);
   border-color: var(--primary-color);
 }
 

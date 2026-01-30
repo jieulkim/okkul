@@ -11,13 +11,14 @@ import site.okkul.be.domain.exam.entity.ExamReport;
 import site.okkul.be.domain.exam.repository.ExamAnswerJpaRepository;
 import site.okkul.be.domain.exam.repository.ExamJpaRepository;
 import site.okkul.be.domain.exam.repository.ExamReportJpaRepository;
-import site.okkul.be.domain.history.dto.ExamAnswerResponse;
-import site.okkul.be.domain.history.dto.ExamHistoryDetailResponse;
-import site.okkul.be.domain.history.dto.ExamHistorySummary;
-import site.okkul.be.domain.history.dto.PracticeHistorySummary;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import site.okkul.be.domain.history.dto.*;
+import site.okkul.be.domain.practice.entity.Practice;
+import site.okkul.be.domain.practice.entity.PracticeAnswer;
+import site.okkul.be.domain.practice.entity.PracticeSentenceFeedback;
+import site.okkul.be.domain.practice.repository.PracticeAnswerJpaRepository;
+import site.okkul.be.domain.practice.repository.PracticeJpaRepository;
+
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,6 +28,8 @@ public class HistoryService {
     private final ExamJpaRepository examJpaRepository;
     private final ExamAnswerJpaRepository examAnswerJpaRepository;
     private final ExamReportJpaRepository examReportJpaRepository;
+    private final PracticeJpaRepository practiceRepository;
+    private final PracticeAnswerJpaRepository practiceAnswerRepository;
 
     public Page<ExamHistorySummary> getExamHistories(Long userId, Pageable pageable) {
 
@@ -110,6 +113,120 @@ public class HistoryService {
     }
 
     public Page<PracticeHistorySummary> getPracticeHistories(Long userId, Pageable pageable) {
+        // 사용자 ID로 Practice 목록 조회
+        Page<Practice> page = practiceRepository.findAllByUserId(userId, pageable);
 
+        // Entity -> DTO 변환
+        return page.map(practice -> PracticeHistorySummary.builder()
+                .practiceId(practice.getPracticeId())
+                .startedAt(practice.getStartedAt())
+                .topicId(practice.getTopic().getId())
+                .topic(practice.getTopic().getTopicName())
+                .typeId(practice.getQuestionType().getId())
+                .typeName(practice.getQuestionType().getTypeCode())
+                .build());
+    }
+
+    public PracticeHistoryDetailResponse getPracticeHistoryDetail(Long userId, Long practiceId) {
+        // 1. 연습 기록 조회
+        Practice practice = practiceRepository.findByPracticeIdAndUserId(practiceId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 연습 기록을 찾을 수 없거나 접근 권한이 없습니다."));
+
+        // 2. 답변 목록 조회 (N+1 방지 Fetch Join)
+        List<PracticeAnswer> answers = practiceAnswerRepository.findAllByPracticeIdWithFeedbacks(practiceId);
+
+        // 3. 답변 정렬 (오래된 순)
+        List<PracticeAnswer> sortedAnswers = answers.stream()
+                .sorted(Comparator.comparing(PracticeAnswer::getCreatedAt))
+                .toList();
+
+        // 4. [핵심] 질문별로 그룹핑 (LinkedHashMap 사용)
+        Map<Long, List<PracticeAnswer>> answersByQuestionMap = new LinkedHashMap<>();
+
+        for (PracticeAnswer answer : sortedAnswers) {
+            answersByQuestionMap
+                    .computeIfAbsent(answer.getQuestion().getId(), k -> new ArrayList<>())
+                    .add(answer);
+        }
+
+        // 5. 그룹핑된 데이터를 DTO로 변환
+        List<PracticeQuestionDetail> questionDetails = new ArrayList<>();
+        int qOrder = 1; // 질문 순서 (Q1, Q2...)
+
+        for (Long questionId : answersByQuestionMap.keySet()) {
+            List<PracticeAnswer> questionAnswers = answersByQuestionMap.get(questionId);
+
+            // 질문 내용은 첫 번째 답변에서 꺼냄
+            site.okkul.be.domain.qustion.entity.Question questionEntity = questionAnswers.get(0).getQuestion();
+
+            // 해당 질문에 대한 시도(Attempt) 리스트 생성
+            List<PracticeCycleDetail> attempts = new ArrayList<>();
+            int attemptOrder = 1;
+
+            for (PracticeAnswer ans : questionAnswers) {
+                attempts.add(toPracticeCycleDetail(ans, attemptOrder++));
+            }
+
+            // 질문 DTO 생성
+            questionDetails.add(PracticeQuestionDetail.builder()
+                    .questionId(questionId)
+                    .questionOrder(qOrder++)
+                    // 엔티티 필드명 확인 (questionText 또는 content)
+                    .questionText(questionEntity.getQuestionText())
+                    .attempts(attempts)
+                    .build());
+        }
+
+        // 6. 최종 반환
+        return PracticeHistoryDetailResponse.builder()
+                .practiceId(practice.getPracticeId())
+
+                // [추가됨] 토픽 ID 및 이름
+                .topicId(practice.getTopic().getId())
+                .topicTitle(practice.getTopic().getTopicName()) // getName() vs getTopicName() 확인
+
+                // [추가됨] 유형 ID 및 코드
+                .typeId(practice.getQuestionType().getId())
+                .typeName(practice.getQuestionType().getTypeCode())
+
+                .startedAt(practice.getStartedAt())
+                .questions(questionDetails)
+                .build();
+    }
+
+    // --- 내부 변환 메소드 ---
+    private PracticeCycleDetail toPracticeCycleDetail(PracticeAnswer answer, int attemptOrder) {
+
+        // 문장별 피드백 리스트 변환
+        List<PracticeSentenceFeedbackResponse> sentenceFeedbacks = (answer.getFeedbacks() == null)
+                ? Collections.emptyList()
+                : answer.getFeedbacks().stream()
+                .sorted(Comparator.comparingInt(PracticeSentenceFeedback::getSentenceOrder))
+                .map(sf -> PracticeSentenceFeedbackResponse.builder()
+                        .targetSentence(sf.getTargetSentence())
+                        .targetSegment(sf.getTargetSegment())
+                        .correctedSegment(sf.getImprovedSegment())
+                        .comment(sf.getComment())
+                        .build())
+                .toList();
+
+        return PracticeCycleDetail.builder()
+                .attemptOrder(attemptOrder) // 1차 시도, 2차 시도...
+
+                .userAnswer(site.okkul.be.domain.history.dto.PracticeAnswer.builder()
+                        .koreanScript(answer.getKoreanScript())
+                        .englishScript(answer.getEnglishScript())
+                        .recordUrl(answer.getEnglishRecordUrl())
+                        .build())
+
+                .feedback(PracticeAiFeedback.builder()
+                        .status(answer.getFeedbackStatus())
+                        .improvedAnswer(answer.getImprovedAnswer())
+                        .fluencyFeedback(answer.getFluencyFeedback())
+                        .logicFeedback(answer.getLogicFeedback())
+                        .relevanceFeedback(answer.getRelevanceFeedback())
+                        .sentenceDetails(sentenceFeedbacks)
+                        .build())
+                .build();
     }
 }

@@ -713,7 +713,7 @@ onMounted(() => {
 }
 
 .question-card:hover {
-  border-color: var(--primary-color);
+  border-color: #FBC02D;
   transform: translateX(8px);
   box-shadow: var(--shadow-md);
 }
@@ -917,11 +917,11 @@ onMounted(() => {
 
 .highlighted-word {
   background: var(--primary-color);
-  color: #000000;
+  color: #E65100;
   padding: 4px 8px;
   border-radius: 6px;
   font-weight: 900;
-  border: 1px solid #000;
+  border: 1px solid #E65100;
   cursor: help;
   display: inline-block;
   margin: 2px;

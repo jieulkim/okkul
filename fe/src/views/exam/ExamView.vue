@@ -92,10 +92,11 @@ onMounted(async () => {
 <template>
   <div class="page-container">
     <main class="page-content">
-      <div class="hero-section">
+      <div class="hero-section fade-in">
         <h1 class="page-title">실전 모의고사</h1>
         <p class="subtitle">
-          실제 OPIc 시험과 동일한 환경에서 15개 문항을 풀어보세요
+          실제 OPIc 시험과 동일한 환경에서<br>
+          <span class="highlight">15개 문항</span>을 풀어보세요.
         </p>
 
         <button @click="openSurveyModal" class="start-exam-btn">
@@ -135,44 +136,28 @@ onMounted(async () => {
       </div>
     </main>
 
-    <div v-if="showResumeModal" class="modal-overlay">
-      <div
-        class="modal-card resume-modal"
-        :class="{ 'dark-mode-card': isDarkMode }"
-      >
+    <div v-if="showResumeModal" class="modal-overlay fade-in">
+      <div class="modal-card resume-modal">
         <div class="modal-header">
           <h3>진행 중인 시험이 있습니다</h3>
-          <p class="subtitle">이전에 진행하던 모의고사를 계속하시겠습니까?</p>
+          <p class="subtitle-sm">이전에 진행하던 모의고사를 계속하시겠습니까?</p>
         </div>
 
         <div class="resume-info" v-if="incompleteExam">
           <div class="info-row">
-            <span class="label">문항 진행도:</span>
+            <span class="label">문항 진행도</span>
             <span class="value">{{ incompleteExam.currentQuestion }} / 15</span>
           </div>
           <div class="info-row">
-            <span class="label">남은 시간:</span>
-            <span class="value">{{
-              incompleteExam.remainingTime || "정보 없음"
-            }}</span>
+            <span class="label">남은 시간</span>
+            <span class="value">{{ incompleteExam.remainingTime || "정보 없음" }}</span>
           </div>
         </div>
 
         <div class="modal-footer">
           <button @click="resumeExam" class="primary-btn">이어서 하기</button>
-          <button
-            @click="startNewExam"
-            class="secondary-btn"
-            :class="{ 'dark-mode-btn': isDarkMode }"
-          >
-            새로 시작
-          </button>
-          <button
-            @click="discardExam"
-            class="cancel-btn"
-          >
-            진행 중 시험 삭제
-          </button>
+          <button @click="startNewExam" class="secondary-btn">새로 시작</button>
+          <button @click="discardExam" class="cancel-btn">기록 삭제</button>
         </div>
       </div>
     </div>
@@ -193,164 +178,173 @@ onMounted(async () => {
 
 .page-container {
   min-height: 100vh;
-  background: var(--bg-primary);
+  background: var(--bg-color);
+  padding-bottom: 80px;
 }
 
 .page-content {
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 32px 64px;
-}
-
-@media (max-width: 1024px) {
-  .page-content {
-    padding: 24px 32px;
-  }
-}
-
-@media (max-width: 768px) {
-  .page-content {
-    padding: 16px 24px;
-  }
+  padding: 40px 24px;
 }
 
 .hero-section {
   text-align: center;
+  margin-top: 40px;
 }
 
 .page-title {
-  font-size: var(--font-size-xl);
+  font-size: 3rem;
   font-weight: 800;
-  color: var(--text-primary);
-  margin-bottom: 32px;
+  color: var(--text-main);
+  margin-bottom: 16px;
 }
 
 .subtitle {
-  font-size: 1.125rem;
-  color: var(--text-secondary);
-  margin-bottom: 40px;
+  font-size: 1.25rem;
+  color: var(--text-sub);
+  margin-bottom: 50px;
+  line-height: 1.6;
+}
+
+.highlight {
+  color: #F9A825;
+  font-weight: 700;
+  position: relative;
+}
+
+.highlight::after {
+  content: "";
+  position: absolute;
+  bottom: 0px;
+  left: 0;
+  width: 100%;
+  height: 8px;
+  background: var(--honey-200);
+  z-index: -1;
+  opacity: 0.6;
 }
 
 .start-exam-btn {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px 40px;
-  background: var(--primary-color);
-  color: #212529;
+  justify-content: center;
+  padding: 20px 60px;
+  background: var(--primary-gradient);
+  color: #3E2723;
   border: none;
-  border-radius: var(--border-radius);
-  font-size: 1.25rem;
-  font-weight: 700;
+  border-radius: var(--radius-full);
+  font-size: 1.35rem;
+  font-weight: 800;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: var(--shadow-md);
-  margin-bottom: 60px;
+  box-shadow: 0 10px 25px rgba(255, 215, 0, 0.3);
+  margin-bottom: 80px;
 }
 
 .start-exam-btn:hover {
-  background: var(--primary-hover);
   transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-}
-
-.start-exam-btn .btn-icon {
-  font-size: 24px;
+  box-shadow: 0 15px 35px rgba(255, 215, 0, 0.4);
 }
 
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 24px;
-  margin-top: 40px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 30px;
 }
 
 .feature-card {
-  background: var(--bg-secondary);
-  border: var(--border-primary);
-  border-radius: 24px;
-  padding: 32px 24px;
+  background: #FFF;
+  border: 1px solid #F1F5F9;
+  border-radius: var(--radius-lg);
+  padding: 40px 30px;
   text-align: center;
   transition: all 0.3s ease;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.02);
 }
 
 .feature-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--primary-color);
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+  border-color: var(--honey-200);
 }
 
 .feature-icon {
-  margin-bottom: 16px;
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 24px;
+  background: var(--honey-50);
+  border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
+  color: #FBC02D;
 }
 
 .feature-icon .material-icons {
-  font-size: 48px;
-  color: var(--primary-color);
+  font-size: 36px;
 }
 
 .feature-card h3 {
-  font-size: 20px;
-  font-weight: 900;
-  margin-bottom: 8px;
-  color: var(--text-primary);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text-main);
 }
 
 .feature-card p {
-  font-size: 14px;
-  color: var(--text-secondary);
+  font-size: 0.95rem;
+  color: var(--text-sub);
   line-height: 1.6;
 }
 
+/* Modal */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(8px);
 }
 
 .modal-card {
-  background: var(--bg-secondary);
-  border-radius: var(--border-radius);
-  max-width: 500px;
+  background: #FFF;
+  border-radius: var(--radius-lg);
+  max-width: 460px;
   width: 90%;
-  border: var(--border-primary);
-  box-shadow: var(--shadow-lg);
-}
-
-.resume-modal .modal-header {
-  padding: 32px 32px 24px;
+  box-shadow: 0 25px 50px rgba(0,0,0,0.2);
+  padding: 40px;
   text-align: center;
 }
 
 .modal-header h3 {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 800;
-  margin-bottom: 8px;
-  color: var(--text-primary);
+  margin-bottom: 12px;
+  color: var(--text-main);
+}
+
+.subtitle-sm {
+  font-size: 1rem;
+  color: var(--text-sub);
+  margin-bottom: 30px;
 }
 
 .resume-info {
-  padding: 24px 32px;
-  background: var(--bg-tertiary);
-  margin: 0 32px 24px;
-  border-radius: var(--border-radius);
-  border: var(--border-thin);
+  background: var(--honey-50);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin-bottom: 30px;
 }
 
 .info-row {
   display: flex;
   justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 8px 0;
+  border-bottom: 1px dashed rgba(0,0,0,0.1);
 }
 
 .info-row:last-child {
@@ -359,16 +353,15 @@ onMounted(async () => {
 
 .label {
   font-weight: 600;
-  color: #64748b;
+  color: var(--text-sub);
 }
 
 .value {
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text-main);
 }
 
 .modal-footer {
-  padding: 0 32px 32px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -376,63 +369,47 @@ onMounted(async () => {
 
 button {
   padding: 16px;
-  border-radius: 12px;
+  border-radius: var(--radius-full);
   border: none;
   font-weight: 700;
   cursor: pointer;
-  font-size: 15px;
+  font-size: 1rem;
   transition: all 0.2s;
 }
 
 .primary-btn {
-  background: var(--primary-color);
-  color: #212529;
-  border: none;
-  font-weight: 700;
+  background: var(--honey-300);
+  color: #3E2723;
 }
-
 .primary-btn:hover {
-  transform: translate(-0.02em, -0.02em);
-  box-shadow: var(--shadow-sm);
+  background: var(--honey-400);
+  transform: translateY(-2px);
 }
 
 .secondary-btn {
-  background: #f1f5f9;
-  color: #64748b;
+  background: #F1F5F9;
+  color: var(--text-sub);
 }
-
 .secondary-btn:hover {
-  background: #e2e8f0;
+  background: #E2E8F0;
 }
 
 .cancel-btn {
-  background: white;
-  border: 1.5px solid #e2e8f0;
-  color: #ef4444;
+  background: transparent;
+  color: #EF5350;
+  border: 1px solid #FFE5E5;
 }
-
 .cancel-btn:hover {
-  background: #fef2f2;
-  border-color: #ef4444;
+  background: #FFEBEE;
 }
 
-.dark-mode {
-  background: var(--bg-primary);
-  color: #f1f5f9;
+/* Animation */
+.fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
 }
 
-.dark-mode .feature-card {
-  background: var(--bg-secondary);
-  border-color: #FFFFFF;
-}
-
-.dark-mode-card {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border-color: #FFFFFF;
-}
-
-.dark-mode-card .resume-info {
-  background: var(--bg-tertiary);
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

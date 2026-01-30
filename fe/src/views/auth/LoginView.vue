@@ -1,7 +1,9 @@
 <script setup>
 import { useAuthStore } from '@/stores/auth'
+import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
+const router = useRouter() // router 사용
 
 const handleLogin = () => {
   authStore.login()
@@ -14,49 +16,23 @@ const handleDevLogin = () => {
     authStore.loginAsDev()
   }
 }
-
-// 개발자 테스트용 함수
-import { useRouter } from 'vue-router';
-const router = useRouter();
-
-const startDevTest = () => {
-  const dummyExamId = 999;
-  const dummyData = {
-    examId: dummyExamId,
-    currentIndex: 6, // 7번 문제 (index 6)부터 시작
-    questions: Array.from({ length: 7 }, (_, i) => ({
-      id: i + 1,
-      answerId: 500 + i,
-      order: i + 1,
-      questionText: `테스트 문제 ${i + 1}`,
-      audioUrl: null,
-      type: 'SPEAKING',
-      preparationTime: 10,
-      speakingTime: 30
-    })),
-    totalQuestions: 15
-  };
-  
-  localStorage.setItem(`exam_${dummyExamId}`, JSON.stringify(dummyData));
-  router.push(`/exam/question?examId=${dummyExamId}`);
-};
 </script>
 
 <template>
   <div class="login-container">
-    <div class="login-card">
+    <div class="login-card fade-in">
       <div class="logo-section">
-        <div class="okkul-wrapper">
+        <div class="okkul-bubble">
           <img src="/okkul.svg" alt="Okkul" class="okkul-img" />
         </div>
         <h1>오꿀</h1>
-        <p>오늘의 꿀같은 오픽 점수, 오꿀과 함께 만드세요!</p>
+        <p>꿀처럼 달콤한 오픽 점수,<br>AI와 함께 만들어보세요!</p>
       </div>
 
       <div class="login-actions">
         <button @click="handleLogin" class="google-login-btn">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" />
-          구글로 시작하기
+          <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" width="20" />
+          구글 계정으로 시작하기
         </button>
 
         <!-- 개발자 모드 전용 버튼 -->
@@ -65,7 +41,7 @@ const startDevTest = () => {
           @click="handleDevLogin" 
           class="dev-login-btn"
         >
-          <span class="material-icons">code</span>
+          <span class="material-icons-outlined text-sm">code</span>
           개발자 로그인 (Mock Mode)
         </button>
       </div>
@@ -83,111 +59,135 @@ const startDevTest = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-primary);
-  padding: 24px;
+  padding: 20px;
+  background: var(--bg-color);
+  /* Optional: Centered Pattern */
+  background-image: radial-gradient(circle at 50% 50%, var(--honey-50) 0%, transparent 70%);
 }
 
 .login-card {
-  background: var(--bg-secondary);
-  border: var(--border-primary);
-  padding: 56px 48px;
-  border-radius: 32px;
-  box-shadow: var(--shadow-xl);
-  max-width: 440px;
   width: 100%;
+  max-width: 420px;
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  border: var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+  padding: 48px 40px;
   text-align: center;
+  transition: transform 0.3s;
 }
 
-.okkul-wrapper {
-  margin-bottom: 32px;
+.logo-section {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.okkul-bubble {
+  width: 90px;
+  height: 90px;
+  background: var(--honey-100);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
   justify-content: center;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 12px rgba(255, 235, 59, 0.3);
 }
 
 .okkul-img {
-  width: 80px;
-  height: 80px;
+  width: 50px;
+  height: auto;
 }
 
 .logo-section h1 {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 800;
-  color: var(--text-primary);
-  margin-bottom: 12px;
+  color: var(--text-main);
+  margin-bottom: 8px;
 }
 
 .logo-section p {
-  color: var(--text-secondary);
-  line-height: 1.6;
-  margin-bottom: 48px;
   font-size: 1rem;
+  color: var(--text-sub);
+  line-height: 1.5;
 }
 
 .login-actions {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+  width: 100%;
 }
 
 .google-login-btn {
   width: 100%;
+  height: 52px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 18px;
-  background: var(--primary-color);
-  border: none;
-  border-radius: 16px;
+  gap: 10px;
+  background: #FFFFFF;
+  border: 1px solid #E0E0E0;
+  border-radius: var(--radius-full);
   font-size: 1rem;
-  font-weight: 700;
-  color: #212529;
+  font-weight: 600;
+  color: #1F1F1F;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: var(--shadow-md);
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
 .google-login-btn:hover {
-  background: var(--primary-hover);
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-}
-
-.google-login-btn img {
-  width: 24px;
-  height: 24px;
+  background: #F8F9FA;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
 }
 
 .dev-login-btn {
   width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 1px dashed #BDBDBD;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 16px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-primary);
-  border-radius: 14px;
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  cursor: pointer;
+  gap: 6px;
   transition: all 0.2s;
 }
 
 .dev-login-btn:hover {
-  background: #e2e8f0;
-  color: var(--text-primary);
-  transform: translateY(-2px);
+  border-color: var(--text-sub);
+  color: var(--text-sub);
+  background: rgba(0,0,0,0.02);
 }
 
 .footer-note {
-  margin-top: 40px;
+  margin-top: 32px;
 }
 
 .footer-note p {
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   color: var(--text-tertiary);
-  line-height: 1.5;
+}
+
+.text-sm {
+  font-size: 18px;
+}
+
+/* Fade In Animation */
+.fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

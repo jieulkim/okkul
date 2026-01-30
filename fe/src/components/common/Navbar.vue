@@ -60,14 +60,14 @@ const isActive = (path) => {
           <span class="nav-label">{{ item.label }}</span>
         </router-link>
       </nav>
-      <div v-else class="nav-menu">
-        <span class="guest-msg">로그인 후 AI 분석과 모의고사를 이용해보세요!</span>
+      <div v-else class="nav-menu guest-menu">
+        <span class="guest-msg">✨ 로그인하고 AI 꿀팁 받으세요!</span>
       </div>
 
       <!-- 우측 컨트롤 -->
       <div class="nav-controls">
         <!-- 다크모드 토글 -->
-        <button class="theme-toggle" @click="toggleDarkMode" title="테마 변경">
+        <button class="icon-btn theme-toggle" @click="toggleDarkMode" title="테마 변경">
           <span class="material-icons-outlined">{{ isDarkMode ? 'light_mode' : 'dark_mode' }}</span>
         </button>
 
@@ -77,18 +77,18 @@ const isActive = (path) => {
             <div class="profile-avatar">
               <img src="/default-profile.png" alt="프로필" class="profile-image" />
             </div>
-            <span class="profile-name">{{ userName }}</span>
+            <span class="profile-name">{{ userName }}님</span>
           </router-link>
 
           <!-- 로그아웃 -->
-          <button class="logout-btn" @click="handleLogout" title="로그아웃">
+          <button class="icon-btn logout-btn" @click="handleLogout" title="로그아웃">
             <span class="material-icons-outlined">logout</span>
           </button>
         </template>
 
         <!-- 로그인 버튼 -->
         <router-link v-else to="/login" class="login-btn">
-          로그인
+          시작하기
         </router-link>
       </div>
     </div>
@@ -100,77 +100,71 @@ const isActive = (path) => {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: var(--bg-secondary);
-  border-bottom: var(--border-primary);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
+  height: var(--header-height);
+  display: flex;
+  align-items: center;
 }
 
 .dark-mode .main-navbar {
-  background: var(--bg-secondary);
+  background: rgba(18, 18, 18, 0.8);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .navbar-content {
+  width: 100%;
   max-width: var(--max-width);
   margin: 0 auto;
-  padding: 0 var(--container-padding);
+  padding: 0 24px;
   display: flex;
   align-items: center;
-  height: 64px;
-  gap: 1.5rem;
+  /* 네비게이션 메뉴를 절대 위치로 중앙 정렬하기 위해 relative 설정 */
+  position: relative;
+  justify-content: space-between;
 }
 
-@media (max-width: 768px) {
-  .navbar-content {
-    height: 56px;
-    gap: 0.75rem;
-  }
-}
-
-/* 로고 - 원래 버튼 스타일 유지 */
+/* 로고 */
 .logo {
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 8px;
   text-decoration: none;
-  transition: all 0.2s ease;
+  font-weight: 800;
+  font-size: 1.5rem;
+  color: var(--text-main);
+  transition: opacity 0.2s;
+  /* 로고 영역 확보 */
   z-index: 10;
-  cursor: pointer;
 }
 
 .logo:hover {
-  transform: scale(1.05);
-}
-
-.logo:active {
-  transform: translate(0.02em, 0.02em);
-  box-shadow: none;
+  opacity: 0.8;
 }
 
 .navbar-logo-img {
   height: 32px;
   width: auto;
-  object-fit: contain;
 }
 
-/* 네비게이션 메뉴 - 원래 중앙 정렬 유지 */
+.logo-text {
+  font-family: var(--font-heading);
+  letter-spacing: -0.02em;
+  color: #FBC02D; /* Deep Yellow */
+}
+
+/* 네비게이션 메뉴 */
 .nav-menu {
-  flex: 1;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-}
-
-@media (max-width: 768px) {
-  .nav-menu {
-    display: none;
-  }
-}
-
-.guest-msg {
-  font-size: 0.95rem;
-  color: var(--text-secondary);
-  font-weight: 600;
 }
 
 .nav-link {
@@ -178,62 +172,90 @@ const isActive = (path) => {
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  border-radius: var(--border-radius);
+  border-radius: var(--radius-full);
   text-decoration: none;
-  color: var(--text-secondary);
-  font-weight: 900;
-  font-size: var(--font-size-base);
-  transition: all 0.2s;
-  border: 2px solid transparent;
+  color: var(--text-sub);
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.2s var(--ease-smooth);
 }
 
 .nav-link:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
+  background: rgba(0, 0, 0, 0.03);
+  color: var(--text-main);
 }
 
 .nav-link.active {
-  background: var(--bg-tertiary);
-  color: var(--primary-color);
-  border-color: var(--primary-color);
+  background: var(--honey-100);
+  color: #F9A825;
 }
 
 .nav-icon {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
 }
 
-/* 프로필 */
-.user-profile {
+.guest-msg {
+  font-size: 0.9rem;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+/* 우측 컨트롤 */
+.nav-controls {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem 1rem;
-  border-radius: var(--border-radius);
-  text-decoration: none;
-  transition: all 0.2s ease;
-  border: 2px solid transparent;
+  gap: 12px;
 }
 
-.user-profile:hover {
-  background: var(--bg-tertiary);
-}
-
-.user-profile.active {
-  background: var(--bg-tertiary);
-  border-color: var(--primary-color);
-}
-
-.profile-avatar {
-  width: 36px;
-  height: 36px;
+.icon-btn {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  overflow: hidden;
+  border: none;
+  background: transparent;
+  color: var(--text-sub);
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  background: var(--bg-tertiary);
-  border: 2px solid var(--primary-color);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.icon-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-main);
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 4px;
+  border-radius: var(--radius-full);
+  text-decoration: none;
+  background: rgba(0,0,0,0.02);
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+.user-profile:hover {
+  background: #fff;
+  border-color: #eee;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.user-profile.active {
+  background: #fff;
+  border-color: var(--honey-200);
+  color: var(--text-main);
+}
+
+.profile-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #fff;
 }
 
 .profile-image {
@@ -243,61 +265,31 @@ const isActive = (path) => {
 }
 
 .profile-name {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  white-space: nowrap;
-}
-
-@media (max-width: 768px) {
-  .profile-name {
-    display: none;
-  }
-}
-
-/* 컨트롤 버튼들 */
-.nav-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.theme-toggle,
-.logout-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: var(--border-thin);
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.theme-toggle:hover,
-.logout-btn:hover {
-  background: var(--bg-primary);
-  color: var(--primary-color);
-  border-color: var(--primary-color);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+  padding-right: 4px;
 }
 
 .login-btn {
-  padding: 0.5rem 1.5rem;
-  background: var(--primary-color);
-  color: #000000;
-  border-radius: var(--border-radius);
-  font-weight: 900;
+  padding: 8px 20px;
+  background: var(--honey-300);
+  color: #3E2723;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  font-size: 0.9rem;
   text-decoration: none;
-  border: var(--border-secondary);
-  transition: all 0.2s ease;
-  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s;
 }
 
 .login-btn:hover {
-  transform: translate(-0.02em, -0.02em);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+  background: var(--honey-400);
+}
+
+@media (max-width: 768px) {
+  .nav-menu { display: none; }
+  .profile-name { display: none; }
+  .navbar-content { padding: 0 16px; }
 }
 </style>

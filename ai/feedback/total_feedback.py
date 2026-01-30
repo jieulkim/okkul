@@ -41,9 +41,9 @@ class ExamReportResponse(BaseModel):
     average_fluency_score: int = Field(..., description="전체 평균 유창성 점수")
     average_relevance_score: int = Field(..., description="전체 평균 질문 부합도")
     
-    overall_evaluation: str = Field(..., description="종합 총평 (한국어)")
-    strengths: List[str] = Field(..., description="강점 리스트 (키워드/짧은 문장)")
-    improvements: List[str] = Field(..., description="보완점 리스트 (키워드/짧은 문장)")
+    overall_evaluation: str = Field(..., description="종합 총평: 반드시 한국어로 작성.)")
+    strengths: List[str] = Field(..., description="강점 리스트: 키워드/짧은 문장, 반드시 한국어로 작성.")
+    improvements: List[str] = Field(..., description="보완점 리스트: 키워드/짧은 문장, 반드시 한국어로 작성.")
 
 # --- 에이전트 함수 ---
 
@@ -62,7 +62,8 @@ async def generate_exam_report_gemini(all_results: List[ExamQuestionResult]):
     - 등급(predicted_level)은 실제 OPIc 기준(AL, IH, IM3 ~ NH)으로 평가하세요.
     - 점수는 모두 정수(Integer)로 반환하세요.
     - **중요: total_score는 5개 평가 항목(Grammar, Vocab, Logic, Fluency, Relevance)의 평균 점수들을 모두 더한 뒤 5로 나눈 '최종 평균 점수' (100점 만점)입니다.**
-    - 강점(strengths)과 보완점(improvements)은 각각 3개 내외의 짧은 요약 문장 리스트로 작성하세요.
+    - overall_evaluation은 반드시 한국어로, 문항별 개별 피드백 내용을 꼭 참고해서, 전체적인 평가를 답변하세요.
+    - 강점(strengths)과 보완점(improvements)은 반드시 한국어 답변으로, 각각 3개 내의 짧은 요약 문장 리스트로 작성하세요.
     
     [입력 데이터]
     {summary_data}

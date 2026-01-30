@@ -294,9 +294,10 @@ export interface QuestionRequest {
   order?: number;
 }
 
-export interface PracticeStartResponse {
+/** 유형 연습 생성 API의 응답 결과 */
+export interface PracticeCreateResponse {
   /**
-   * 생성된 연습의 ID
+   * 생성된 유형연습의 ID
    * @format int64
    * @example 1
    */
@@ -312,63 +313,31 @@ export interface PracticeStartResponse {
 /** 스크립트 정보 (JSON) */
 export interface PracticeFeedbackRequest {
   /**
+   * 문제 ID
+   * @format int64
+   * @example 7
+   */
+  questionId?: number;
+  /**
    * 사용자 한국어 스크립트
-   * @example "안녕하세요, 제 이름은 OOO입니다."
+   * @example "제가 가장 자주 가는 단골 바는 집 근처 골목에 숨겨진 '아지트'라는 작은 펍이에요. 이곳은 전체적으로 어두운 조명에 빈티지한 벽돌로 꾸며져 있어서, 들어서자마자 굉장히 아늑하고 편안한 느낌을 줘요. 특히 벽면 가득한 LP판에서 흘러나오는 재즈 음악과 은은한 위스키 향이 어우러져서, 하루의 피로를 풀며 친구들과 진솔한 대화를 나누기에 정말 최고의 장소입니다."
    */
   koreanScript?: string;
   /**
    * 사용자 영어 스크립트
-   * @example "Hello, my name is OOO."
+   * @example "My favorite place to grab a drink is a cozy, neighborhood bar called \"The Hideout\" located just a few blocks from my house. The interior is dimly lit with vintage brick walls and comfortable leather booths, creating a very warm and inviting atmosphere. It’s the perfect spot to unwind because the music is always at a perfect volume, allowing for great conversations with friends. Would you like me to adjust the vocabulary level or add more specific details to make it sound more like your personal style?"
    */
   englishScript: string;
 }
 
-/** AI 피드백 결과 상세 */
-export interface PracticeAIFeedbackResult {
-  /** 문법 및 어휘 교정 제안 목록 */
-  scriptCorrections?: ScriptCorrection[];
+/** 생성된 유형별 연습 답변 ID 응답 */
+export interface PracticeAnswerIdResponse {
   /**
-   * 종합 평가 코멘트
-   * @example "전반적으로 훌륭한 답변입니다! 몇 가지 사소한 문법 오류를 수정하면 더욱 자연스러워질 것입니다."
-   */
-  overallComment?: string;
-}
-
-/** 유형별 연습 피드백 저장 응답 DTO */
-export interface PracticeFeedbackResponse {
-  /**
-   * 연습 ID
+   * 생성된 유형별 연습 답변 ID
    * @format int64
    * @example 1
    */
-  practiceId?: number;
-  /**
-   * 문제 ID
-   * @format int64
-   * @example 101
-   */
-  questionId?: number;
-  /** AI 피드백 결과 상세 */
-  feedbackResult?: PracticeAIFeedbackResult;
-}
-
-/** 스크립트 교정 항목 */
-export interface ScriptCorrection {
-  /**
-   * 수정이 필요한 원본 문구
-   * @example "I am go to the school."
-   */
-  originalSegment?: string;
-  /**
-   * 교정된 문구
-   * @example "I go to school."
-   */
-  correctedSegment?: string;
-  /**
-   * 교정 이유 또는 설명
-   * @example "불필요한 'am'이 사용되었습니다."
-   */
-  comment?: string;
+  practiceAnswerId?: number;
 }
 
 /** 질문 상세 정보 */
@@ -654,19 +623,8 @@ export interface PagedModelQuestionSetResponse {
   page?: PageMetadata;
 }
 
-export interface PracticeProblemResponse {
-  /**
-   * 할당된 문제 세트의 ID
-   * @format int64
-   * @example 10
-   */
-  setId?: number;
-  /** 연습에 포함된 질문 목록 */
-  questions?: PracticeQuestion[];
-}
-
 /** 유형별 연습 모드 질문 상세 정보 */
-export interface PracticeQuestion {
+export interface PracticeQuestionInfo {
   /**
    * 문제 ID
    * @format int64
@@ -689,6 +647,75 @@ export interface PracticeQuestion {
    * @example "https://cdn.okkul.site/audio/q1.mp3"
    */
   audioUrl?: string;
+}
+
+export interface PracticeQuestionResponse {
+  /**
+   * 할당된 문제 세트의 ID
+   * @format int64
+   * @example 10
+   */
+  setId?: number;
+  /** 연습에 포함된 질문 목록 */
+  questions?: PracticeQuestionInfo[];
+}
+
+/** AI 피드백 결과 상세 */
+export interface PracticeAIFeedbackResult {
+  /** 피드백 응답 상태 반환 */
+  feedbackStatus?: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+  /** 문법 및 어휘 교정 제안 목록 */
+  scriptCorrections?: SentenceCorrection[];
+  /**
+   * 주제 적합성 피드백
+   * @example "전반적으로 훌륭한 답변입니다! 몇 가지 사소한 문법 오류를 수정하면 더욱 자연스러워질 것입니다."
+   */
+  relevanceFeedback?: string;
+  /**
+   * 논리성 피드백
+   * @example "전반적으로 훌륭한 답변입니다! 몇 가지 사소한 문법 오류를 수정하면 더욱 자연스러워질 것입니다."
+   */
+  logicFeedback?: string;
+  /**
+   * 유창성 피드백
+   * @example "전반적으로 훌륭한 답변입니다! 몇 가지 사소한 문법 오류를 수정하면 더욱 자연스러워질 것입니다."
+   */
+  fluencyFeedback?: string;
+  /**
+   * AI 개선 종합 답변
+   * @example "That's my ~~"
+   */
+  aiImprovedAnswer?: string;
+}
+
+/** 스크립트 교정 항목 */
+export interface SentenceCorrection {
+  /**
+   * 타겟 문장
+   * @example "I am usually go to the school in morning."
+   */
+  targetSentence?: string;
+  /**
+   * 수정이 필요한 원본 문구
+   * @example "I am go to the school."
+   */
+  originalSegment?: string;
+  /**
+   * 교정된 문구
+   * @example "I go to school."
+   */
+  correctedSegment?: string;
+  /**
+   * 교정 이유 또는 설명
+   * @example "불필요한 'am'이 사용되었습니다."
+   */
+  comment?: string;
+  /**
+   * 문장 순서
+   * @format int32
+   * @example 1
+   */
+  sentenceOrder?: number;
 }
 
 /** AI 분석 진행 상태 응답 */
@@ -872,7 +899,7 @@ export type CreateQuestionSetData = QuestionSetResponse;
 
 export type AddQuestionData = QuestionDetailResponse;
 
-export type StartPracticeData = PracticeStartResponse;
+export type StartPracticeData = PracticeCreateResponse;
 
 export interface SavePracticeSessionPayload {
   /** 스크립트 정보 (JSON) */
@@ -884,7 +911,7 @@ export interface SavePracticeSessionPayload {
   audio: File;
 }
 
-export type SavePracticeSessionData = PracticeFeedbackResponse;
+export type SavePracticeSessionData = PracticeAnswerIdResponse;
 
 export type GetRemainingQuestionsData = QuestionResponse[];
 
@@ -925,7 +952,9 @@ export type GetSurveyByIdData = SurveyResponse;
 
 export type GetSurveyTopicByIdData = Type선택된토픽목록;
 
-export type GetPracticeProblemData = PracticeProblemResponse;
+export type GetPracticeProblemData = PracticeQuestionResponse;
+
+export type GetPracticeFeedbackData = PracticeAIFeedbackResult;
 
 export type HealthCheckData = string;
 

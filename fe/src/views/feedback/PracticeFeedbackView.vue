@@ -205,8 +205,7 @@ const selectCorrection = (index) => {
 .practice-feedback-page {
   min-height: 100vh;
   background: var(--bg-primary);
-  font-family: 'Noto Sans KR', sans-serif;
-  padding: 40px 20px;
+  padding: 48px 24px;
 }
 
 .dark-mode {
@@ -221,14 +220,14 @@ const selectCorrection = (index) => {
   align-items: center;
   justify-content: center;
   min-height: 80vh;
-  gap: 20px;
+  gap: 24px;
 }
 
 .spinner {
   width: 50px;
   height: 50px;
-  border: 4px solid #e2e8f0;
-  border-top-color: #FFD700;
+  border: 4px solid var(--bg-tertiary);
+  border-top-color: var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -245,7 +244,10 @@ const selectCorrection = (index) => {
 
 /* 헤더 */
 .feedback-header {
-  margin-bottom: 40px;
+  margin-bottom: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 .back-btn {
@@ -254,18 +256,20 @@ const selectCorrection = (index) => {
   gap: 8px;
   padding: 12px 24px;
   background: var(--bg-secondary);
-  border: var(--border-secondary);
-  border-radius: var(--border-radius);
-  font-weight: 900;
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
-  margin-bottom: 20px;
   box-shadow: var(--shadow-sm);
+  color: var(--text-secondary);
+  align-self: flex-start;
 }
 
 .back-btn:hover {
-  transform: translate(-0.02em, -0.02em);
-  box-shadow: var(--shadow-md);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  transform: translateY(-2px);
 }
 
 .dark-mode .back-btn {
@@ -275,23 +279,22 @@ const selectCorrection = (index) => {
 }
 
 .feedback-title {
-  font-size: 36px;
-  font-weight: 900;
-  color: var(--primary-color);
-  -webkit-text-fill-color: initial;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
 }
 
 /* 섹션 */
 .enhanced-section,
 .corrections-section,
 .overall-section {
-  margin-bottom: 40px;
+  margin-bottom: 48px;
 }
 
 .section-card {
   background: var(--bg-secondary);
-  border-radius: var(--border-radius);
-  padding: 32px;
+  border-radius: 24px;
+  padding: 40px;
   box-shadow: var(--shadow-md);
   border: var(--border-primary);
   margin-bottom: 24px;
@@ -303,9 +306,9 @@ const selectCorrection = (index) => {
 }
 
 .section-title {
-  font-size: 24px;
-  font-weight: 900;
-  margin-bottom: 16px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 24px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -322,16 +325,16 @@ const selectCorrection = (index) => {
 }
 
 .section-description {
-  color: #64748b;
-  margin-bottom: 20px;
-  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+  font-size: 0.95rem;
   line-height: 1.6;
 }
 
 .subsection-title {
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 700;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   color: var(--text-primary);
 }
 
@@ -341,15 +344,15 @@ const selectCorrection = (index) => {
 
 /* 스크립트 박스 */
 .script-box {
-  padding: 24px;
-  border-radius: 12px;
-  line-height: 2;
-  font-size: 16px;
+  padding: 32px;
+  border-radius: 16px;
+  line-height: 1.8;
+  font-size: 1.125rem;
 }
 
 .enhanced-script {
   background: var(--bg-tertiary);
-  border: var(--border-secondary);
+  border: 1px solid var(--border-primary);
 }
 
 .dark-mode .enhanced-script {
@@ -358,7 +361,7 @@ const selectCorrection = (index) => {
 
 .original-script {
   background: var(--bg-tertiary);
-  border: var(--border-thin);
+  border: 1px solid var(--border-primary);
 }
 
 .dark-mode .original-script {
@@ -373,12 +376,11 @@ const selectCorrection = (index) => {
 }
 
 .highlighted-word {
-  background: var(--primary-color);
-  color: #000000;
-  padding: 4px 8px;
+  background: var(--primary-light);
+  color: #8B7300;
+  padding: 2px 6px;
   border-radius: 6px;
-  font-weight: 900;
-  border: 1px solid #000;
+  font-weight: 700;
   cursor: pointer;
   display: inline-block;
   margin: 2px;
@@ -394,26 +396,31 @@ const selectCorrection = (index) => {
 .corrections-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 .correction-item {
   display: flex;
-  gap: 20px;
+  gap: 24px;
   background: var(--bg-secondary);
-  border-radius: var(--border-radius);
-  padding: 24px;
-  border: var(--border-primary);
+  border-radius: 20px;
+  padding: 32px;
+  border: 1px solid var(--border-primary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: var(--shadow-sm);
 }
 
-.correction-item:hover,
-.correction-item.selected {
-  transform: translate(-0.02em, -0.02em);
+.correction-item:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--primary-color);
+  transform: translateX(8px);
   box-shadow: var(--shadow-md);
-  background: var(--primary-color);
+}
+
+.correction-item.selected {
+  border-color: var(--primary-color);
+  background: var(--primary-light);
 }
 
 .dark-mode .correction-item {
@@ -429,11 +436,10 @@ const selectCorrection = (index) => {
   align-items: center;
   justify-content: center;
   background: var(--primary-color);
-  color: #000000;
-  font-weight: 900;
-  font-size: 16px;
+  color: #212529;
+  font-weight: 700;
+  font-size: 1.125rem;
   border-radius: 50%;
-  border: var(--border-secondary);
 }
 
 .correction-content {
@@ -443,8 +449,8 @@ const selectCorrection = (index) => {
 .correction-comparison {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 20px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
 }
 
@@ -456,22 +462,23 @@ const selectCorrection = (index) => {
 }
 
 .label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-tertiary);
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .text {
-  font-size: 16px;
+  font-size: 1.125rem;
   font-weight: 600;
-  padding: 8px 16px;
-  border-radius: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
 }
 
 .original {
   background: #fee2e2;
-  color: #dc2626;
+  color: #ef4444;
   text-decoration: line-through;
 }
 
@@ -481,20 +488,21 @@ const selectCorrection = (index) => {
 }
 
 .arrow {
-  color: #94a3b8;
+  color: var(--text-tertiary);
   font-size: 24px;
 }
 
 .correction-comment {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  padding: 16px;
-  background: var(--bg-tertiary);
-  border-radius: var(--border-radius);
+  gap: 10px;
+  padding: 20px;
+  background: var(--bg-secondary);
+  border-radius: 12px;
   border-left: 4px solid var(--primary-color);
   line-height: 1.6;
   color: var(--text-secondary);
+  font-size: 0.95rem;
 }
 
 .dark-mode .correction-comment {
@@ -503,31 +511,30 @@ const selectCorrection = (index) => {
 }
 
 .correction-comment .material-icons {
-  color: #FFD700;
+  color: var(--primary-color);
   font-size: 20px;
   margin-top: 2px;
 }
 
 .no-corrections {
   text-align: center;
-  padding: 60px 20px;
+  padding: 64px 24px;
   color: #10b981;
 }
 
 .no-corrections .material-icons {
   font-size: 64px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .no-corrections p {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 700;
 }
 
 /* 종합 평가 */
 .overall-card {
-  background: var(--primary-color);
-  border-color: #000000;
+  border-top: 4px solid var(--primary-color);
 }
 
 .dark-mode .overall-card {
@@ -546,7 +553,7 @@ const selectCorrection = (index) => {
 }
 
 .overall-comment {
-  font-size: 16px;
+  font-size: 1.125rem;
   line-height: 1.8;
   color: var(--text-primary);
 }
@@ -558,43 +565,46 @@ const selectCorrection = (index) => {
 /* 액션 버튼 */
 .action-buttons {
   display: flex;
-  gap: 16px;
+  gap: 20px;
   justify-content: center;
-  margin-top: 48px;
+  margin-top: 64px;
 }
 
 .action-btn {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px 32px;
-  border-radius: var(--border-radius);
-  border: var(--border-secondary);
-  font-weight: 900;
-  font-size: 16px;
+  padding: 18px 40px;
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 1.125rem;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-md);
 }
 
 .retry-btn {
   background: var(--primary-color);
-  color: #000000;
+  color: #212529;
+  border: none;
 }
 
 .retry-btn:hover {
-  transform: translate(-0.05em, -0.05em);
+  background: var(--primary-hover);
+  transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
 }
 
 .home-btn {
   background: var(--bg-secondary);
   color: var(--text-primary);
+  border: 1px solid var(--border-primary);
 }
 
 .home-btn:hover {
-  transform: translate(-0.02em, -0.02em);
-  box-shadow: var(--shadow-md);
+  background: var(--bg-tertiary);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
 }
 
 .dark-mode .home-btn {

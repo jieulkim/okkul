@@ -90,29 +90,28 @@ const startDevTest = () => {
 .login-card {
   background: var(--bg-secondary);
   border: var(--border-primary);
-  padding: 48px;
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-lg);
+  padding: 56px 48px;
+  border-radius: 32px;
+  box-shadow: var(--shadow-xl);
   max-width: 440px;
   width: 100%;
   text-align: center;
 }
 
 .okkul-wrapper {
-  margin-bottom: 24px;
+  margin-bottom: 32px;
   display: flex;
   justify-content: center;
 }
 
-.logo-section .logo-icon {
-  font-size: 64px;
-  display: block;
-  margin-bottom: 16px;
+.okkul-img {
+  width: 80px;
+  height: 80px;
 }
 
 .logo-section h1 {
-  font-size: 36px;
-  font-weight: 900;
+  font-size: 2.5rem;
+  font-weight: 800;
   color: var(--text-primary);
   margin-bottom: 12px;
 }
@@ -120,7 +119,14 @@ const startDevTest = () => {
 .logo-section p {
   color: var(--text-secondary);
   line-height: 1.6;
-  margin-bottom: 40px;
+  margin-bottom: 48px;
+  font-size: 1rem;
+}
+
+.login-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .google-login-btn {
@@ -129,35 +135,27 @@ const startDevTest = () => {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  padding: 16px;
+  padding: 18px;
   background: var(--primary-color);
-  border: var(--border-secondary);
-  border-radius: var(--border-radius);
-  font-size: 16px;
-  font-weight: 900;
-  color: #000000;
+  border: none;
+  border-radius: 16px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #212529;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-md);
 }
 
 .google-login-btn:hover {
-  transform: translate(-0.02em, -0.02em);
-  box-shadow: var(--shadow-md);
+  background: var(--primary-hover);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
 }
 
 .google-login-btn img {
   width: 24px;
   height: 24px;
-}
-
-.footer-note {
-  margin-top: 32px;
-}
-
-.footer-note p {
-  font-size: 13px;
-  color: #94a3b8;
 }
 
 .dev-login-btn {
@@ -167,20 +165,29 @@ const startDevTest = () => {
   justify-content: center;
   gap: 12px;
   padding: 16px;
-  margin-top: 12px;
   background: var(--bg-tertiary);
-  border: var(--border-secondary);
-  border-radius: var(--border-radius);
-  font-size: 16px;
-  font-weight: 900;
-  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+  border-radius: 14px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: var(--shadow-sm);
 }
 
 .dev-login-btn:hover {
-  transform: translate(-0.02em, -0.02em);
-  box-shadow: var(--shadow-md);
+  background: #e2e8f0;
+  color: var(--text-primary);
+  transform: translateY(-2px);
+}
+
+.footer-note {
+  margin-top: 40px;
+}
+
+.footer-note p {
+  font-size: 0.8125rem;
+  color: var(--text-tertiary);
+  line-height: 1.5;
 }
 </style>

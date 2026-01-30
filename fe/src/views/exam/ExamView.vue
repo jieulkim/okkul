@@ -99,27 +99,26 @@ onMounted(async () => {
         </p>
 
         <button @click="openSurveyModal" class="start-exam-btn">
-          <span class="btn-icon">🚀</span>
           시험 시작하기
         </button>
 
         <div class="features-grid">
-          <div class="feature-card" @click="openSurveyModal">
+          <div class="feature-card">
             <div class="feature-icon">📝</div>
             <h3>실전 시뮬레이션</h3>
             <p>실제 시험과 동일한 15문항 구성</p>
           </div>
-          <div class="feature-card" @click="openSurveyModal">
+          <div class="feature-card">
             <div class="feature-icon">🎯</div>
             <h3>난이도 자동 조정</h3>
             <p>7번 문제 후 난이도 재설정</p>
           </div>
-          <div class="feature-card" @click="openSurveyModal">
+          <div class="feature-card">
             <div class="feature-icon">🤖</div>
             <h3>AI 분석</h3>
             <p>문법, 어휘, 유창성 등 종합 평가</p>
           </div>
-          <div class="feature-card" @click="openSurveyModal">
+          <div class="feature-card">
             <div class="feature-icon">📊</div>
             <h3>상세 피드백</h3>
             <p>문항별 강점과 약점 분석</p>
@@ -212,8 +211,8 @@ onMounted(async () => {
 }
 
 .page-title {
-  font-size: 2.5rem;
-  font-weight: 900;
+  font-size: var(--font-size-xl);
+  font-weight: 800;
   color: var(--text-primary);
   margin-bottom: 32px;
 }
@@ -228,21 +227,22 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   gap: 12px;
-  padding: 20px 48px;
+  padding: 16px 40px;
   background: var(--primary-color);
-  color: #000000;
-  border: var(--border-primary);
+  color: #212529;
+  border: none;
   border-radius: var(--border-radius);
-  font-size: 20px;
-  font-weight: 900;
+  font-size: 1.25rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: var(--shadow-md);
   margin-bottom: 60px;
 }
 
 .start-exam-btn:hover {
-  transform: translate(-0.05em, -0.05em);
+  background: var(--primary-hover);
+  transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
 }
 
@@ -260,17 +260,17 @@ onMounted(async () => {
 .feature-card {
   background: var(--bg-secondary);
   border: var(--border-primary);
-  border-radius: var(--border-radius);
+  border-radius: 24px;
   padding: 32px 24px;
   text-align: center;
-  transition: all 0.2s ease;
-  cursor: pointer;
+  transition: all 0.3s ease;
   box-shadow: var(--shadow-sm);
 }
 
 .feature-card:hover {
-  transform: translate(-0.05em, -0.05em);
+  transform: translateY(-4px);
   box-shadow: var(--shadow-md);
+  border-color: var(--primary-color);
 }
 
 .feature-icon {
@@ -318,7 +318,7 @@ onMounted(async () => {
 
 .modal-header h3 {
   font-size: 24px;
-  font-weight: 900;
+  font-weight: 800;
   margin-bottom: 8px;
   color: var(--text-primary);
 }
@@ -371,9 +371,9 @@ button {
 
 .primary-btn {
   background: var(--primary-color);
-  color: #000000;
-  border: var(--border-secondary);
-  font-weight: 900;
+  color: #212529;
+  border: none;
+  font-weight: 700;
 }
 
 .primary-btn:hover {

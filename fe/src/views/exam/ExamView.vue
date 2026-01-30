@@ -14,18 +14,6 @@ const showResumeModal = ref(false);
 const existingSurveys = ref([]);
 const incompleteExam = ref(null);
 
-// 진행 중인 시험 확인
-const checkIncompleteExam = () => {
-  const savedExam = localStorage.getItem("incompleteExam");
-  if (savedExam) {
-    incompleteExam.value = JSON.parse(savedExam);
-    showResumeModal.value = true;
-  } else {
-    showSurveySelectModal.value = true;
-  }
-};
-
-// 실제 API를 사용하여 설문 목록 로드
 const fetchExistingSurveys = async () => {
   try {
     const response = await surveysApi.getSurveyList();
@@ -38,7 +26,7 @@ const fetchExistingSurveys = async () => {
     existingSurveys.value = filteredList.map(s => ({
       ...s,
       occupation: s.occupation || 'N/A',
-      topics: s.topicList || [] // Backend might use topicList for IDs or topics for names/objects
+      topics: s.topicList || []
     }));
   } catch (error) {
     console.error("설문 목록 로드 실패", error);
@@ -46,12 +34,18 @@ const fetchExistingSurveys = async () => {
   }
 };
 
-const startNewExam = () => {
-  showResumeModal.value = false;
-  showSurveySelectModal.value = true;
+const openSurveyModal = () => {
+  const savedExam = localStorage.getItem("incompleteExam");
+  if (savedExam) {
+    incompleteExam.value = JSON.parse(savedExam);
+    showResumeModal.value = true;
+  } else {
+    showSurveySelectModal.value = true;
+  }
 };
 
-const openSurveyModal = () => {
+const startNewExam = () => {
+  showResumeModal.value = false;
   showSurveySelectModal.value = true;
 };
 
@@ -92,7 +86,6 @@ const handleDeleteSurvey = (surveyId) => {
 
 onMounted(async () => {
   await fetchExistingSurveys();
-  checkIncompleteExam();
 });
 </script>
 
@@ -105,7 +98,6 @@ onMounted(async () => {
           실제 OPIc 시험과 동일한 환경에서 15개 문항을 풀어보세요
         </p>
 
-        <!-- 시작하기 버튼 -->
         <button @click="openSurveyModal" class="start-exam-btn">
           <span class="btn-icon">🚀</span>
           시험 시작하기

@@ -315,11 +315,25 @@ const analyze = async () => {
     };
 
     // 4. API 호출
-    const response = await practicesApi.savePracticeSession(
-      props.practiceSession.practice_id,
-      currentQuestion.value.question_id,
-      payload,
-    );
+    // const response = await practicesApi.savePracticeSession(
+    //   props.practiceSession.practice_id,
+    //   currentQuestion.value.question_id,
+    //   payload,
+    // );
+    const response = {
+      data: {
+        feedbackResult: {
+          scriptCorrections: [
+            {
+              originalSegment: "Hello",
+              correctedSegment: "Hi",
+              comment: "Change 'Hello' to 'Hi' for a more casual greeting.",
+            },
+          ],
+          overallComment: "Your pronunciation is good, but there's room for improvement in intonation.",
+        },
+      },
+    };
 
     console.log("분석 결과:", response.data);
 
@@ -444,7 +458,19 @@ onMounted(async () => {
         const practiceId = startRes.data.practiceId;
 
         // 문제 상세 조회
-        const problemRes = await practicesApi.getPracticeProblem(practiceId);
+        // const problemRes = await practicesApi.getPracticeProblem(practiceId);
+        const problemRes = {
+          data: {
+            questions: [
+              {
+                questionId: 1,
+                questionOrder: 1,
+                questionText: "What is your name?",
+                audioUrl: "https://example.com/audio/1.mp3",
+              },
+            ],
+          },
+        };
         if (problemRes.data && problemRes.data.questions) {
           localQuestions.value = problemRes.data.questions.map((q) => ({
             question_id: q.questionId,

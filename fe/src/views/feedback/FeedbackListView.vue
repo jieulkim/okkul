@@ -147,26 +147,28 @@ const goToDetail = (item) => {
   padding: 24px;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 8px 8px 0 #000;
+  box-shadow: 6px 6px 0 #000;
   position: relative;
   display: flex;
   flex-direction: column;
 }
 
+/* 다크모드 테두리 및 그림자 */
 .dark-mode .feedback-card {
   border-color: #FFF;
-  box-shadow: 8px 8px 0 #FFF;
+  box-shadow: 6px 6px 0 #FFF;
 }
 
 .feedback-card:hover {
   transform: translate(-4px, -4px);
-  box-shadow: 12px 12px 0 #000;
+  box-shadow: 8px 8px 0 #000;
 }
 
 .dark-mode .feedback-card:hover {
-  box-shadow: 12px 12px 0 #FFF;
+  box-shadow: 8px 8px 0 #FFF;
 }
 
+/* 상단 태그 스타일 */
 .card-tag {
   display: inline-block;
   padding: 4px 12px;
@@ -184,10 +186,16 @@ const goToDetail = (item) => {
   color: #000;
 }
 
+/* --- EXAM 카드 스타일 --- */
 .exam.feedback-card {
   background: var(--primary-color);
 }
 
+.dark-mode .exam.feedback-card {
+  background: #868e96;
+}
+
+/* --- PRACTICE 카드 스타일 --- */
 .practice.feedback-card {
   background: #FFFFFF;
 }
@@ -207,6 +215,10 @@ const goToDetail = (item) => {
   color: var(--text-primary);
 }
 
+.dark-mode .exam.feedback-card .card-title {
+  color: #FFFFFF;
+}
+
 .card-date {
   font-size: 0.9rem;
   color: rgba(0, 0, 0, 0.6);
@@ -217,6 +229,7 @@ const goToDetail = (item) => {
   color: var(--text-secondary);
 }
 
+/* 등급 및 점수 정보 */
 .exam-info {
   display: flex;
   align-items: center;
@@ -232,6 +245,11 @@ const goToDetail = (item) => {
   border-radius: 12px;
 }
 
+.dark-mode .exam.feedback-card .grade-badge {
+  background: var(--primary-color);
+  color: #000000;
+}
+
 .score-text {
   font-weight: 800;
   color: #000;
@@ -241,6 +259,7 @@ const goToDetail = (item) => {
   color: var(--text-primary);
 }
 
+/* 주제 태그 */
 .topic-tag {
   padding: 6px 12px;
   background: #f1f5f9;
@@ -254,6 +273,7 @@ const goToDetail = (item) => {
   color: var(--text-secondary);
 }
 
+/* 카드 하단 */
 .card-footer {
   margin-top: auto;
   padding-top: 20px;

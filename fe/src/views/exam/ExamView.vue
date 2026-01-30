@@ -99,7 +99,6 @@ onMounted(async () => {
         </p>
 
         <button @click="openSurveyModal" class="start-exam-btn">
-          <span class="btn-icon">🚀</span>
           시험 시작하기
         </button>
 

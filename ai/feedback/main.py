@@ -151,6 +151,7 @@ async def analyze_overall_gemini(question: str, user_answer: str, corrected_text
 @app.post(
     "/v1/analyze", 
     response_model=CombinedResponse,
+    tags=["Practice"],
     summary="사용자 답변 AI 종합 분석",
     description="사용자의 영어 답변과 한국어 의도를 바탕으로 문법 교정 및 AL 기준 피드백을 생성합니다."
 )

@@ -83,6 +83,4 @@ public class HistoryController implements HistoryControllerDocs {
 
         return ResponseEntity.ok(response);
     }
-
-
 }

@@ -9,10 +9,14 @@ spring:
     driver-class-name: org.postgresql.Driver
 
   jpa:
-    hibernate.ddl-auto: create
+    hibernate:
+      ddl-auto: create
+
     show-sql: true
-    properties.hibernate.format_sql: true
+    properties:
+      hibernate.format_sql: true
     defer-datasource-initialization: true
+
 
   sql:
     init:
@@ -24,6 +28,7 @@ spring:
       port: ${REDIS_PORT:6379}
       database: ${REDIS_DATABASE:0}
       password: ${REDIS_PASSWORD:}
+
 
   security:
     oauth2:

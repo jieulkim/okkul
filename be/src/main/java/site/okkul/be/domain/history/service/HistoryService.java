@@ -15,7 +15,6 @@ import site.okkul.be.domain.history.dto.ExamAnswerResponse;
 import site.okkul.be.domain.history.dto.ExamHistoryDetailResponse;
 import site.okkul.be.domain.history.dto.ExamHistorySummary;
 import site.okkul.be.domain.history.dto.PracticeHistorySummary;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;

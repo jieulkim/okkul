@@ -57,7 +57,6 @@ public interface HistoryControllerDocs {
             @Parameter(hidden = true) UserDetails user
     );
 
-
     @Operation(
             summary = "유형별 연습 히스토리 목록 조회",
             description = "사용자가 유형별로 연습한 기록 목록을 최신순으로 조회한다"

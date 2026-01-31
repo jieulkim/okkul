@@ -94,6 +94,7 @@ const goNext = async () => {
   // 시험 모드나 일반 모드 상관없이 먼저 설문을 서버에 저장합니다.
   try {
     isSubmitting.value = true;
+    
     // 1. Store에서 설문 데이터 가져오기
     const surveyStore = useSurveyStore();
     const surveyData = surveyStore.surveyData;
@@ -102,15 +103,14 @@ const goNext = async () => {
     let surveyId;
 
     if (surveyData) {
-      // 2. 레벨 정보 추가
+      // 2. 레벨 정보 추가 (selectedLevel.value는 1~6의 id값)
       const finalSurveyData = {
         ...surveyData,
-        level: selectedLevel.value
+        level: selectedLevel.value // API는 1~6 정수를 기대
       };
       console.log("[SurveyLevelView] Final Data to Submit:", finalSurveyData);
 
       // 3. API 호출 (설문 생성)
-      // Mock Mode Check
       let response;
       if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
         console.log("[SurveyLevelView] Mock Mode: Skipping API call");
@@ -120,12 +120,21 @@ const goNext = async () => {
           }
         };
       } else {
+        console.log("[SurveyLevelView] API 호출 시작");
         response = await surveysApi.createSurvey(finalSurveyData);
+        console.log("[SurveyLevelView] API 응답:", response);
       }
-      console.log("[SurveyLevelView] API Response:", response);
       
-      // response.data가 실제 응답 객체 (HTTPClient/Axios 기준)
+      // response.data가 실제 응답 객체 (Axios 기준)
       surveyId = response.data?.surveyId;
+      
+      if (!surveyId) {
+        console.error("[SurveyLevelView] surveyId를 받지 못했습니다:", response.data);
+        alert("설문 저장에 실패했습니다. (surveyId 없음)");
+        return;
+      }
+
+      console.log("[SurveyLevelView] 설문 생성 성공:", surveyId);
 
       // 성공적으로 저장되었다면 로컬 스토리지에 표시 (리다이렉트 루프 방지용)
       localStorage.setItem('survey_completed', 'true');
@@ -133,12 +142,16 @@ const goNext = async () => {
       // Store 초기화
       surveyStore.clearSurveyData();
     } else {
-      console.warn("설문 데이터가 없습니다. (새로고침 등)");
+      console.warn("[SurveyLevelView] 설문 데이터가 없습니다. (새로고침 등)");
+      alert("설문 데이터를 찾을 수 없습니다. 처음부터 다시 진행해주세요.");
+      router.push('/');
+      return;
     }
 
     // 4. 다음 페이지로 이동
     if (route.query.from === 'exam') {
       // 시험 모드에서 진입한 경우 기기 설정(Setup) 페이지로 이동
+      console.log("[SurveyLevelView] 시험 모드 - Setup으로 이동");
       router.push({
         path: '/exam/setup',
         query: { 
@@ -147,6 +160,7 @@ const goNext = async () => {
       });
     } else {
       // 일반 연습 모드인 경우 PracticeView로 이동
+      console.log("[SurveyLevelView] 연습 모드 - Practice로 이동");
       router.push({
         path: '/practice',
         query: { 
@@ -156,15 +170,40 @@ const goNext = async () => {
       });
     }
   } catch (error) {
-    console.error("설문 생성 실패:", error);
+    console.error("[SurveyLevelView] 설문 생성 실패:", error);
+    
     let errorMsg = "설문 저장 중 오류가 발생했습니다.";
+    
     if (error.response) {
-      console.error("Error Response Data:", error.response.data);
-      errorMsg += `\n(${error.response.status}: ${JSON.stringify(error.response.data)})`;
+      // 서버 응답이 있는 경우
+      console.error("[SurveyLevelView] Error Response:", error.response);
+      console.error("[SurveyLevelView] Error Data:", error.response.data);
+      console.error("[SurveyLevelView] Error Status:", error.response.status);
+      
+      // 상세 에러 메시지 추가
+      const errorData = error.response.data;
+      if (typeof errorData === 'string') {
+        errorMsg += `\n${errorData}`;
+      } else if (errorData.message) {
+        errorMsg += `\n${errorData.message}`;
+      } else {
+        errorMsg += `\n${JSON.stringify(errorData)}`;
+      }
+      
+      errorMsg += `\n(HTTP ${error.response.status})`;
+    } else if (error.request) {
+      // 요청은 보냈으나 응답이 없는 경우
+      console.error("[SurveyLevelView] No Response:", error.request);
+      errorMsg += "\n서버로부터 응답이 없습니다. 네트워크 연결을 확인해주세요.";
     } else {
-      errorMsg += `\n(${error.message})`;
+      // 요청 설정 중 에러
+      console.error("[SurveyLevelView] Error:", error.message);
+      errorMsg += `\n${error.message}`;
     }
+    
     alert(errorMsg);
+  } finally {
+    isSubmitting.value = false;
   }
 };
 
@@ -253,14 +292,14 @@ const showGuide = ref(false);
     </main>
 
     <footer class="assessment-footer">
-      <button @click="router.back()" class="nav-btn back-btn">Back</button>
-      <button @click="router.push('/')" class="nav-btn quit-btn">Quit</button>
+      <button @click="router.back()" class="nav-btn back-btn" :disabled="isSubmitting">Back</button>
+      <button @click="router.push('/')" class="nav-btn quit-btn" :disabled="isSubmitting">Quit</button>
       <button
         @click="goNext"
         class="nav-btn next-btn"
-        :disabled="!selectedLevel"
+        :disabled="!selectedLevel || isSubmitting"
       >
-        Next
+        {{ isSubmitting ? '저장 중...' : 'Next' }}
       </button>
     </footer>
 
@@ -560,7 +599,7 @@ const showGuide = ref(false);
   color: var(--text-secondary);
 }
 
-.back-btn:hover {
+.back-btn:hover:not(:disabled) {
   background: #e2e8f0;
 }
 
@@ -577,7 +616,8 @@ const showGuide = ref(false);
 }
 
 .next-btn:disabled,
-.back-btn:disabled {
+.back-btn:disabled,
+.quit-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
@@ -587,7 +627,7 @@ const showGuide = ref(false);
   color: #ef4444;
 }
 
-.quit-btn:hover {
+.quit-btn:hover:not(:disabled) {
   background: #fecaca;
 }
 

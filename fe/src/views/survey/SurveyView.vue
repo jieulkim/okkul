@@ -353,6 +353,17 @@ const submitSurvey = () => {
   try {
     // 선택지 순서(1, 2, 3, 4...)
     // 프론트엔드 내부 ID를 그대로 전송
+
+    // [Backend Compatibility Workaround]
+    // 백엔드 이슈: SurveyMapper.java에서 `teachAt`(강사 근무처) 필드에 
+    // `teachAnswerId`가 아닌 `classTypeAnswerId`(수강 강의) 값을 잘못 매핑하고 있습니다.
+    // `classTypeAnswerId`가 4(5년 이상)일 경우, `TeachingLevel` Enum(1~3) 범위를 벗어나 400 에러가 발생합니다.
+    // 이를 방지하기 위해 4번 값은 null로 변환하여 전송합니다. (백엔드 수정 시 해당 로직 제거 가능)
+    let safeClassTypeAnswerId = surveyData.value.classTypeAnswerId;
+    if (safeClassTypeAnswerId === 4) {
+      safeClassTypeAnswerId = null;
+    }
+
     const payload = {
       occupationAnswerId: surveyData.value.occupationAnswerId, // 1, 2, 3, 4
       hasJob: surveyData.value.hasJob,
@@ -360,7 +371,7 @@ const submitSurvey = () => {
       teachAnswerId: surveyData.value.teachAnswerId, // 1, 2, 3
       manager: surveyData.value.manager,
       student: surveyData.value.student,
-      classTypeAnswerId: surveyData.value.classTypeAnswerId, // 1, 2, 3, 4
+      classTypeAnswerId: safeClassTypeAnswerId, // Sanitized Value
       residenceAnswerId: surveyData.value.residenceAnswerId, // 1, 2, 3, 4, 5
       leisure: surveyData.value.leisure,
       hobby: surveyData.value.hobby,

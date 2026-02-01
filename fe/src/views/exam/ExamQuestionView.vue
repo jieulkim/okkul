@@ -21,15 +21,32 @@ const showRelevelModal = ref(false);
 const adjustedDifficulty = ref(null);
 const isLoading = ref(true);
 const errorMessage = ref(null);
-const isBackendConnected = ref(false); // 백엔드 연결 상태
+const initialDifficulty = ref(1); // 초기 난이도 상태 추가
+const isSaving = ref(false); // 저장 중 상태 추가
+
+// 제약 조건 관련 상태
+const playCount = ref(0); // 재생 횟수 (0: 초기, 1: 1회 재생, 2: 2회 재생/완료)
+const canReplay = ref(false); // 다시 듣기 가능 여부 (5초 윈도우)
+const isSubmitted = ref(false); // 답변 제출 완료 여부 (재녹음 방지)
+let replayTimer = null; // 다시 듣기 5초 타이머
 
 let mediaRecorder = null;
+
 let audioChunks = [];
 let recordingTimer = null;
 let volumeMonitor = null;
+const totalExamTime = ref(0); // 전체 시험 경과 시간
+let totalTimer = null; // 전체 타이머
 
-// 포맷팅된 시간
-const formattedTime = computed(() => {
+// 포맷팅된 시간 (전체 시험 시간)
+const formattedTotalTime = computed(() => {
+  const mins = Math.floor(totalExamTime.value / 60);
+  const secs = totalExamTime.value % 60;
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+});
+
+// 포맷팅된 시간 (녹음 시간)
+const formattedRecordingTime = computed(() => {
   const mins = Math.floor(recordingTime.value / 60);
   const secs = recordingTime.value % 60;
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
@@ -45,63 +62,110 @@ const currentQuestion = computed(() => {
   return questions.value[currentQuestionIndex.value];
 });
 
+// 백엔드 레이스 컨디션 대응: 문제 생성 폴링
+const pollForQuestions = async (targetExamId, retries = 5, delay = 1000) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      console.log(`[ExamQuestionView] 질문 생성 확인 중... (${i + 1}/${retries})`);
+      const response = await examApi.getExamInfo(targetExamId); // getExam -> getExamInfo 수정
+      const examData = response.data;
+      
+      if (examData && examData.questions && examData.questions.length > 0) {
+        console.log(`[ExamQuestionView] 질문 생성 완료! (${examData.questions.length}개)`);
+        
+        questions.value = examData.questions;
+        totalQuestions.value = examData.totalQuestions || 15;
+        currentQuestionIndex.value = 0;
+        
+        // 문제 로드 후 저장
+        saveProgress();
+        return;
+      }
+    } catch (e) {
+      console.warn(`[ExamQuestionView] 폴링 중 에러:`, e);
+    }
+    
+    // 대기
+    await new Promise(resolve => setTimeout(resolve, delay));
+  }
+  
+  throw new Error('문제를 불러오지 못했습니다. (Timeout)');
+};
+
 // 시험 시작/재개
 const initializeExam = async () => {
   try {
     isLoading.value = true;
-    const { examId: queryExamId, resume } = route.query;
     
-    console.log('[ExamQuestionView] 초기화 시작:', { queryExamId, resume });
-    
-    if (!queryExamId) {
-      errorMessage.value = '시험 정보가 없습니다.';
-      alert('시험 정보가 없습니다.');
-      router.push('/exam');
-      return;
+    // 1. examId 먼저 확보
+    const { examId: queryExamId } = route.query;
+    if (queryExamId) {
+      examId.value = parseInt(queryExamId);
+    } else {
+      // 쿼리에 없으면 로컬스토리지나 setupData 등에서 추론해야 할 수도 있으나,
+      // 현재 흐름상 query로 setupView가 넘겨줌.
+      // 없을 경우 에러 처리
+      console.error('[ExamQuestionView] examId가 없습니다.');
+    }
+
+    // 2. 로컬 스토리지에서 진행 상황 확인
+    // examId.value가 있어야 키를 만들 수 있음
+    let savedData = null;
+    if (examId.value) {
+      savedData = localStorage.getItem(`exam_${examId.value}`);
     }
     
-    examId.value = parseInt(queryExamId);
-    const savedData = localStorage.getItem(`exam_${examId.value}`);
+    // 설문 데이터 확인 (이어하기가 아닐 때 필요)
+    const setupData = localStorage.getItem('setupData');
     
-    console.log('[ExamQuestionView] localStorage 데이터:', savedData);
-    
-    if (!savedData) {
-      errorMessage.value = '시험 데이터를 찾을 수 없습니다.';
-      alert('시험 데이터를 찾을 수 없습니다.');
-      router.push('/exam');
-      return;
+    if (savedData) {
+      // 이어하기
+      const data = JSON.parse(savedData);
+      questions.value = data.questions;
+      currentQuestionIndex.value = data.currentIndex;
+      totalQuestions.value = data.totalQuestions;
+      initialDifficulty.value = data.initialDifficulty || 1;
+      
+      console.log('[ExamQuestionView] 저장된 진행 상황 로드:', data);
+    } else {
+      // 처음 시작
+      if (!examId.value) {
+         throw new Error("Exam ID not found");
+      }
+      
+      // 설문에서 설정한 기본 난이도 가져오기
+      if (setupData) {
+        const parsedSetup = JSON.parse(setupData);
+        if (parsedSetup.initialDifficulty) {
+          initialDifficulty.value = parsedSetup.initialDifficulty;
+        }
+      }
+      
+      console.log('[ExamQuestionView] 새 시험 시작. 난이도:', initialDifficulty.value);
+      
+      // 첫 7문제 로드 (백엔드 레이스 컨디션 대응 폴링)
+      await pollForQuestions(examId.value);
     }
-    
-    const data = JSON.parse(savedData);
-    questions.value = data.questions || [];
-    totalQuestions.value = data.totalQuestions || 15;
-    currentQuestionIndex.value = data.currentIndex || 0;
-    
-    console.log('[ExamQuestionView] 시험 초기화 완료:', {
-      examId: examId.value,
-      totalQuestions: totalQuestions.value,
-      currentIndex: currentQuestionIndex.value,
-      questionsCount: questions.value.length,
-      firstQuestion: questions.value[0]
-    });
-    
-    if (questions.value.length === 0) {
-      errorMessage.value = '문제 데이터가 없습니다.';
-      alert('문제 데이터가 없습니다.');
-      router.push('/exam');
-      return;
-    }
-    
-    // 백엔드 연결 상태 확인
-    await checkBackendConnection();
     
     isLoading.value = false;
     
   } catch (error) {
-    console.error('시험 초기화 실패:', error);
+    console.error('[ExamQuestionView] 시험 초기화 실패:', error);
     errorMessage.value = '시험을 불러오는데 실패했습니다.';
     alert('시험을 불러오는데 실패했습니다.');
     router.push('/exam');
+  }
+};
+
+// 5초 리플레이 타이머 시작
+const startReplayTimer = () => {
+  if (playCount.value === 1) {
+    canReplay.value = true;
+    if (replayTimer) clearTimeout(replayTimer);
+    
+    replayTimer = setTimeout(() => {
+      canReplay.value = false;
+    }, 5000); // 5초간만 다시 듣기 허용
   }
 };
 
@@ -109,21 +173,73 @@ const initializeExam = async () => {
 const togglePlay = () => {
   if (!currentQuestion.value?.audioUrl) return;
   
+  // 이미 재생 중이면 정지 (수동 정지)
   if (isPlaying.value && currentAudio.value) {
     currentAudio.value.pause();
     isPlaying.value = false;
-  } else {
-    if (currentAudio.value) {
-      currentAudio.value.pause();
-    }
-    currentAudio.value = new Audio(currentQuestion.value.audioUrl);
-    currentAudio.value.play();
-    isPlaying.value = true;
-    
-    currentAudio.value.onended = () => {
-      isPlaying.value = false;
-    };
+    // 정지 시에도 카운트나 윈도우는 그대로 진행 또는 만료됨
+    // (기획: "질문 듣다가 5초 이내에만...")
+    return;
   }
+
+  // 재생 시작 조건 체크
+  // 1. 이미 2번 들었으면 불가
+  if (playCount.value >= 2) {
+    return;
+  }
+  
+  // 2. 1번 들었는데 5초가 지났으면 불가
+  if (playCount.value === 1 && !canReplay.value) {
+    return;
+  }
+
+  // 재생 시작
+  if (currentAudio.value) {
+    currentAudio.value.pause();
+  }
+  
+  // 리플레이 타이머 초기화 (새로 재생할 때마다 5초 룰 갱신? 아니면 첫 재생 후 5초? 
+  // "기본적으로 질문은 한번만 나오는데 5초 이내에는 다시 듣기가 가능" -> 첫 재생 시작 시점부터 5초일 가능성이 높으나,
+  // 보통 "다시 듣기" 버튼은 첫 재생 "후" 또는 "도중"에 활성화됨.
+  // 여기선 "재생 시작" 시점에 5초 카운트다운 시작으로 처리하여 엄격하게 적용)
+  if (replayTimer) clearTimeout(replayTimer);
+  canReplay.value = true; // 일단 true로 시작
+  
+  // 5초 후 리플레이 불가 처리
+  replayTimer = setTimeout(() => {
+    canReplay.value = false;
+  }, 5000);
+
+  currentAudio.value = new Audio(currentQuestion.value.audioUrl);
+  
+  // onended 설정
+  currentAudio.value.onended = () => {
+    isPlaying.value = false;
+  };
+
+  // 재생 시작 (Promise 에러 핸들링 추가)
+  currentAudio.value.play()
+    .then(() => {
+      isPlaying.value = true;
+      playCount.value++; // 카운트 증가
+    })
+    .catch(err => {
+      console.warn('[ExamQuestionView] 오디오 재생 실패 (유효하지 않은 URL 등):', err);
+      isPlaying.value = false;
+      // 더미 데이터 등 테스트 환경에서는 알림만 띄움
+      // alert('오디오를 재생할 수 없습니다.'); 
+    });
+};
+
+// 문제 변경 시 상태 초기화 (제약 조건 리셋)
+const resetQuestionState = () => {
+  playCount.value = 0;
+  canReplay.value = false;
+  isSubmitted.value = false;
+  
+  if (replayTimer) clearTimeout(replayTimer);
+  
+  resetRecordingState();
 };
 
 // 녹음 시작
@@ -165,7 +281,7 @@ const startRecording = async () => {
     }, 1000);
     
   } catch (error) {
-    console.error('녹음 시작 실패:', error);
+    console.error('[ExamQuestionView] 녹음 시작 실패:', error);
     if (error.name === 'NotAllowedError') {
       alert('마이크 권한이 거부되었습니다.\n브라우저 설정에서 마이크 권한을 허용해주세요.');
     } else {
@@ -189,26 +305,45 @@ const stopRecording = () => {
 const submitAnswer = async (audioBlob) => {
   try {
     if (!currentQuestion.value) {
-      console.error('현재 문제 정보가 없습니다.');
+      console.error('[ExamQuestionView] 현재 문제 정보가 없습니다.');
       return;
     }
     
+    isSaving.value = true; // 저장 시작 표시
+
+    console.log('[ExamQuestionView] 답변 제출:', {
+      examId: examId.value,
+      questionOrder: currentQuestion.value.order,
+      audioBlobSize: audioBlob.size
+    });
 
     const formData = new FormData();
-    formData.append('audioFile', audioBlob, 'answer.webm');
+    formData.append('file', audioBlob, 'answer.webm'); // 필드명: audioFile -> file 수정
+    formData.append('sttText', ''); // 필수 필드 추가
+    formData.append('duration', String(recordingTime.value)); // 실제 녹음 시간 전송
     
+    // API 호출: examApi.submitAnswer(examId, questionOrder, formData)
     await examApi.submitAnswer(
       examId.value,
-      currentQuestion.value.answerId,
+      currentQuestion.value.order, // questionOrder 파라미터
       formData
     );
+    
+    console.log('[ExamQuestionView] 답변 제출 성공');
+    
+    isSubmitted.value = true; // 제출 완료 상태 설정 (재녹음 방지)
     
     // 진행 상황 저장
     saveProgress();
     
   } catch (error) {
-    console.error('답변 제출 실패:', error);
+    console.error('[ExamQuestionView] 답변 제출 실패:', error);
+    if (error.response) {
+      console.error('[ExamQuestionView] 에러 응답:', error.response.data);
+    }
     alert('답변 제출에 실패했습니다.');
+  } finally {
+    isSaving.value = false; // 저장 종료
   }
 };
 
@@ -219,48 +354,12 @@ const goNext = () => {
     showRelevelModal.value = true;
   } else if (currentQuestionIndex.value < questions.value.length - 1) {
     currentQuestionIndex.value++;
-    resetRecordingState();
+    resetQuestionState(); // 문제 상태 초기화 (제약 조건 포함)
+    saveProgress(); // 진행상황 저장
   } else {
     // 시험 종료
     completeExam();
   }
-};
-
-// 백엔드 연결 상태 확인
-const checkBackendConnection = async () => {
-  try {
-    // Health Check API 호출 (또는 간단한 API)
-    await examApi.getExamStatus(examId.value);
-    isBackendConnected.value = true;
-    console.log('✅ [백엔드 연결됨] 백엔드 서버와 연결되었습니다.');
-  } catch (error) {
-    isBackendConnected.value = false;
-    console.warn('⚠️ [백엔드 미연결] 백엔드 서버와 연결되지 않았습니다. 임시 데이터를 사용합니다.');
-  }
-};
-
-// 임시 더미 문제 생성 (백엔드 미연결 시)
-const generateMockQuestions = (difficulty) => {
-  const mockQuestions = [];
-  const difficultyLabel = difficulty === -1 ? '쉬움' : difficulty === 0 ? '동일' : '어려움';
-  
-  for (let i = 0; i < 8; i++) {
-    mockQuestions.push({
-      id: 100 + i,
-      answerId: 1000 + i, // Added answerId for submission
-      order: 8 + i,
-      questionText: `[임시 데이터] 난이도 ${difficultyLabel} - 문제 ${8 + i}번`,
-      description: `This is a temporary test question. Please respond naturally and practice your speaking skills.`,
-      audioUrl: null,
-      type: 'SPEAKING',
-      preparationTime: 15,
-      speakingTime: 45,
-      difficult: difficulty,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    });
-  }
-  return mockQuestions;
 };
 
 // 난이도 재조정
@@ -271,44 +370,59 @@ const setRelevel = async (choice) => {
     hard: 1
   };
   
-  adjustedDifficulty.value = difficultyMap[choice];
+  // 저장된 초기 난이도 사용 (state variable)
+  const baseLevel = initialDifficulty.value;
+
+  // 절대 레벨 계산 (기본 레벨 + 변화량)
+  const targetLevel = baseLevel + difficultyMap[choice];
+  
+  // 유효성 검사 (1~6 범위 - 비즈니스 로직상 +/- 1만 허용되므로 이미 map으로 제한됨)
+  // 단, 결과가 1 미만이나 6 초과가 되지 않도록 방어
+  const finalLevel = Math.max(1, Math.min(6, targetLevel));
+
+  adjustedDifficulty.value = finalLevel;
   showRelevelModal.value = false;
   
-  if (isBackendConnected.value) {
-    // ✅ 백엔드 연결됨 → 실제 데이터 로드
-    try {
-      console.log('[setRelevel] 백엔드에서 문제 로드 중...');
-      const response = await examApi.getRemainingQuestions(examId.value, {
-        adjustedDifficulty: adjustedDifficulty.value
-      });
-      
-      // 나머지 문제 추가
-      questions.value = [...questions.value, ...response.data.questions];
-      currentQuestionIndex.value++;
-      resetRecordingState();
-      
-    } catch (error) {
-      console.warn('[setRelevel] 백엔드 문제 로드 실패, 임시 데이터로 전환:', error.message);
-      // 백엔드 호출 실패 시 임시 데이터 사용으로 폴백
-      console.log('[setRelevel] 백엔드 호환 실패 - 임시 문제 사용');
-      const mockQuestions = generateMockQuestions(adjustedDifficulty.value);
-      questions.value = [...questions.value, ...mockQuestions];
-      
-      console.log('[setRelevel] 임시 문제 추가 완료:', mockQuestions.length, '개');
-      
-      currentQuestionIndex.value++;
-      resetRecordingState();
-    }
-  } else {
-    // ❌ 백엔드 미연결 → 임시 더미 문제 사용
-    console.log('[setRelevel] 백엔드 미연결 - 임시 문제 사용');
-    const mockQuestions = generateMockQuestions(adjustedDifficulty.value);
-    questions.value = [...questions.value, ...mockQuestions];
+  try {
+    console.log('[ExamQuestionView] 난이도 재조정 요청:', {
+      examId: examId.value,
+      initialDifficulty: baseLevel,
+      choice,
+      adjustedDifficulty: adjustedDifficulty.value
+    });
     
-    console.log('[setRelevel] 임시 문제 추가 완료:', mockQuestions.length, '개');
+    // API 호출: examApi.updateAdjustedDifficulty(examId, { adjustedDifficulty })
+    const response = await examApi.updateAdjustedDifficulty(
+      examId.value,
+      { adjustedDifficulty: adjustedDifficulty.value },
+    );
+    
+    console.log('[ExamQuestionView] 난이도 재조정 응답:', response.data);
+    
+    // 나머지 문제 추가
+    // 현재 문제까지 유지하고, 이후 문제(난이도 조절 전 생성된 더미/이전 문제들)는 제거
+    const currentQuestions = questions.value.slice(0, currentQuestionIndex.value + 1);
+    const newQuestions = response.data.questions || [];
+    
+    // 전체 문제 수가 15개를 넘지 않도록 조정 (기존 문제 + 새 문제 합쳐서 15개까지만)
+    const combinedQuestions = [...currentQuestions, ...newQuestions];
+    questions.value = combinedQuestions.slice(0, 15);
+    
+    console.log('[ExamQuestionView] 문제 추가 완료:', {
+      totalQuestions: questions.value.length,
+      newQuestions: newQuestions.length
+    });
     
     currentQuestionIndex.value++;
-    resetRecordingState();
+    resetQuestionState();
+    saveProgress();
+    
+  } catch (error) {
+    console.error('[ExamQuestionView] 난이도 재조정 실패:', error);
+    if (error.response) {
+      console.error('[ExamQuestionView] 에러 응답:', error.response.data);
+    }
+    alert('난이도 재조정에 실패했습니다.');
   }
 };
 
@@ -328,6 +442,8 @@ const saveProgress = () => {
     examId: examId.value,
     currentIndex: currentQuestionIndex.value,
     questions: questions.value,
+    totalQuestions: totalQuestions.value,
+    initialDifficulty: initialDifficulty.value,
     timestamp: new Date().toISOString()
   };
   
@@ -335,328 +451,264 @@ const saveProgress = () => {
   localStorage.setItem('incompleteExam', JSON.stringify({
     examId: examId.value,
     currentQuestion: currentQuestionIndex.value + 1,
-    remainingTime: formattedTime.value
+    remainingTime: formattedTotalTime.value
   }));
+  
+  console.log('[ExamQuestionView] 진행상황 저장:', data);
 };
 
-// 시험 완료
+// 시험 종료
 const completeExam = async () => {
+  if (!confirm('시험을 종료하시겠습니까?')) {
+    return;
+  }
+  
   try {
-    if (!examId.value) {
-      console.error('examId가 없습니다.');
-      return;
-    }
+    console.log('[ExamQuestionView] 시험 종료 요청:', examId.value);
     
-
-    // Mock Mode Check
-    if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
-      console.log('[completeExam] Mock Mode: Skipping API call');
-      // 로컬 스토리지 정리 (선택사항, 실제 로직과 동일하게)
-      localStorage.removeItem(`exam_${examId.value}`);
-      localStorage.removeItem('incompleteExam');
-      
-      router.push({
-        path: '/exam/feedback', // 결과 페이지 경로 확인 필요 (User said /feedback folder, code says /exam/result or similar? Let's check router push path in original code which was /exam/result or /exam/feedback? Original code line 349 said /exam/result. Wait, the user said "feedback page is in /feedback folder". I need to check router config again or just follow the existing router push logic but make sure it goes to the right place. The existing code went to /exam/result. I will stick to existing redirect but check if that route exists/maps to the feedback view.)
-        query: { examId: examId.value }
-      });
-      return;
-    }
-
+    // API 호출: examApi.completeExam(examId)
     await examApi.completeExam(examId.value);
     
+    console.log('[ExamQuestionView] 시험 종료 성공');
+    
+    // 로컬스토리지 정리
     localStorage.removeItem(`exam_${examId.value}`);
     localStorage.removeItem('incompleteExam');
     
-    router.push({
-      path: '/exam/feedback', // Changed to /exam/feedback based on user implication, but wait. The original code (line 349) was `/exam/result`. Let's verify the router paths first.
-      query: { examId: examId.value }
-    });
+    alert('시험이 종료되었습니다. AI 분석이 시작됩니다.');
+    router.push('/exam');
+    
   } catch (error) {
-    console.error('시험 완료 처리 실패:', error);
-    alert('시험 완료 처리에 실패했습니다.');
+    console.error('[ExamQuestionView] 시험 종료 실패:', error);
+    if (error.response) {
+      console.error('[ExamQuestionView] 에러 응답:', error.response.data);
+    }
+    alert('시험 종료에 실패했습니다.');
   }
 };
 
 // 시험 나가기
 const exitExam = () => {
-  if (confirm('시험을 나가시겠습니까? 진행 상황은 저장됩니다.')) {
+  if (confirm('시험을 종료하고 나가시겠습니까? 진행 상황이 저장됩니다.')) {
     saveProgress();
     router.push('/exam');
   }
 };
 
 onMounted(() => {
-  initializeExam();
+  initializeExam().then(() => {
+    // 첫 문제에 대한 타이머 시작
+    resetQuestionState();
+    
+    // 전체 시험 타이머 시작
+    totalTimer = setInterval(() => {
+      totalExamTime.value++;
+    }, 1000);
+  });
 });
 
 onUnmounted(() => {
+  if (mediaRecorder && isRecording.value) {
+    stopRecording();
+  }
   if (currentAudio.value) {
     currentAudio.value.pause();
   }
-  stopRecording();
+  clearInterval(recordingTimer);
+  clearInterval(volumeMonitor);
+  clearInterval(totalTimer); // 전체 타이머 정리
+  if (replayTimer) clearTimeout(replayTimer);
 });
 </script>
 
 <template>
-  <div class="page-container">
-    <!-- 로딩 화면 -->
-    <div v-if="isLoading" class="loading-screen">
-      <div class="loading-content">
-        <div class="spinner"></div>
-        <p>시험을 불러오는 중...</p>
-      </div>
+  <div class="exam-container">
+    <!-- 로딩 상태 -->
+    <div v-if="isLoading" class="loading-overlay">
+      <div class="loading-spinner"></div>
+      <p>시험 데이터를 불러오는 중...</p>
     </div>
 
-    <!-- 에러 화면 -->
-    <div v-else-if="errorMessage" class="error-screen">
-      <div class="error-content">
-        <span class="material-icons error-icon">error_outline</span>
-        <h2>{{ errorMessage }}</h2>
-        <button @click="router.push('/exam')" class="back-to-exam-btn">
-          모의고사 홈으로 돌아가기
-        </button>
-      </div>
+    <!-- 에러 상태 -->
+    <div v-else-if="errorMessage" class="error-container">
+      <p>{{ errorMessage }}</p>
+      <button @click="router.push('/exam')" class="back-to-exam-btn">돌아가기</button>
     </div>
 
     <!-- 메인 화면 -->
-    <template v-else>
-    <!-- 헤더 -->
-    <div class="exam-header">
-      <div class="header-left">
+    <div v-else class="exam-content">
+      <!-- 헤더 -->
+      <header class="exam-header">
         <button @click="exitExam" class="exit-btn">
-          <span class="material-icons">arrow_back</span>
+          <span class="material-icons">close</span>
           나가기
         </button>
-      </div>
-      <div class="header-center">
-        <span class="question-number">Question {{ currentQuestionIndex + 1 }} / {{ totalQuestions }}</span>
-      </div>
-      <div class="header-right">
+        <div class="question-number">
+          Question {{ currentQuestionIndex + 1 }} / {{ totalQuestions }}
+        </div>
         <div class="time-display">
           <span class="material-icons">timer</span>
-          {{ formattedTime }}
+          {{ formattedTotalTime }}
         </div>
-      </div>
-    </div>
+      </header>
 
-    <!-- 메인 콘텐츠 -->
-    <main class="page-content">
-      <div class="content-wrapper">
+      <!-- 메인 콘텐츠 -->
+      <main class="content-wrapper">
         <!-- 질문 섹션 -->
-        <div class="question-section">
+        <section class="question-section">
           <div class="question-card">
             <div class="question-header">
-              <h2>{{ currentQuestion?.questionText || 'Loading...' }}</h2>
+              <h2>{{ currentQuestion?.questionText || '문제를 불러오는 중...' }}</h2>
             </div>
-            
-            <div class="audio-controls">
-              <button @click="togglePlay" class="play-button" :class="{ playing: isPlaying }">
-                <span class="material-icons">{{ isPlaying ? 'pause' : 'play_arrow' }}</span>
-                {{ isPlaying ? 'Stop' : 'Listen' }}
+            <div class="audio-controls" v-if="currentQuestion?.audioUrl">
+              <button @click="togglePlay" class="play-button" 
+                      :class="{ playing: isPlaying }"
+                      :disabled="!isPlaying && (playCount >= 2 || (playCount === 1 && !canReplay))">
+                <span class="material-icons">{{ isPlaying ? 'stop' : 'play_arrow' }}</span>
+                {{ isPlaying ? 'Stop' : (playCount === 0 ? 'Play Audio' : (playCount === 1 && canReplay ? '다시 듣기' : 'Played')) }}
               </button>
             </div>
           </div>
-        </div>
+        </section>
 
         <!-- 녹음 섹션 -->
-        <div class="recording-section">
+        <section class="recording-section">
           <div class="recording-card">
             <div class="recording-header">
-              <div class="status-indicator" :class="{ recording: isRecording }">
+              <!-- 저장 중 표시 -->
+              <div v-if="isSaving" class="status-indicator saving">
+                <span class="material-icons spin">sync</span>
+                SAVING...
+              </div>
+              <!-- 녹음 중/대기 표시 -->
+              <div v-else class="status-indicator" :class="{ recording: isRecording, submitted: isSubmitted }">
                 <span class="status-dot"></span>
-                {{ isRecording ? 'RECORDING' : 'READY' }}
+                {{ isSubmitted ? 'SUBMITTED' : (isRecording ? 'RECORDING' : 'READY') }}
+              </div>
+              <div class="recording-timer" v-if="!isSubmitted">
+                <span class="material-icons" style="font-size: 20px; color: var(--text-secondary);">schedule</span>
+                {{ formattedRecordingTime }}
               </div>
             </div>
 
             <!-- 볼륨 미터 -->
             <div class="volume-meter">
-              <div 
-                v-for="n in 20" 
-                :key="n" 
-                class="volume-bar"
-                :class="{ 
-                  active: volumeLevel >= n,
-                  low: n <= 7,
-                  mid: n > 7 && n <= 14,
-                  high: n > 14
-                }"
-              ></div>
+              <div v-for="i in 10" :key="i" 
+                   class="volume-bar" 
+                   :class="{
+                     active: i <= volumeLevel,
+                     low: i <= volumeLevel && i <= 4,
+                     mid: i <= volumeLevel && i > 4 && i <= 7,
+                     high: i <= volumeLevel && i > 7
+                   }">
+              </div>
             </div>
 
             <!-- 녹음 컨트롤 -->
             <div class="recording-controls">
-              <button 
-                v-if="!isRecording" 
-                @click="startRecording" 
-                class="record-btn"
-              >
-                <span class="material-icons">mic</span>
-                녹음 시작
+              <button v-if="!isRecording" @click="startRecording" class="record-btn" :disabled="isSubmitted">
+                <span class="material-icons">{{ isSubmitted ? 'check' : 'mic' }}</span>
+                {{ isSubmitted ? 'Answer Submitted' : 'Start Recording' }}
               </button>
-              <button 
-                v-else 
-                @click="stopRecording" 
-                class="stop-btn"
-              >
+              <button v-else @click="stopRecording" class="stop-btn">
                 <span class="material-icons">stop</span>
-                녹음 중지
+                Stop & Submit
               </button>
             </div>
 
             <!-- 다음 버튼 -->
             <div class="navigation-controls">
               <button @click="goNext" class="next-btn">
-                다음 문제
+                Next Question
                 <span class="material-icons">arrow_forward</span>
               </button>
             </div>
           </div>
-        </div>
-      </div>
-    </main>
+        </section>
+      </main>
+    </div>
 
     <!-- 난이도 재조정 모달 -->
     <div v-if="showRelevelModal" class="modal-overlay">
       <div class="modal-card">
         <div class="modal-header">
-          <h3>난이도 재조정</h3>
-          <p class="subtitle">전반부 7문제를 완료하셨습니다.<br>남은 문제의 난이도를 선택해주세요.</p>
+          <h3>난이도 조정</h3>
+          <p class="subtitle">다음 문제들의 난이도를 선택해주세요</p>
         </div>
-
         <div class="difficulty-options">
-          <button @click="setRelevel('easy')" class="difficulty-btn easy">
-            <span class="label">쉬운 질문</span>
+          <button @click="setRelevel('easy')" class="difficulty-btn">
+            <span class="material-icons">trending_down</span>
+            <span class="label">쉽게</span>
           </button>
-          <button @click="setRelevel('same')" class="difficulty-btn same active">
-            <span class="label">비슷한 질문</span>
+          <button @click="setRelevel('same')" class="difficulty-btn">
+            <span class="material-icons">trending_flat</span>
+            <span class="label">동일</span>
           </button>
-          <button @click="setRelevel('hard')" class="difficulty-btn hard">
-            <span class="label">어려운 질문</span>
+          <button @click="setRelevel('hard')" class="difficulty-btn">
+            <span class="material-icons">trending_up</span>
+            <span class="label">어렵게</span>
           </button>
         </div>
       </div>
     </div>
-    </template>
   </div>
 </template>
 
 <style scoped>
-.page-container {
+.exam-container {
   min-height: 100vh;
   background: var(--bg-primary);
 }
 
-.page-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 32px 64px;
-}
-
-@media (max-width: 1024px) {
-  .page-content {
-    padding: 24px 32px;
-  }
-}
-
-@media (max-width: 768px) {
-  .page-content {
-    padding: 16px 24px;
-  }
-}
-
-/* 로딩 화면 */
-.loading-screen {
-  min-height: 100vh;
+/* 로딩 & 에러 */
+.loading-overlay, .error-container {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--bg-primary);
+  min-height: 100vh;
+  gap: 24px;
 }
 
-.loading-content {
-  text-align: center;
-}
-
-.spinner {
-  width: 54px;
-  height: 54px;
+.loading-spinner {
+  width: 50px;
+  height: 50px;
   border: 4px solid var(--bg-tertiary);
   border-top-color: var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin: 0 auto 24px;
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-.loading-content p {
-  font-size: 1.125rem;
-  color: var(--text-secondary);
-  font-weight: 600;
-}
-
-/* 에러 화면 */
-.error-screen {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-primary);
-}
-
-.error-content {
-  text-align: center;
-  padding: 48px;
-  background: var(--bg-secondary);
-  border-radius: 24px;
-  border: var(--border-primary);
-  box-shadow: var(--shadow-lg);
-}
-
-.error-icon {
-  font-size: 64px !important;
-  color: #ef4444;
-  margin-bottom: 24px;
-}
-
-.error-content h2 {
-  font-size: 1.5rem;
-  color: var(--text-primary);
-  margin-bottom: 32px;
-}
-
 .back-to-exam-btn {
-  padding: 16px 32px;
+  padding: 12px 32px;
   background: var(--primary-color);
   color: #212529;
   border: none;
   border-radius: 12px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: var(--shadow-md);
 }
 
-.back-to-exam-btn:hover {
-  background: var(--primary-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-lg);
+/* 메인 콘텐츠 */
+.exam-content {
+  padding: 24px;
 }
 
 /* 헤더 */
 .exam-header {
+  max-width: 1280px;
+  margin: 0 auto 32px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 24px 40px;
+  justify-content: space-between;
+  padding: 20px 32px;
   background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-primary);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: var(--shadow-sm);
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
 }
 
 .exit-btn {
@@ -665,9 +717,9 @@ onUnmounted(() => {
   gap: 8px;
   padding: 10px 20px;
   background: var(--bg-tertiary);
-  border: none;
+  border: 1px solid var(--border-primary);
   border-radius: 10px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
   color: var(--text-secondary);
@@ -896,6 +948,39 @@ onUnmounted(() => {
   box-shadow: var(--shadow-lg);
 }
 
+.record-btn:disabled,
+.play-button:disabled {
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.recording-timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 20px;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums; /* 숫자 너비 고정 */
+  margin-left: auto;
+}
+
+.status-indicator.submitted {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.status-indicator.submitted .status-dot {
+  background: #2563eb;
+}
+
 /* 네비게이션 */
 .navigation-controls {
   display: flex;
@@ -931,21 +1016,21 @@ onUnmounted(() => {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.85); /* 배경을 더 어둡게 처리 */
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(8px);
+  /* backdrop-filter 제거: 일부 환경에서 흐릿하게 보일 수 있음 */
 }
 
 .modal-card {
-  background: var(--bg-secondary);
+  background: white; /* 명확한 가독성을 위해 흰색 배경 지정 (다크모드 변수 대신) */
   border-radius: 24px;
   max-width: 600px;
   width: 90%;
   padding: 56px 48px;
-  border: var(--border-primary);
+  border: 1px solid #e2e8f0;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   text-align: center;
 }
@@ -980,19 +1065,24 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
   padding: 24px;
-  background: var(--bg-tertiary);
-  border: 1px solid transparent;
+  background: #ffffff; /* 흰색 배경으로 버튼감 살리기 */
+  border: 2px solid #e2e8f0; /* 테두리 추가 */
   border-radius: 20px;
   cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* 그림자 강화 */
 }
 
 .difficulty-btn:hover {
   background: var(--bg-secondary);
   border-color: var(--primary-color);
   transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.difficulty-btn:active {
+  transform: translateY(0);
+  box-shadow: none;
 }
 
 .difficulty-btn.active {
@@ -1004,5 +1094,16 @@ onUnmounted(() => {
 .difficulty-btn .label {
   font-weight: 700;
   font-size: 0.95rem;
+}
+
+/* 저장 중 스타일 */
+.status-indicator.saving {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+  font-size: 1.1rem;
 }
 </style>

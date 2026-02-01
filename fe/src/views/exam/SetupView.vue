@@ -28,12 +28,56 @@ const togglePlay = () => {
   isPlaying.value = !isPlaying.value
 }
 
-const startRec = () => {
-  isRecording.value = true
-  setTimeout(() => {
+const recordedAudioUrl = ref(null)
+const mediaRecorder = ref(null)
+const audioChunks = ref([])
+
+const startRec = async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    mediaRecorder.value = new MediaRecorder(stream)
+    audioChunks.value = []
+
+    mediaRecorder.value.ondataavailable = (event) => {
+      audioChunks.value.push(event.data)
+    }
+
+    mediaRecorder.value.onstop = () => {
+      const audioBlob = new Blob(audioChunks.value, { type: 'audio/webm' })
+      recordedAudioUrl.value = URL.createObjectURL(audioBlob)
+      hasRecording.value = true
+      isRecording.value = false
+    }
+
+    mediaRecorder.value.start()
+    isRecording.value = true
+
+    // 20초 후 자동 정지
+    setTimeout(() => {
+      if (mediaRecorder.value && mediaRecorder.value.state === 'recording') {
+        stopRec()
+      }
+    }, 20000)
+
+  } catch (error) {
+    console.error('마이크 접근 실패:', error)
+    alert('마이크를 사용할 수 없습니다.')
+  }
+}
+
+const stopRec = () => {
+  if (mediaRecorder.value && mediaRecorder.value.state === 'recording') {
+    mediaRecorder.value.stop()
+    mediaRecorder.value.stream.getTracks().forEach(track => track.stop())
     isRecording.value = false
-    hasRecording.value = true
-  }, 3000)
+  }
+}
+
+const playRecording = () => {
+  if (recordedAudioUrl.value) {
+    const audio = new Audio(recordedAudioUrl.value)
+    audio.play()
+  }
 }
 
 const handleNext = async () => {
@@ -44,10 +88,14 @@ const handleNext = async () => {
   }
 }
 
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 const startExam = async () => {
   try {
     isLoading.value = true
     const surveyId = parseInt(route.query.surveyId)
+    
+    console.log('[SetupView] 시험 시작 요청:', { surveyId })
     
     if (!surveyId) {
       alert('설문 정보가 없습니다.')
@@ -55,55 +103,101 @@ const startExam = async () => {
       return
     }
     
-    let response;
-    // Mock Mode
+    // 1. 시험 생성 요청 (비동기 트리거)
+    let initialResponse;
     if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
-        const mockQuestions = Array.from({ length: 7 }, (_, i) => ({
-            id: 100 + i,
-            answerId: 500 + i,
+        // Mock Mode (즉시 리턴)
+        console.log('[SetupView] Mock Mode: 임시 데이터 사용')
+        // ... (Mock Logic unchanged for brevity, handled by simple return below if needed, but let's keep logic flow)
+         const mockQuestions = Array.from({ length: 7 }, (_, i) => ({
+            questionId: 100 + i,
             order: i + 1,
             questionText: `[Mock] Question ${i + 1}`,
             audioUrl: null,
-            type: 'SPEAKING',
-            preparationTime: 10,
-            speakingTime: 30
         }));
-
-        response = {
+        initialResponse = {
             data: {
-                examId: 999,
+                id: 999,
                 questions: mockQuestions,
                 totalQuestions: 15
             }
         };
     } else {
-        response = await examApi.startExam({
-            examSetId: 1,
+        console.log('[SetupView] API 호출 시작')
+        initialResponse = await examApi.startExam({
             surveyId: surveyId
         })
+        console.log('[SetupView] API 응답:', initialResponse)
+    }
+
+    // 2. ID 확인 (API returns 'id')
+    const createdExamId = initialResponse.data?.id;
+    const initialDifficulty = initialResponse.data?.initialDifficulty || 1; // 기본값 1
+
+    if (!createdExamId) {
+        throw new Error('시험 ID를 받지 못했습니다.');
+    }
+
+    // 3. Polling: 질문 생성 대기 (최대 10초)
+    let finalQuestions = [];
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
+        finalQuestions = initialResponse.data.questions;
+    } else {
+        console.log(`[SetupView] 질문 생성 대기 중... (ID: ${createdExamId})`);
+        
+        while (attempts < maxAttempts) {
+            // 상세 정보 조회 (질문 포함 여부 확인)
+            const detailResponse = await examApi.getExamInfo(createdExamId);
+            const detailData = detailResponse.data;
+
+            if (detailData.questions && detailData.questions.length > 0) {
+                console.log(`[SetupView] 질문 생성 완료! (${detailData.questions.length}개)`);
+                finalQuestions = detailData.questions;
+                break;
+            }
+
+            attempts++;
+            console.log(`[SetupView] 질문 생성 대기... (${attempts}/${maxAttempts})`);
+            await delay(1000); // 1초 대기
+        }
     }
     
-    const { examId, questions, totalQuestions } = response.data
+    if (!finalQuestions || finalQuestions.length === 0) {
+      throw new Error('질문 생성 시간 초과. 잠시 후 다시 시도해주세요.');
+    }
     
     const examData = {
-      examId,
-      questions,
-      totalQuestions,
+      examId: createdExamId,
+      questions: finalQuestions,
+      totalQuestions: 15, // 전체 문제 수
       currentIndex: 0,
       surveyId,
+      initialDifficulty, // 난이도 저장
       startedAt: new Date().toISOString()
     }
     
-    localStorage.setItem(`exam_${examId}`, JSON.stringify(examData))
+    // localStorage에 시험 데이터 저장
+    localStorage.setItem(`exam_${createdExamId}`, JSON.stringify(examData))
+    console.log('[SetupView] localStorage 저장 완료:', `exam_${createdExamId}`)
     
+    // 시험 화면으로 이동
     router.push({
       path: '/exam/question',
-      query: { examId }
+      query: { examId: createdExamId }
     })
     
   } catch (error) {
-    console.error('시험 시작 실패:', error)
-    alert('시험을 시작하는데 실패했습니다.')
+    console.error('[SetupView] 시험 시작 실패:', error)
+    let errorMessage = '시험을 시작하는데 실패했습니다.';
+    if (error.response) {
+      errorMessage += `\n(${error.response.status}: ${JSON.stringify(error.response.data)})`;
+    } else {
+      errorMessage += `\n${error.message}`;
+    }
+    alert(errorMessage);
   } finally {
     isLoading.value = false
   }
@@ -162,10 +256,13 @@ onUnmounted(() => audio.pause())
             <li>2. 마이크 녹음 버튼을 눌러 목소리를 점검하세요.</li>
           </ul>
           <div class="btns">
-            <button @click="startRec" class="rec-btn" :disabled="isRecording">
-              {{ isRecording ? 'Recording...' : 'Start Recording' }}
+            <button v-if="!isRecording" @click="startRec" class="rec-btn">
+              Start Recording
             </button>
-            <button v-if="hasRecording" class="check-btn">Play Recorded Voice</button>
+            <button v-else @click="stopRec" class="rec-btn stop-rec-btn">
+              Stop Recording
+            </button>
+            <button v-if="hasRecording" @click="playRecording" class="check-btn">Play Recorded Voice</button>
           </div>
         </div>
       </div>
@@ -441,5 +538,14 @@ onUnmounted(() => audio.pause())
 .nav-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+.stop-rec-btn {
+  background: #ef4444;
+  color: white;
+}
+
+.stop-rec-btn:hover {
+  background: #dc2626;
 }
 </style>

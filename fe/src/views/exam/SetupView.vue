@@ -138,7 +138,7 @@ const startExam = async () => {
         throw new Error('시험 ID를 받지 못했습니다.');
     }
 
-    // 3. Polling: 질문 생성 대기 (최대 10초)
+    // 3. Polling: 질문 생성 대기 (최대 20초: 2초 x 10회)
     let finalQuestions = [];
     let attempts = 0;
     const maxAttempts = 10;
@@ -149,19 +149,24 @@ const startExam = async () => {
         console.log(`[SetupView] 질문 생성 대기 중... (ID: ${createdExamId})`);
         
         while (attempts < maxAttempts) {
-            // 상세 정보 조회 (질문 포함 여부 확인)
-            const detailResponse = await examApi.getExamInfo(createdExamId);
-            const detailData = detailResponse.data;
+            try {
+                // 상세 정보 조회 (질문 포함 여부 확인)
+                const detailResponse = await examApi.getExamInfo(createdExamId);
+                const detailData = detailResponse.data;
 
-            if (detailData.questions && detailData.questions.length > 0) {
-                console.log(`[SetupView] 질문 생성 완료! (${detailData.questions.length}개)`);
-                finalQuestions = detailData.questions;
-                break;
+                if (detailData.questions && detailData.questions.length > 0) {
+                    console.log(`[SetupView] 질문 생성 완료! (${detailData.questions.length}개)`);
+                    finalQuestions = detailData.questions;
+                    break;
+                }
+            } catch (err) {
+                console.warn(`[SetupView] Polling 중 오류 발생 (시도 ${attempts + 1}):`, err);
+                // 일시적 오류일 수 있으므로 계속 진행
             }
 
             attempts++;
             console.log(`[SetupView] 질문 생성 대기... (${attempts}/${maxAttempts})`);
-            await delay(1000); // 1초 대기
+            await delay(2000); // 2초 대기
         }
     }
     

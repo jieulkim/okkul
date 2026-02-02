@@ -1,14 +1,16 @@
 <script setup>
 import { ref, computed, onMounted, inject } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { historyApi } from '@/api'; // Import historyApi
 
 const router = useRouter();
 const route = useRoute();
-const isDarkMode = inject('isDarkMode', ref(false));
+// Removed isDarkMode injection
 
 // 피드백 데이터 (API에서 받은 데이터 - localStorage 또는 props로 전달받음)
 const feedbackData = ref(null);
 const selectedCorrectionIndex = ref(null);
+const isLoading = ref(false); // Add isLoading state
 
 // 초기화 (즉시 실행하여 로딩화면 방지)
 loadFeedback();
@@ -18,19 +20,63 @@ onMounted(() => {
   // ...
 });
 
-const loadFeedback = () => {
-  // localStorage에서 피드백 데이터 로드
+const loadFeedback = async () => {
   const practiceId = route.query.practiceId;
-  const questionId = route.query.questionId;
+  let questionId = parseInt(route.query.questionId);
   
-  if (practiceId && questionId) {
-    const savedData = localStorage.getItem(`practice_feedback_${practiceId}_${questionId}`);
-    if (savedData) {
-      feedbackData.value = JSON.parse(savedData);
-    } else {
-      alert('피드백 데이터를 찾을 수 없습니다.');
-      router.push('/practice');
+  if (!practiceId) {
+    alert('잘못된 접근입니다.');
+    router.push('/practice');
+    return;
+  }
+
+  try {
+    isLoading.value = true;
+    // 1. 연습 히스토리 상세 조회
+    const { data } = await historyApi.getPracticeHistoryDetail(practiceId);
+    
+    // questionId가 없으면 첫 번째 질문 사용
+    if (!questionId && data.questions && data.questions.length > 0) {
+        questionId = data.questions[0].questionId;
+        // URL 업데이트
+        router.replace({ query: { ...route.query, questionId } });
     }
+
+    // 2. 해당 질문 찾기
+    const targetQuestion = data.questions?.find(q => q.questionId === questionId);
+    if (!targetQuestion) {
+      throw new Error('해당 질문을 찾을 수 없습니다.');
+    }
+
+    // 3. 마지막 시도 찾기 (또는 특정 시도)
+    const lastAttempt = targetQuestion.attempts?.[targetQuestion.attempts.length - 1];
+    if (!lastAttempt || !lastAttempt.feedback) {
+      throw new Error('피드백 데이터가 존재하지 않습니다.');
+    }
+
+    // 4. 데이터 매핑
+    feedbackData.value = {
+      userEnglishScript: lastAttempt.userAnswer?.englishScript || '',
+      feedbackResult: {
+        overallComment: [
+          lastAttempt.feedback.fluencyFeedback,
+          lastAttempt.feedback.logicFeedback,
+          lastAttempt.feedback.relevanceFeedback
+        ].filter(Boolean).join('\n\n'),
+        scriptCorrections: lastAttempt.feedback.sentenceDetails?.map(detail => ({
+            originalSegment: detail.targetSegment,
+            correctedSegment: detail.correctedSegment,
+            comment: detail.comment
+        })) || []
+      }
+    };
+
+  } catch (error) {
+    console.error('피드백 로드 실패:', error);
+    alert('피드백 데이터를 불러올 수 없습니다.');
+    // router.push('/practice'); // 디버깅을 위해 일단 주석 처리
+  } finally {
+      isLoading.value = false;
   }
 };
 
@@ -78,7 +124,7 @@ const selectCorrection = (index) => {
 </script>
 
 <template>
-  <div class="practice-feedback-page" :class="{ 'dark-mode': isDarkMode }">
+  <div class="practice-feedback-page">
     <div v-if="feedbackData" class="feedback-container">
         <!-- 헤더 -->
         <div class="feedback-header">
@@ -208,11 +254,6 @@ const selectCorrection = (index) => {
   padding: 48px 24px;
 }
 
-.dark-mode {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-}
-
 @keyframes slideUpFade {
   from {
     opacity: 0;
@@ -261,12 +302,6 @@ const selectCorrection = (index) => {
   transform: translateY(-2px);
 }
 
-.dark-mode .back-btn {
-  background: var(--bg-tertiary);
-  border-color: #334155;
-  color: #f1f5f9;
-}
-
 .feedback-title {
   font-size: 2.5rem;
   font-weight: 800;
@@ -289,11 +324,6 @@ const selectCorrection = (index) => {
   margin-bottom: 24px;
 }
 
-.dark-mode .section-card {
-  background: var(--bg-secondary);
-  border-color: #FFFFFF;
-}
-
 .section-title {
   font-size: 1.5rem;
   font-weight: 800;
@@ -302,10 +332,6 @@ const selectCorrection = (index) => {
   align-items: center;
   gap: 12px;
   color: var(--text-primary);
-}
-
-.dark-mode .section-title {
-  color: #f1f5f9;
 }
 
 .section-title .material-icons {
@@ -327,10 +353,6 @@ const selectCorrection = (index) => {
   color: var(--text-primary);
 }
 
-.dark-mode .subsection-title {
-  color: #f1f5f9;
-}
-
 /* 스크립트 박스 */
 .script-box {
   padding: 32px;
@@ -344,18 +366,9 @@ const selectCorrection = (index) => {
   border: 1px solid var(--border-primary);
 }
 
-.dark-mode .enhanced-script {
-  background: var(--bg-primary);
-}
-
 .original-script {
   background: var(--bg-tertiary);
   border: 1px solid var(--border-primary);
-}
-
-.dark-mode .original-script {
-  background: var(--bg-tertiary);
-  border-color: #FFFFFF;
 }
 
 .script-word {
@@ -373,12 +386,6 @@ const selectCorrection = (index) => {
   cursor: pointer;
   display: inline-block;
   margin: 2px;
-}
-
-.dark-mode .highlighted-word {
-  background: var(--primary-color);
-  color: #000000;
-  border-color: #FFFFFF;
 }
 
 /* 교정 목록 */
@@ -410,11 +417,6 @@ const selectCorrection = (index) => {
 .correction-item.selected {
   border-color: var(--primary-color);
   background: var(--primary-light);
-}
-
-.dark-mode .correction-item {
-  background: var(--bg-primary);
-  border-color: #334155;
 }
 
 .correction-number {
@@ -494,11 +496,6 @@ const selectCorrection = (index) => {
   font-size: 0.95rem;
 }
 
-.dark-mode .correction-comment {
-  background: var(--bg-tertiary);
-  color: #cbd5e1;
-}
-
 .correction-comment .material-icons {
   color: var(--primary-color);
   font-size: 20px;
@@ -526,10 +523,6 @@ const selectCorrection = (index) => {
   border-top: 4px solid var(--primary-color);
 }
 
-.dark-mode .overall-card {
-  background: linear-gradient(135deg, #422006 0%, #78350f 100%);
-}
-
 .overall-content {
   padding: 20px;
   background: var(--bg-secondary);
@@ -537,18 +530,10 @@ const selectCorrection = (index) => {
   border: var(--border-thin);
 }
 
-.dark-mode .overall-content {
-  background: var(--bg-primary);
-}
-
 .overall-comment {
   font-size: 1.125rem;
   line-height: 1.8;
   color: var(--text-primary);
-}
-
-.dark-mode .overall-comment {
-  color: #f1f5f9;
 }
 
 /* 액션 버튼 */
@@ -594,12 +579,6 @@ const selectCorrection = (index) => {
   background: var(--bg-tertiary);
   transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
-}
-
-.dark-mode .home-btn {
-  background: var(--bg-tertiary);
-  border-color: #334155;
-  color: #f1f5f9;
 }
 
 /* 반응형 */

@@ -2,6 +2,7 @@ import { Exam } from "./Exam";
 import { Surveys } from "./Surveys";
 import { Users } from "./Users";
 import { Practices } from "./Practices";
+import { History } from "./History";
 
 const commonConfig = {
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -38,6 +39,7 @@ export const examApi = new Exam(commonConfig);
 export const surveysApi = new Surveys(commonConfig);
 export const usersApi = new Users(commonConfig);
 export const practicesApi = new Practices(commonConfig);
+export const historyApi = new History(commonConfig);
 
 // 모든 인스턴스에 공통으로 적용할 인터셉터 설정 함수
 const setupInterceptors = (apiInstance) => {
@@ -66,5 +68,4 @@ setupInterceptors(examApi);
 setupInterceptors(surveysApi);
 setupInterceptors(usersApi);
 setupInterceptors(practicesApi);
-
-
+setupInterceptors(historyApi);

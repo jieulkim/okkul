@@ -1,90 +1,82 @@
 <script setup>
-import { ref, onMounted, inject, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import { historyApi } from '@/api';
 
+// 라우터
 const router = useRouter();
-const isDarkMode = inject('isDarkMode', ref(false));
-const isLoading = ref(false); // remove this line entirely if unused, but tool requires replacement. I will just comment it out.
-// const isLoading = ref(false);
-const isFiltering = ref(false); // 필터링 로딩 추가
-const currentCategory = ref(null); // 'EXAM', 'PRACTICE', or null
 
-// 가상 데이터 (API 연결 전)
-const feedbackHistory = ref([
-  {
-    id: 1,
-    type: 'EXAM',
-    title: '제 3회 모의고사',
-    date: '2026-01-28',
-    grade: 'IM2',
-    score: 85
-  },
-  {
-    id: 2,
-    type: 'PRACTICE',
-    title: '유형별 연습 - 영화보기',
-    date: '2026-01-27',
-    grade: null,
-    score: null,
-    topic: '영화보기'
-  },
-  {
-    id: 3,
-    type: 'EXAM',
-    title: '제 2회 모의고사',
-    date: '2026-01-25',
-    grade: 'IL',
-    score: 65
-  },
-  {
-    id: 4,
-    type: 'PRACTICE',
-    title: '유형별 연습 - 공원 가기',
-    date: '2026-01-24',
-    grade: null,
-    score: null,
-    topic: '공원 가기'
-  }
-]);
+// 상태 관리
+const isLoading = ref(false);
+const currentCategory = ref(null); // 'EXAM', 'PRACTICE', null(전체/초기화면)
+const feedbackHistory = ref([]);
+const isFiltering = ref(false);
 
-onMounted(async () => {
-  // 초기 데이터 로드는 즉시 완료된 것으로 처리 (이미 가상 데이터 사용 중)
-});
-
-const filteredHistory = computed(() => {
-  if (!currentCategory.value) return [];
-  return feedbackHistory.value.filter(item => item.type === currentCategory.value);
-});
-
-const selectCategory = (category) => {
+const selectCategory = async (category) => {
   currentCategory.value = category;
-  loadFilteredHistory();
+  await loadFilteredHistory();
 };
 
-const loadFilteredHistory = () => {
-  isFiltering.value = true;
-  // 카테고리 선택 시 로딩 시뮬레이션
-  setTimeout(() => {
-    isFiltering.value = false;
-  }, 600);
+const loadFilteredHistory = async () => {
+    if (!currentCategory.value) return;
+    
+    isFiltering.value = true;
+    try {
+        if (currentCategory.value === 'EXAM') {
+            const { data } = await historyApi.getExamHistories({ size: 20, sort: ['createdAt,desc'] });
+            feedbackHistory.value = data.content?.map(item => ({
+                id: item.examId,
+                type: 'EXAM',
+                title: 'OPIc 모의고사', 
+                date: formatDate(item.createdAt),
+                grade: item.grade || '등급 없음',
+                score: null // API 미제공
+            })) || [];
+        } else {
+            const { data } = await historyApi.getPracticeHistories({ size: 20, sort: ['startedAt,desc'] });
+            feedbackHistory.value = data.content?.map(item => ({
+                id: item.practiceId,
+                type: 'PRACTICE',
+                title: `유형별 연습`,
+                typeName: item.typeName,
+                date: formatDate(item.startedAt),
+                topic: item.topic || '토픽 정보 없음',
+                score: null,
+                grade: null
+            })) || [];
+        }
+    } catch (error) {
+        console.error('Failed to fetch history:', error);
+        feedbackHistory.value = [];
+    } finally {
+        isFiltering.value = false;
+    }
 };
 
 const goBackToCategories = () => {
   currentCategory.value = null;
+  feedbackHistory.value = [];
 };
 
 const goToDetail = (item) => {
   if (item.type === 'EXAM') {
     router.push({ path: '/exam/feedback', query: { examId: item.id } });
   } else {
-    // 연습 피드백의 경우 practiceId와 questionId가 필요함 (가정)
-    router.push({ path: '/practice/feedback', query: { practiceId: item.id, questionId: 101 } });
+    // API 연결 버전: questionId 없이 practiceId만 보냄 (PracticeFeedbackView 수정 필요)
+    router.push({ path: '/practice/feedback', query: { practiceId: item.id } });
   }
 };
+
+const formatDate = (dateString) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('ko-KR');
+};
+
+const filteredHistory = computed(() => feedbackHistory.value);
 </script>
 
 <template>
-  <div class="feedback-list-page" :class="{ 'dark-mode': isDarkMode }">
+  <div class="feedback-list-page">
     <div class="container">
       <header class="page-header">
         <div v-if="currentCategory" class="header-nav">
@@ -148,10 +140,11 @@ const goToDetail = (item) => {
               
               <div v-if="item.type === 'EXAM'" class="exam-info">
                 <div class="grade-badge">{{ item.grade }}</div>
-                <div class="score-text">점수: {{ item.score }}점</div>
+                <div v-if="item.score" class="score-text">점수: {{ item.score }}점</div>
               </div>
               <div v-else class="practice-info">
                 <span class="topic-tag">#{{ item.topic }}</span>
+                <span v-if="item.typeName" class="topic-tag" style="margin-left: 8px;">{{ item.typeName }}</span>
               </div>
             </div>
             <div class="card-footer">

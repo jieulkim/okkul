@@ -21,7 +21,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 import site.okkul.be.domain.qustion.entity.converter.QuestionTypeConverter;
 import site.okkul.be.domain.topic.entity.Topic;
 
@@ -59,10 +61,12 @@ public class QuestionSet {
 
 	// 생성 및 수정 시점
 	@CreationTimestamp
+	@JdbcTypeCode(SqlTypes.TIMESTAMP)
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
 
 	@UpdateTimestamp
+	@JdbcTypeCode(SqlTypes.TIMESTAMP)
 	@Column(name = "updated_at", nullable = false)
 	private Instant updatedAt;
 

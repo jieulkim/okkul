@@ -259,18 +259,18 @@ export interface QuestionRequest {
    * 질문 텍스트
    * @example "Tell me about your favorite park."
    */
-  questionText?: string;
+  questionText: string;
   /**
    * 질문 음성 파일 URL
    * @example "https://cdn.okkul.site/audio/q1.mp3"
    */
-  audioUrl?: string;
+  audioUrl: string;
   /**
    * 세트 내 출력 순서
    * @format int32
    * @example 1
    */
-  order?: number;
+  order: number;
 }
 
 /** 유형 연습 생성 API의 응답 결과 */

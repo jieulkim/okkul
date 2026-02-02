@@ -50,9 +50,8 @@ export class Users<
    *
    * @tags User
    * @name UpdateProfileImage
-   * @summary (미구현) 프로필 이미지 변경
+   * @summary 프로필 이미지 변경
    * @request POST:/users/profile-image
-   * @deprecated
    * @secure
    */
   updateProfileImage = (

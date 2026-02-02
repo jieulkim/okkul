@@ -2,14 +2,24 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { usersApi } from '@/api'
+import { usersApi, historyApi } from '@/api'
+import defaultProfile from '@/assets/images/default-profile.png'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
-// 사용자 닉네임
 const userName = computed(() => {
   return authStore.user?.nickname || authStore.user?.name || '사용자'
+})
+
+// 프로필 기본 이미지 : 오꿀
+const displayAvatar = computed(() => {
+  const url = authStore.user?.profileImageUrl
+  // URL이 없거나 구글 기본 이미지 경로인 경우 기본 오꿀 이미지 반환
+  if (!url || url.includes('googleusercontent.com')) {
+    return defaultProfile
+  }
+  return url
 })
 
 // 프로필 편집
@@ -18,6 +28,42 @@ const editForm = ref({
   nickname: '',
   targetLevel: ''
 })
+
+const fileInput = ref(null)
+const isUploading = ref(false)
+
+function triggerFileInput() {
+  if (isEditing.value) {
+    fileInput.value.click()
+  }
+}
+
+async function handleImageUpload(event) {
+  const file = event.target.files[0]
+  if (!file) return
+
+  try {
+    isUploading.value = true
+    await usersApi.updateProfileImage({ file })
+    
+    // 유저 정보 갱신
+    const response = await usersApi.getMyInfo()
+    if (response.data) {
+      authStore.updateUser(response.data)
+      if (localStorage.getItem('user')) {
+        localStorage.setItem('user', JSON.stringify(response.data))
+      }
+    }
+    alert('프로필 이미지가 변경되었습니다.')
+  } catch (error) {
+    console.error('이미지 업로드 실패:', error)
+    alert('이미지 업로드에 실패했습니다.')
+  } finally {
+    isUploading.value = false
+    // 파일 입력 초기화 (같은 파일 다시 선택 가능하도록)
+    event.target.value = ''
+  }
+}
 
 const levelOptions = [
   { value: 'ADVANCED_LOW', label: 'AL (Advanced Low)' },
@@ -28,23 +74,25 @@ const levelOptions = [
   { value: 'INTERMEDIATE_LOW', label: 'IL (Intermediate Low)' }
 ]
 
-const startEdit = () => {
+function startEdit() {
   editForm.value = {
-    nickname: authStore.user?.nickname || '',
+    nickname: '', // placeholder를 보여주기 위해 빈칸으로 초기화
     targetLevel: authStore.user?.targetLevel || 'INTERMEDIATE_HIGH'
   }
   isEditing.value = true
 }
 
-const cancelEdit = () => {
+function cancelEdit() {
   isEditing.value = false
 }
 
-const saveProfile = async () => {
+async function saveProfile() {
   try {
-    // API 호출
-    if (editForm.value.nickname !== authStore.user?.nickname) {
-      await usersApi.updateNickname({ nickname: editForm.value.nickname })
+    // 닉네임이 빈칸이면 기존 닉네임 유지
+    const finalNickname = editForm.value.nickname.trim() || authStore.user?.nickname || authStore.user?.name;
+    
+    if (finalNickname && finalNickname !== authStore.user?.nickname) {
+      await usersApi.updateNickname({ nickname: finalNickname })
     }
     
     if (editForm.value.targetLevel !== authStore.user?.targetLevel) {
@@ -54,16 +102,12 @@ const saveProfile = async () => {
     // 최신 사용자 정보 조회
     const response = await usersApi.getMyInfo()
     
-    // authStore 업데이트 - updateUser 함수 사용
+    // authStore 업데이트
     if (response.data) {
-      // localStorage 먼저 업데이트
       if (localStorage.getItem('user')) {
         localStorage.setItem('user', JSON.stringify(response.data))
       }
-      
-      // authStore의 updateUser 함수를 사용하여 반응성 보장
       authStore.updateUser(response.data)
-      
       console.log('[MyPageView] 프로필 업데이트 완료:', authStore.user)
     }
     
@@ -80,38 +124,23 @@ const saveProfile = async () => {
 const examHistory = ref([])
 const isLoadingExams = ref(false)
 
-const loadExamHistory = async () => {
+async function loadExamHistory() {
   try {
     isLoadingExams.value = true
+    const { data } = await historyApi.getExamHistories({ size: 20, sort: ['createdAt,desc'] }) // 통계 계산을 위해 사이즈 늘림
     
-    examHistory.value = [
-      {
-        examId: 1,
-        title: '제 12회 실전 모의고사',
-        createdAt: '2026-01-20T10:30:00',
-        grade: 'IH',
-        totalScore: 85.5,
-        status: 'COMPLETED'
-      },
-      {
-        examId: 2,
-        title: '제 11회 실전 모의고사',
-        createdAt: '2026-01-15T14:20:00',
-        grade: 'IM3',
-        totalScore: 78.2,
-        status: 'COMPLETED'
-      },
-      {
-        examId: 3,
-        title: '제 10회 실전 모의고사',
-        createdAt: '2026-01-10T09:15:00',
-        grade: 'IM2',
-        totalScore: 72.8,
-        status: 'COMPLETED'
-      }
-    ]
+    const total = data.page?.totalElements || data.content?.length || 0;
+    
+    examHistory.value = data.content?.map((exam, index) => ({
+      examId: exam.examId,
+      num: total - index,
+      title: `제 ${total - index}회 실전 모의고사`,
+      createdAt: exam.createdAt,
+      grade: exam.grade || '채점 중'
+    })) || []
   } catch (error) {
     console.error('시험 내역 로드 실패:', error)
+    examHistory.value = []
   } finally {
     isLoadingExams.value = false
   }
@@ -121,63 +150,60 @@ const loadExamHistory = async () => {
 const practiceHistory = ref([])
 const isLoadingPractice = ref(false)
 
-const loadPracticeHistory = async () => {
+async function loadPracticeHistory() {
   try {
     isLoadingPractice.value = true
+    const { data } = await historyApi.getPracticeHistories({ size: 20, sort: ['startedAt,desc'] }) // 통계 계산을 위해 사이즈 늘림
     
-    practiceHistory.value = [
-      {
-        practiceId: 1,
-        questionId: 101,
-        typeName: '롤플레이',
-        topicName: '여행 중 겪은 경험',
-        createdAt: '2026-01-23T16:40:00',
-        status: 'REVIEWED'
-      },
-      {
-        practiceId: 2,
-        questionId: 202,
-        typeName: '콤보',
-        topicName: '음악 감상 및 기기',
-        createdAt: '2026-01-22T11:20:00',
-        status: 'REVIEWED'
-      },
-      {
-        practiceId: 3,
-        questionId: 303,
-        typeName: '자유주제',
-        topicName: '좋아하는 음식',
-        createdAt: '2026-01-18T15:30:00',
-        status: 'REVIEWED'
-      }
-    ]
+    practiceHistory.value = data.content?.map(practice => ({
+      practiceId: practice.practiceId,
+      questionId: null, 
+      typeName: practice.typeName,
+      topicName: practice.topic || '토픽 없음',
+      createdAt: practice.startedAt,
+      status: 'COMPLETED'
+    })) || []
   } catch (error) {
     console.error('연습 내역 로드 실패:', error)
+    practiceHistory.value = []
   } finally {
     isLoadingPractice.value = false
   }
 }
 
-// 학습 통계
-const learningStats = computed(() => ({
-  totalExams: examHistory.value.length,
-  totalPractice: practiceHistory.value.length,
-  studyDays: 23,
-  totalMinutes: 1420
-}))
+// 학습 통계 (실제 데이터 기반 계산)
+const learningStats = computed(() => {
+  // 중복 없는 학습 일수 계산
+  const allDates = [
+    ...examHistory.value.map(e => e.createdAt),
+    ...practiceHistory.value.map(p => p.createdAt)
+  ].filter(Boolean);
+
+  const uniqueDays = new Set(allDates.map(d => new Date(d).toDateString()));
+
+  return {
+    totalExams: examHistory.value.length,
+    totalPractice: practiceHistory.value.length,
+    studyDays: uniqueDays.size,
+    totalMinutes: 0 // API에서 Duration 정보를 제공하지 않으므로 0 (혹은 추후 구현)
+  }
+})
 
 // 결과 보기
-const viewExamResult = (examId) => {
-  router.push({ path: '/exam/result', query: { examId } })
+function viewExamResult(examId, num) {
+  router.push({ path: '/exam/feedback', query: { examId, num } })
 }
 
-const viewPracticeFeedback = (practiceId, questionId) => {
-  router.push({ path: '/practice/feedback', query: { practiceId, questionId } })
+function viewPracticeFeedback(practiceId) {
+  router.push({ path: '/practice/feedback', query: { practiceId } })
 }
 
 onMounted(() => {
   loadExamHistory()
   loadPracticeHistory()
+  if (authStore.isAuthenticated) {
+      authStore.fetchUser();
+  }
 })
 </script>
 
@@ -197,10 +223,17 @@ onMounted(() => {
           </div>
           <div class="profile-content">
             <!-- 프로필 이미지 -->
-            <div class="profile-avatar-display">
+            <div class="profile-avatar-display" :class="{ 'editable': isEditing }" @click="triggerFileInput">
               <div class="avatar-circle">
-                <img src="/default-profile.png" alt="프로필" class="profile-image" />
+                <img :src="displayAvatar" alt="프로필" class="profile-image" />
+                <div v-if="isEditing" class="avatar-overlay">
+                  <span class="material-icons-outlined">photo_camera</span>
+                </div>
+                <div v-if="isUploading" class="upload-spinner">
+                  <div class="mini-spinner"></div>
+                </div>
               </div>
+              <input type="file" ref="fileInput" @change="handleImageUpload" style="display: none" accept="image/*" />
             </div>
 
             <!-- 프로필 정보 -->
@@ -223,7 +256,14 @@ onMounted(() => {
             <div v-else class="profile-edit">
               <div class="form-group">
                 <label class="label">닉네임</label>
-                <input v-model="editForm.nickname" type="text" class="input" />
+                <input 
+                  v-model="editForm.nickname" 
+                  type="text" 
+                  class="input" 
+                  :placeholder="userName"
+                  @focus="$event.target.placeholder = ''"
+                  @blur="$event.target.placeholder = userName"
+                />
               </div>
               <div class="form-group">
                 <label class="label">목표 등급</label>
@@ -248,28 +288,36 @@ onMounted(() => {
           </div>
           <div class="stats-grid">
             <div class="stat-item">
-              <div class="stat-icon">📝</div>
+              <div class="stat-icon full-icon">
+                <span class="material-icons-outlined">assignment</span>
+              </div>
               <div class="stat-content">
                 <p class="stat-label">실전 모의고사</p>
                 <p class="stat-value">{{ learningStats.totalExams }}회</p>
               </div>
             </div>
             <div class="stat-item">
-              <div class="stat-icon">🎯</div>
+              <div class="stat-icon full-icon">
+                <span class="material-icons-outlined">category</span>
+              </div>
               <div class="stat-content">
                 <p class="stat-label">유형별 연습</p>
                 <p class="stat-value">{{ learningStats.totalPractice }}회</p>
               </div>
             </div>
             <div class="stat-item">
-              <div class="stat-icon">📅</div>
+              <div class="stat-icon full-icon">
+                <span class="material-icons-outlined">calendar_today</span>
+              </div>
               <div class="stat-content">
                 <p class="stat-label">학습 일수</p>
                 <p class="stat-value">{{ learningStats.studyDays }}일</p>
               </div>
             </div>
             <div class="stat-item">
-              <div class="stat-icon">⏱️</div>
+              <div class="stat-icon full-icon">
+                <span class="material-icons-outlined">schedule</span>
+              </div>
               <div class="stat-content">
                 <p class="stat-label">학습 시간</p>
                 <p class="stat-value">{{ Math.floor(learningStats.totalMinutes / 60) }}시간</p>
@@ -297,7 +345,7 @@ onMounted(() => {
               v-for="exam in examHistory" 
               :key="exam.examId"
               class="history-item"
-              @click="viewExamResult(exam.examId)"
+              @click="viewExamResult(exam.examId, exam.num)"
             >
               <div class="item-icon">
                 <span class="material-icons-outlined">assignment</span>
@@ -308,7 +356,7 @@ onMounted(() => {
               </div>
               <div class="item-meta">
                 <span class="grade-badge">{{ exam.grade }}</span>
-                <span class="score">{{ exam.totalScore }}점</span>
+                <span class="score" v-if="exam.totalScore">{{ exam.totalScore }}점</span>
               </div>
               <span class="material-icons-outlined arrow">chevron_right</span>
             </div>
@@ -331,7 +379,7 @@ onMounted(() => {
               v-for="practice in practiceHistory" 
               :key="practice.practiceId"
               class="history-item"
-              @click="viewPracticeFeedback(practice.practiceId, practice.questionId)"
+              @click="viewPracticeFeedback(practice.practiceId)"
             >
               <div class="item-icon">
                 <span class="material-icons-outlined">category</span>
@@ -351,6 +399,11 @@ onMounted(() => {
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Material+Icons+Outlined&display=swap');
+
+/* 공통 카드 스타일 */
+.card:hover {
+  transform: none !important;
+}
 
 .page-container {
   min-height: 100vh;
@@ -431,23 +484,70 @@ onMounted(() => {
 
 /* 프로필 아바타 */
 .profile-avatar-display {
-  width: 100%;
   display: flex;
   justify-content: center;
-  margin-bottom: 8px;
+  margin-bottom: 24px;
+  position: relative;
+}
+
+.profile-avatar-display.editable {
+  cursor: pointer;
 }
 
 .avatar-circle {
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: var(--bg-tertiary);
+  border: 4px solid #FFFFFF;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  overflow: hidden;
+  background: #F1F5F9;
+  position: relative;
+}
+
+.avatar-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 4px solid var(--bg-secondary);
-  box-shadow: 0 8px 24px rgba(255, 215, 0, 0.2);
-  overflow: hidden;
+  color: #FFFFFF;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.profile-avatar-display.editable:hover .avatar-overlay {
+  opacity: 1;
+}
+
+.upload-spinner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.mini-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid var(--bg-tertiary);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .profile-image {
@@ -517,6 +617,12 @@ onMounted(() => {
   gap: 8px;
 }
 
+.form-group .input::placeholder {
+  color: #BDBDBD;
+  opacity: 0.8;
+  font-weight: 400;
+}
+
 .form-actions {
   display: flex;
   gap: 12px;
@@ -573,6 +679,11 @@ onMounted(() => {
 .btn-ghost:hover {
   color: var(--primary-color);
   background: var(--bg-tertiary);
+  transform: translateY(-2px);
+}
+
+.btn-secondary:hover {
+  transform: translateY(-2px);
 }
 
 .label {
@@ -631,7 +742,7 @@ onMounted(() => {
 }
 
 .stat-item:hover {
-  transform: translateY(-4px);
+  transform: none;
   background: #FFFFFF;
   box-shadow: 0 8px 16px rgba(0,0,0,0.06);
   border-color: var(--primary-color);
@@ -640,6 +751,18 @@ onMounted(() => {
 .stat-icon {
   font-size: 2.5rem;
 }
+
+.stat-icon.full-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-icon .material-icons-outlined {
+  font-size: 3rem;
+  color: #F9A825;
+}
+
 .stat-content {
   display: flex;
   flex-direction: column;

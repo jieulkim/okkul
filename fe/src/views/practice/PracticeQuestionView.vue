@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed, onUnmounted, onMounted, watch } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import okkulSvg from '@/assets/images/okkul.svg'
 import { useRoute } from "vue-router";
 import { practicesApi, surveysApi } from "@/api";
 import { useAuthStore } from "@/stores/auth";
@@ -687,7 +688,7 @@ onUnmounted(() => {
           <h3 class="result-title">오꿀쌤 피드백</h3>
 
           <div class="okkul-left-align">
-            <img src="/okkul.svg" alt="Okkul" style="width: 100px; height: 100px;" />
+            <img :src="okkulSvg" alt="Okkul" style="width: 100px; height: 100px;" />
           </div>
 
           <div v-if="currentTab === 'sentence'">

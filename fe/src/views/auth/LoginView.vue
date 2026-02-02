@@ -1,4 +1,5 @@
 <script setup>
+import okkulSvg from '@/assets/images/okkul.svg'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 
@@ -23,7 +24,7 @@ const handleDevLogin = () => {
     <div class="login-card fade-in">
       <div class="logo-section">
         <div class="okkul-bubble">
-          <img src="/okkul.svg" alt="Okkul" class="okkul-img" />
+          <img :src="okkulSvg" alt="Okkul" class="okkul-img" />
         </div>
         <h1>오꿀</h1>
         <p>꿀처럼 달콤한 오픽 점수,<br>AI와 함께 만들어보세요!</p>

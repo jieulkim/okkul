@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'jacoco'
     id 'org.springframework.boot' version '3.5.9'
     id 'io.spring.dependency-management' version '1.1.7'
 }
@@ -12,6 +13,10 @@ java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
     }
+}
+
+jacoco  {
+    toolVersion = '0.8.11' // Java 21 호환을 위해 최신 버전 권장
 }
 
 configurations {
@@ -55,6 +60,7 @@ tasks.named('test') {
     useJUnitPlatform {
         excludeTags 'integration'
     }
+    finalizedBy jacocoTestReport // 테스트 종료 후 리포트 생성
 }
 
 tasks.register('integrationTest', Test) {
@@ -65,4 +71,62 @@ tasks.register('integrationTest', Test) {
 
 tasks.named('bootBuildImage') {
     createdDate = "now"
+}
+
+// JaCoCo 리포트 설정
+jacocoTestReport {
+    dependsOn test // 리포트 생성 전 테스트 실행 보장
+
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+
+    // QueryDSL QClass 및 기타 제외 설정
+    def Qdomains = []
+    for (qPattern in '**/QA'..'**/QZ') {
+        Qdomains.add(qPattern + '*')
+    }
+
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                    "**/*Application*",
+                    "**/*Config*",
+                    "**/*Dto*",
+                    "**/*Request*",
+                    "**/*Response*",
+                    "**/*Interceptor*",
+                    "**/*Exception*",
+                    "**/*Entity*", // 엔티티 제외 여부는 팀 정책에 따름
+                    "**/global/**",
+                    "**/infra/**"
+            ] + Qdomains)
+        }))
+    }
+}
+
+// JaCoCo 커버리지 검증 설정
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            enabled = true
+            element = 'CLASS'
+
+            // 라인 커버리지 최소 기준 (현재는 0%로 설정, 추후 상향 조정)
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.00
+            }
+
+            // 브랜치 커버리지 최소 기준
+            limit {
+                counter = 'BRANCH'
+                value = 'COVEREDRATIO'
+                minimum = 0.00
+            }
+        }
+    }
 }

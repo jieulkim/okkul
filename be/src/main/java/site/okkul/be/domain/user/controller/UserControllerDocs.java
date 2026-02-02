@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.multipart.MultipartFile;
 import site.okkul.be.domain.user.dto.request.UpdateNicknameRequest;
@@ -39,7 +40,7 @@ public interface UserControllerDocs {
 			UpdateNicknameRequest request
 	);
 
-	@Operation(summary = "(미구현) 프로필 이미지 변경", description = "프로필 이미지를 업로드하여 변경합니다. (MultipartFile)", deprecated = true)
+	@Operation(summary = "프로필 이미지 변경", description = "프로필 이미지를 업로드하여 변경합니다. (MultipartFile)")
 	@SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
 	ResponseEntity<UserResponse> updateProfileImage(
 			@Parameter(hidden = true) UserDetails user,

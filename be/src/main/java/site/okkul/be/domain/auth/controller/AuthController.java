@@ -30,7 +30,8 @@ public class AuthController {
 	public ResponseEntity<AccessTokenResponse> reissue(
 			@RequestBody TokenReissueRequest request
 	) {
-		AccessTokenResponse response = authService.reissueAccessToken(request.refreshToken());
-		return ResponseEntity.ok(response);
+		return ResponseEntity.ok(
+				authService.reissueAccessToken(request.refreshToken())
+		);
 	}
 }

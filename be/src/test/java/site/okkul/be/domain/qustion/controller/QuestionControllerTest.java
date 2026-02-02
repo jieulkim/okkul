@@ -11,7 +11,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import site.okkul.be.domain.qustion.dto.QuestionRequest;
@@ -21,6 +20,8 @@ import site.okkul.be.domain.qustion.entity.QuestionType;
 import site.okkul.be.domain.qustion.repository.QuestionRepository;
 import site.okkul.be.domain.qustion.repository.QuestionSetRepository;
 import site.okkul.be.domain.topic.entity.Topic;
+import site.okkul.be.domain.topic.entity.TopicCategory;
+import site.okkul.be.domain.topic.repository.TopicCategoryRepository;
 import site.okkul.be.domain.topic.repository.TopicRepository;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -33,7 +34,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
-@ActiveProfiles("local")
 class QuestionControllerTest {
 
 	@Autowired
@@ -48,30 +48,47 @@ class QuestionControllerTest {
 	@Autowired
 	private QuestionRepository questionRepository;
 
-
 	@Autowired
 	private TopicRepository topicRepository;
+
+	@Autowired
+	private TopicCategoryRepository topicCategoryRepository;
 
 	private Long savedSetId;
 	private Long savedQuestionId;
 
 	@BeforeEach
 	void setUp() {
-		// data.sql에 있는 데이터를 활용하여 테스트 데이터 설정
-		Topic topic = topicRepository.findById(101L).orElseThrow();
-		QuestionType questionType = QuestionType.INTRODUCE;
+		// 1. TopicCategory 생성 및 저장
+		TopicCategory category = TopicCategory.builder()
+				.id(999L)
+				.categoryCode("TEST_CATEGORY")
+				.categoryName("테스트 카테고리")
+				.build();
+		topicCategoryRepository.save(category);
 
+		// 2. Topic 생성 및 저장
+		Topic topic = Topic.builder()
+				.id(999L)
+				.topicCode("TEST_TOPIC")
+				.topicName("테스트 토픽")
+				.category(category)
+				.build();
+		topicRepository.save(topic);
+
+		// 3. QuestionSet 생성 및 저장
 		QuestionSet questionSet = QuestionSet.builder()
 				.level(1)
 				.questionCnt(0)
 				.topic(topic)
-				.questionType(questionType)
+				.questionType(QuestionType.INTRODUCE)
 				.createdAt(Instant.now())
 				.updatedAt(Instant.now())
 				.build();
 		QuestionSet savedSet = questionSetRepository.save(questionSet);
 		this.savedSetId = savedSet.getId();
 
+		// 4. Question 생성 및 저장
 		Question question = Question.builder()
 				.questionText("Old Question")
 				.audioUrl("http://old.url")

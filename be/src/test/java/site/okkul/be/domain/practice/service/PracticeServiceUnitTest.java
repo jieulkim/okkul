@@ -15,6 +15,7 @@ import site.okkul.be.domain.practice.repository.PracticeJpaRepository;
 import site.okkul.be.domain.question.entity.Question;
 import site.okkul.be.domain.question.entity.QuestionSet;
 import site.okkul.be.domain.question.repository.QuestionRepository;
+import site.okkul.be.global.exception.BusinessException;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -95,7 +96,7 @@ class PracticeServiceUnitTest {
         when(practiceJpaRepository.findByPracticeIdAndUserId(practiceId, userId)).thenReturn(Optional.empty());
 
         // when & then
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+        BusinessException exception = assertThrows(BusinessException.class, () -> {
             practiceService.getPractice(practiceId, userId);
         });
 

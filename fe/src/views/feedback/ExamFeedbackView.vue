@@ -1,22 +1,20 @@
 <script setup>
 import { ref, computed, onMounted, inject } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { examApi } from '@/api';
+import { examApi, historyApi } from '@/api';
 
 const router = useRouter();
 const route = useRoute();
-const isDarkMode = inject('isDarkMode', ref(false));
 
 const examResult = ref(null);
 const selectedQuestionIndex = ref(null);
 const isLoading = ref(true);
 const showDetailModal = ref(false);
 
-// 시험 결과 로드
+// 시험 결과 로드 (API 연동 버전)
 const loadExamResult = async () => {
   try {
     isLoading.value = true;
-    // const examApi = new Exam(); // Removed - using shared instance
     const examId = parseInt(route.query.examId);
     
     if (!examId) {
@@ -25,46 +23,46 @@ const loadExamResult = async () => {
       return;
     }
     
-    // Mock Mode Check
-    let response;
-    if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
-        const mockQuestions = Array.from({ length: 15 }, (_, i) => ({
-            questionOrder: i + 1,
-            questionText: `[Mock] Feedback Question ${i + 1}`,
-            sttScript: "This is a mock answer script provided for testing purposes.",
-            enhancedScript: "This is a mock answer script provided for testing purposes.",
-            grammar: { score: 85, feedback: "Good grammar." },
-            vocabulary: { score: 80, feedback: "Good vocabulary." },
-            logic: { score: 75, feedback: "Logical flow is clear." },
-            fluency: { score: 90, feedback: "Very fluent." },
-            relevance: { score: 88, feedback: "Relevant answer." }
-        }));
+    // 1. 시험 히스토리(리포트) 조회
+    const historyResponse = await historyApi.getExamHistoryDetail(examId);
+    const report = historyResponse.data.examReport;
 
-        response = {
-            data: {
-                createdAt: new Date().toISOString(),
-                summary: {
-                    grade: 'IM2',
-                    totalScore: 85,
-                    categoryScores: {
-                        grammar: 85,
-                        vocabulary: 80,
-                        logic: 75,
-                        fluency: 90,
-                        relevance: 88
-                    },
-                    comment: "This is a mock summary comment. Use this to verify the UI layout and components.",
-                    strengths: "Mock strength: Good delivery.",
-                    weakness: "Mock weakness: Needs more complex sentence structures."
-                },
-                questionResults: mockQuestions
-            }
-        };
-        examResult.value = response.data;
-    } else {
-        const response = await examApi.getExamResult(examId);
-        examResult.value = response.data;
-    }
+    // 2. 시험 문제 목록 조회 (질문 텍스트 등)
+    const infoResponse = await examApi.getExamInfo(examId);
+    console.log("Info Response questions:", infoResponse.data.questions);
+
+    // 3. 데이터 매핑
+    examResult.value = {
+      createdAt: historyResponse.data.createdAt || new Date().toISOString(),
+      summary: {
+        grade: report?.grade || '정보없음',
+        totalScore: report?.totalScore || 0,
+        categoryScores: {
+          grammar: report?.avgGrammar || 0,
+          vocabulary: report?.avgVocab || 0,
+          logic: report?.avgLogic || 0,
+          fluency: report?.avgFluency || 0,
+          relevance: report?.avgRelevance || 0
+        },
+        comment: report?.comment || '총평이 없습니다.',
+        strengths: report?.strengthTypes?.join(', ') || '없음',
+        weakness: report?.weaknessTypes?.join(', ') || '없음'
+      },
+      // 질문 목록은 infoResponse에서 가져옴. 
+      // 개별 점수가 없으므로 기본값 처리하거나 상세 조회 시 가져올 수 있는지 확인 필요.
+      // 현재 API 구조상 개별 점수는 없고 피드백 텍스트만 존재함.
+      questionResults: infoResponse.data.questions?.map(q => ({
+        questionOrder: q.order,
+        questionText: q.questionText,
+        sttScript: '', // 상세 데이터는 클릭 시 로드하거나 여기서 Promise.all로 로드해야 함
+        enhancedScript: '',
+        grammar: { score: 0, feedback: '' },
+        vocabulary: { score: 0, feedback: '' },
+        logic: { score: 0, feedback: '' },
+        fluency: { score: 0, feedback: '' },
+        relevance: { score: 0, feedback: '' }
+      })) || []
+    };
     
   } catch (error) {
     console.error('시험 결과 로드 실패:', error);
@@ -125,9 +123,54 @@ const getLabelPosition = (index) => {
 };
 
 // 문항 클릭
-const selectQuestion = (index) => {
+const selectQuestion = async (index) => {
+  const question = examResult.value.questionResults[index];
+  if (!question) return;
+
   selectedQuestionIndex.value = index;
   showDetailModal.value = true;
+  
+  // 이미 상세 데이터가 있다면 재요청 방지 (sttScript 유무로 판단)
+  if (question.sttScript) return;
+  
+  try {
+     // 개별 질문 상세 조회
+     // API: getExamAnswerDetail(examId, questionOrder)
+     // questionOrder는 1부터 시작한다고 가정 (response.order 확인)
+     const examId = parseInt(route.query.examId);
+     const response = await historyApi.getExamAnswerDetail(examId, question.questionOrder);
+     const detail = response.data;
+     
+     // 받아온 상세 정보를 해당 질문 객체에 업데이트
+     // API 응답 구조: sttScript, improvedAnswer, categoryFeedback(relevance, logic, fluency), sentenceFeedbacks
+     
+     // 점수 데이터가 API 응답에 없으므로, 상세 보기에서는 점수 대신 피드백 텍스트를 보여주거나
+     // 텍스트 피드백이 있는 경우 점수를 임의로(또는 매핑된 값으로) 표시해야 함.
+     // 현재 API에는 'score' 필드가 없으므로 0으로 두거나, 텍스트만 표시하도록 UI 수정이 필요할 수 있음.
+     // 일단 데이터 매핑
+     
+     question.sttScript = detail.sttScript || '답변 없음';
+     question.enhancedScript = detail.improvedAnswer || '';
+     
+     // 카테고리별 피드백 매핑
+     if (detail.categoryFeedback) {
+        question.relevance.feedback = detail.categoryFeedback.relevanceFeedback || '';
+        question.logic.feedback = detail.categoryFeedback.logicFeedback || '';
+        question.fluency.feedback = detail.categoryFeedback.fluencyFeedback || '';
+     }
+     
+     // 문법/어휘는 sentenceFeedbacks에서 유추하거나 별도 필드가 없으면 공란
+     // 여기서는 sentenceFeedbacks를 문법 피드백으로 간주
+     if (detail.sentenceFeedbacks && detail.sentenceFeedbacks.length > 0) {
+         question.grammar.feedback = "문장 교정 내용이 있습니다.";
+     } else {
+         question.grammar.feedback = "지적된 문법 오류가 없습니다.";
+     }
+     
+  } catch (err) {
+      console.error('문항 상세 조회 실패:', err);
+      alert('상세 정보를 불러오지 못했습니다.');
+  }
 };
 
 // 선택된 문항
@@ -169,7 +212,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="exam-result-page" :class="{ 'dark-mode': isDarkMode }">
+  <div class="exam-result-page">
     <!-- 로딩 -->
     <div v-if="isLoading" class="loading-screen">
       <div class="spinner"></div>
@@ -217,7 +260,7 @@ onMounted(() => {
                     return `${150 + radius * Math.cos(angle)},${150 + radius * Math.sin(angle)}`;
                   }).join(' ')"
                   fill="none"
-                  :stroke="isDarkMode ? '#334155' : '#e2e8f0'"
+                  stroke="#e2e8f0"
                   stroke-width="1"
                 />
               </g>
@@ -230,7 +273,7 @@ onMounted(() => {
                   x1="150" y1="150"
                   :x2="150 + 110 * Math.cos((Math.PI * 2 * index) / 5 - Math.PI / 2)"
                   :y2="150 + 110 * Math.sin((Math.PI * 2 * index) / 5 - Math.PI / 2)"
-                  :stroke="isDarkMode ? '#475569' : '#cbd5e1'"
+                  stroke="#cbd5e1"
                   stroke-width="1"
                 />
               </g>
@@ -261,7 +304,6 @@ onMounted(() => {
                   :x="getLabelPosition(index).x"
                   :y="getLabelPosition(index).y"
                   text-anchor="middle"
-                  :class="{ 'dark-label': isDarkMode }"
                   class="chart-label"
                 >
                   <tspan>{{ item.label }}</tspan>
@@ -752,10 +794,6 @@ onMounted(() => {
   line-height: 1.5;
 }
 
-.dark-mode .question-text {
-  color: #f1f5f9;
-}
-
 .scores-mini {
   display: flex;
   gap: 16px;
@@ -769,11 +807,6 @@ onMounted(() => {
   padding: 4px 12px;
   background: #f1f5f9;
   border-radius: 6px;
-}
-
-.dark-mode .mini-score {
-  background: var(--bg-primary);
-  color: #94a3b8;
 }
 
 /* 모달 */
@@ -798,10 +831,6 @@ onMounted(() => {
   overflow-y: auto;
   border: var(--border-primary);
   box-shadow: var(--shadow-lg);
-}
-
-.dark-mode .modal-card {
-  background: var(--bg-secondary);
 }
 
 .modal-header {

@@ -174,17 +174,20 @@ const goToDetail = (item) => {
 <style scoped>
 .feedback-list-page {
   height: calc(100vh - var(--header-height));
-  overflow: hidden;
+  overflow-y: auto; /* Allow scrolling */
   background: var(--bg-color);
   display: flex;
+  flex-direction: column; /* Changed to column to handle scroll properly */
   align-items: center;
-  justify-content: center;
-  padding: 0;
+  /* justify-content: center; Remove to allow top alignment when scrolling */
+  padding: 40px 0;
 }
 
 .container {
   max-width: 1200px;
+  width: 100%; /* Ensure width is taken */
   margin: 0 auto;
+  padding: 0 24px; /* Add padding for small screens */
 }
 
 .page-header {
@@ -218,14 +221,15 @@ const goToDetail = (item) => {
 }
 
 .page-title {
-  font-size: 2.8rem;
+  margin-top: 20px;
+  font-size: 2.6rem;
   font-weight: 800;
   color: var(--text-primary);
   margin-bottom: 24px;
 }
 
 .page-subtitle {
-  font-size: 1.15rem;
+  font-size: 1rem;
   color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: 50px;

@@ -2,58 +2,42 @@
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css');
 
 /* ==========================================================================
-   HONEYJAM DESIGN SYSTEM - "Soft Pastel & Clean"
-   Refined for White BG & Pastel Yellow Key Color
+   OKKUL DESIGN SYSTEM - "Comfortable Beige with Yellow Point"
    ========================================================================== */
 
 :root {
-  /* ... (Color Palette 생략 - 변경 없음) ... */
   /* Gentle Yellow Tones */
-  --honey-50: #FFFEF0;
-  --honey-100: #FFFDE7;
-  --honey-200: #FFF9C4;
-  --honey-300: #FFF59D;
-  --honey-400: #FFF176;
-  --honey-500: #FFEE58;
-  --honey-600: #FDD835;
-
-  --honey-gradient-start: #FFF59D;
-  --honey-gradient-end: #FFD54F;
-
-  --accent-purple: #B39DDB;
-  --accent-cyan: #80DEEA;
-  --accent-pink: #F48FB1;
-  --accent-green: #A5D6A7;
-
-  --glass-bg-light: rgba(255, 255, 255, 0.6);
-  --glass-border-light: rgba(255, 255, 255, 0.8);
-  --glass-shadow-light: 0 8px 32px 0 rgba(200, 200, 200, 0.15);
-
-  --glass-bg-dark: rgba(30, 30, 30, 0.6);
-  --glass-border-dark: rgba(255, 255, 255, 0.05);
+  --honey-50: #FFFDE7;
+  --honey-100: #FFF9C4;
+  --honey-200: #FFF59D;
+  --honey-300: #FFF176;
+  --honey-400: #FFEE58;
+  --honey-500: #FDD835;
+  --honey-600: #FBC02D;
 
   /* --- Text Colors --- */
-  --text-primary: #2C2C2C;
-  --text-secondary: #5D5D5D;
-  --text-tertiary: #8D8D8D;
+  --text-primary: #3D352E;
+  --text-secondary: #6B5F52;
+  --text-tertiary: #9C8F80;
 
   /* Theming Variables */
-  --bg-color: #fefee5;
-  /* Pastel Chick Yellow */
-  --bg-subtle: #fbfb30;
+  --bg-color: #FDFBF5; /* Soft beige background */
+  --bg-subtle: #FFFDE7; /* Lighter yellow for subtle backgrounds */
 
   --text-main: var(--text-primary);
   --text-sub: var(--text-secondary);
   --text-muted: var(--text-tertiary);
 
-  --primary-color: var(--honey-300);
-  --primary-hover: var(--honey-400);
+  /* Point color is Yellow */
+  --primary-color: var(--honey-500);
+  --primary-hover: var(--honey-600);
+  --primary-light: var(--honey-50);
 
-  --primary-gradient: linear-gradient(135deg, var(--honey-gradient-start), var(--honey-gradient-end));
+  --primary-gradient: linear-gradient(135deg, var(--honey-300), var(--honey-500));
 
-  --card-bg: rgba(255, 255, 255, 0.85);
-  --card-border: 1px solid #F0F0F0;
-  --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
+  --card-bg: #FFFFFF;
+  --card-border: 1px solid #F5EAD8;
+  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 
   /* Font Families - Pretendard Updated */
   --font-heading: 'Pretendard Variable', 'Pretendard', 'Outfit', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
@@ -62,9 +46,9 @@
   /* Layout */
   --max-width: 1400px;
   --header-height: 70px;
-  --radius-sm: 10px;
-  --radius-md: 20px;
-  --radius-lg: 32px;
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
   --radius-full: 9999px;
 
   /* Transitions */
@@ -74,14 +58,14 @@
 
 /* Dark Mode */
 .dark-mode {
-  --bg-color: #121212;
-  --bg-subtle: #1A1A1A;
-  --text-main: #FFFFFF;
-  --text-sub: #E0E0E0;
-  --text-muted: #A0A0A0;
+  --bg-color: #1C1A19;
+  --bg-subtle: #2C2825;
+  --text-main: #FDFBF5;
+  --text-sub: #EFE0C4;
+  --text-muted: #9C8F80;
 
-  --card-bg: rgba(30, 30, 30, 0.7);
-  --card-border: 1px solid rgba(255, 255, 255, 0.1);
+  --card-bg: #2C2825;
+  --card-border: 1px solid #3D352E;
   --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
@@ -136,7 +120,6 @@ a {
 
 ::selection {
   background: var(--honey-200);
-  /* Pastel highlight */
   color: var(--text-primary);
 }
 
@@ -171,34 +154,31 @@ a {
 .btn-primary {
   background: var(--primary-gradient);
   color: #3E2723;
-  /* Dark Brown/Black for contrast on pastel */
-  box-shadow: 0 4px 15px rgba(255, 213, 79, 0.25);
+  box-shadow: 0 4px 15px rgba(251, 191, 36, 0.2);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(255, 213, 79, 0.35);
-  filter: brightness(1.02);
+  box-shadow: 0 8px 20px rgba(251, 191, 36, 0.3);
 }
 
 /* Secondary Button: Subtle Surface */
 .btn-secondary {
   background: white;
   color: var(--text-main);
-  border: 1px solid #E0E0E0;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 .dark-mode .btn-secondary {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: #3D352E;
+  border-color: #6B5F52;
   color: white;
 }
 
 .btn-secondary:hover {
-  background: #F9F9F9;
-  border-color: #D6D6D6;
-  transform: translateY(-1px);
+  background: #FDFBF5;
+  border-color: #EFE0C4;
 }
 
 /* Ghost Button */
@@ -218,8 +198,6 @@ a {
 
 .card {
   background: var(--card-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
   border: var(--card-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--card-shadow);
@@ -229,8 +207,8 @@ a {
 
 .card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.06);
-  border-color: var(--honey-200);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+  border-color: var(--honey-300);
 }
 
 /* ==========================================================================
@@ -252,8 +230,8 @@ a {
 .select {
   width: 100%;
   padding: 16px 24px;
-  background: #FAFAFA;
-  border: 1px solid #EAEAEA;
+  background: #FDFBF5;
+  border: 1px solid #F5EAD8;
   border-radius: var(--radius-md);
   font-family: var(--font-body);
   font-size: 1rem;
@@ -261,13 +239,15 @@ a {
   transition: all 0.2s var(--ease-smooth);
 }
 
-.dark-mode .input {
-  background: #2C2C2C;
-  border-color: #333;
+.dark-mode .input,
+.dark-mode .textarea,
+.dark-mode .select {
+  background: #3D352E;
+  border-color: #6B5F52;
 }
 
 .input::placeholder {
-  color: #BDBDBD;
+  color: #9CA3AF;
 }
 
 .input:focus,
@@ -275,12 +255,14 @@ a {
 .select:focus {
   outline: none;
   background: #FFFFFF;
-  border-color: var(--honey-300);
-  box-shadow: 0 0 0 4px rgba(255, 241, 118, 0.2);
+  border-color: var(--honey-500);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
 }
 
-.dark-mode .input:focus {
-  background: #333;
+.dark-mode .input:focus,
+.dark-mode .textarea:focus,
+.dark-mode .select:focus {
+  background: #6B5F52;
 }
 
 /* ==========================================================================
@@ -368,7 +350,7 @@ a {
 
 .badge-primary {
   background: var(--honey-100);
-  color: #F9A825;
+  color: var(--honey-600);
   border: 1px solid var(--honey-200);
 }
 
@@ -397,10 +379,18 @@ a {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #D6D6D6;
+  background: #EFE0C4;
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #C0C0C0;
+  background: #DBC99A;
+}
+
+.dark-mode ::-webkit-scrollbar-thumb {
+  background: #6B5F52;
+}
+
+.dark-mode ::-webkit-scrollbar-thumb:hover {
+  background: #9C8F80;
 }

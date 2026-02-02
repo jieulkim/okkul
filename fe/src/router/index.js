@@ -25,42 +25,50 @@ const router = createRouter({
     {
       path: '/practice',
       name: 'practice',
-      component: PracticeView
+      component: PracticeView,
+      meta: { requiresAuth: true }
     },
     {
       path: '/practice/question',
       name: 'practice-question',
-      component: PracticeQuestionView
+      component: PracticeQuestionView,
+      meta: { requiresAuth: true }
     },
     {
       path: '/mypage',
       name: 'mypage',
-      component: MyPageView
+      component: MyPageView,
+      meta: { requiresAuth: true }
     },
     {
       path: '/exam',
       name: 'exam',
-      component: ExamView
+      component: ExamView,
+      meta: { requiresAuth: true }
     },
     {
       path: '/exam/setup',
       name: 'exam-setup',
-      component: SetupView
+      component: SetupView,
+      meta: { requiresAuth: true }
     },
     {
       path: '/exam/question',
       name: 'exam-question',
-      component: ExamQuestionView
+      component: ExamQuestionView,
+      meta: { requiresAuth: true }
     },
     {
       path: '/survey',
       name: 'survey',
-      component: SurveyView
+      component: SurveyView,
+      meta: { requiresAuth: true }
     },
     {
       path: '/survey/level',
       name: 'survey-level',
-      component: SurveyLevelView
+      component: SurveyLevelView,
+      meta: { requiresAuth: true }
     },
     {
       path: '/login',
@@ -75,20 +83,54 @@ const router = createRouter({
     {
       path: '/practice/feedback',
       name: 'practice-feedback',
-      component: PracticeFeedbackView
+      component: PracticeFeedbackView,
+      meta: { requiresAuth: true }
     },
     {
       path: '/exam/feedback',
       name: 'exam-feedback',
-      component: ExamFeedbackView
+      component: ExamFeedbackView,
+      meta: { requiresAuth: true }
     },
     {
       path: '/feedback',
       name: 'feedback-list',
-      component: FeedbackListView
+      component: FeedbackListView,
+      meta: { requiresAuth: true }
     }
 
   ]
+})
+
+import { useAuthStore } from '@/stores/auth'
+
+router.beforeEach(async (to, from, next) => {
+  const authStore = useAuthStore()
+  
+  // 인증이 필요한 페이지 접근 시
+  if (to.meta.requiresAuth) {
+    // 1. 이미 로그인 되어 있으면 통과
+    if (authStore.isAuthenticated) {
+      return next()
+    }
+
+    // 2. 토큰이 있다면 정보 가져오기 시도
+    if (authStore.token) {
+      await authStore.fetchUser()
+      if (authStore.isAuthenticated) {
+        return next()
+      }
+    }
+
+    // 3. 로그인 안되어 있고 토큰도 유효하지 않으면 로그인 페이지로
+    if (confirm('로그인이 필요한 서비스입니다. 로그인 하시겠습니까?')) {
+        return next('/login')
+    } else {
+        return next(false)
+    }
+  }
+
+  next()
 })
 
 export default router

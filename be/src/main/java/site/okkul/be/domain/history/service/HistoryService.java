@@ -11,12 +11,14 @@ import site.okkul.be.domain.exam.entity.ExamReport;
 import site.okkul.be.domain.exam.repository.ExamAnswerJpaRepository;
 import site.okkul.be.domain.exam.repository.ExamJpaRepository;
 import site.okkul.be.domain.exam.repository.ExamReportJpaRepository;
+import site.okkul.be.domain.history.domain.HistoryErrorCode;
 import site.okkul.be.domain.history.dto.*;
 import site.okkul.be.domain.practice.entity.Practice;
 import site.okkul.be.domain.practice.entity.PracticeAnswer;
 import site.okkul.be.domain.practice.entity.PracticeSentenceFeedback;
 import site.okkul.be.domain.practice.repository.PracticeAnswerJpaRepository;
 import site.okkul.be.domain.practice.repository.PracticeJpaRepository;
+import site.okkul.be.global.exception.BusinessException;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -62,7 +64,7 @@ public class HistoryService {
     public ExamHistoryDetailResponse getExamHistoryDetail(Long userId, Long examId) {
 
         Exam exam = examJpaRepository.findByIdAndUserId(examId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 모의고사가 존재하지 않습니다."));
+                .orElseThrow(() -> new BusinessException(HistoryErrorCode.EXAM_HISTORY_NOT_FOUND));
 
         ExamReport report = examReportJpaRepository.findById(examId).orElse(null);
 
@@ -96,17 +98,17 @@ public class HistoryService {
     public ExamAnswerResponse getExamAnswerDetail(Long userId, Long examId, Integer questionOrder) {
 
         examJpaRepository.findByIdAndUserId(examId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 모의고사가 존재하지 않습니다."));
+                .orElseThrow(() -> new BusinessException(HistoryErrorCode.EXAM_HISTORY_NOT_FOUND));
 
         ExamAnswer answer = examAnswerJpaRepository
                 .findById(new ExamAnswer.ExamAnswerId(examId, questionOrder))
-                .orElseThrow(() -> new IllegalArgumentException("해당 문항 답변이 존재하지 않습니다."));
+                .orElseThrow(() -> new BusinessException(HistoryErrorCode.EXAM_ANSWER_NOT_FOUND));
 
         if (answer.getStatus() != AnswerStatus.COMPLETED) {
-            throw new IllegalStateException("AI 분석이 완료되지 않았습니다.");
+            throw new BusinessException(HistoryErrorCode.AI_ANALYSIS_NOT_COMPLETED);
         }
         if (answer.getImprovedAnswer() == null || answer.getImprovedAnswer().isBlank()) {
-            throw new IllegalStateException("AI 개선 답변이 존재하지 않습니다.");
+            throw new BusinessException(HistoryErrorCode.AI_IMPROVED_ANSWER_NOT_FOUND);
         }
 
         return ExamAnswerResponse.from(answer);
@@ -130,7 +132,7 @@ public class HistoryService {
     public PracticeHistoryDetailResponse getPracticeHistoryDetail(Long userId, Long practiceId) {
         // 1. 연습 기록 조회
         Practice practice = practiceRepository.findByPracticeIdAndUserId(practiceId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 연습 기록을 찾을 수 없거나 접근 권한이 없습니다."));
+                .orElseThrow(() -> new BusinessException(HistoryErrorCode.PRACTICE_HISTORY_NOT_FOUND));
 
         // 2. 답변 목록 조회 (N+1 방지 Fetch Join)
         List<PracticeAnswer> answers = practiceAnswerRepository.findAllByPracticeIdWithFeedbacks(practiceId);

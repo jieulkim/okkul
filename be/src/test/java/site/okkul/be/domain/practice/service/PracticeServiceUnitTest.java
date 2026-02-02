@@ -10,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import site.okkul.be.domain.practice.dto.response.PracticeQuestionInfo;
 import site.okkul.be.domain.practice.dto.response.PracticeQuestionResponse;
 import site.okkul.be.domain.practice.entity.Practice;
+import site.okkul.be.domain.practice.exception.PracticeErrorCode;
 import site.okkul.be.domain.practice.mapper.PracticeMapper;
 import site.okkul.be.domain.practice.repository.PracticeJpaRepository;
 import site.okkul.be.domain.question.entity.Question;
@@ -100,7 +101,7 @@ class PracticeServiceUnitTest {
             practiceService.getPractice(practiceId, userId);
         });
 
-        assertThat(exception.getMessage()).isEqualTo("Pratice not found or access denied");
+        assertThat(exception.getErrorCode()).isEqualTo(PracticeErrorCode.PRACTICE_NOT_FOUND);
 
         verify(questionRepository, never()).findAllById(any());
     }

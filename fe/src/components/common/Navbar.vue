@@ -2,6 +2,8 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import defaultProfile from '@/assets/images/default-profile.png'
+import okkulLogo from '@/assets/images/okkul_logo.png'
 
 const route = useRoute()
 const authStore = useAuthStore()
@@ -41,7 +43,7 @@ const isActive = (path) => {
     <div class="navbar-content">
       <!-- 로고 -->
       <router-link to="/" class="logo">
-        <img src="/okkul_logo.png" alt="오꿀 로고" class="navbar-logo-img" />
+        <img :src="okkulLogo" alt="오꿀 로고" class="navbar-logo-img" />
       </router-link>
 
       <!-- 네비게이션 메뉴 -->
@@ -66,7 +68,7 @@ const isActive = (path) => {
           <!-- 프로필 -->
           <router-link to="/mypage" class="user-profile" :class="{ active: isActive('/mypage') }">
             <div class="profile-avatar">
-              <img src="/default-profile.png" alt="프로필" class="profile-image" />
+              <img :src="authStore.user?.profileImageUrl || defaultProfile" alt="프로필" class="profile-image" />
             </div>
             <span class="profile-name">{{ userName }}님</span>
           </router-link>

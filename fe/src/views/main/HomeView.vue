@@ -1,5 +1,6 @@
 <script setup>
 import { inject, onMounted, watch, ref, computed } from 'vue'
+import okkulSvg from '@/assets/images/okkul.svg'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -102,7 +103,7 @@ const handleCardClick = (path) => {
           <div class="circle circle-4"></div>
         </div>
         <div class="visual-logo">
-          <img src="/okkul.svg" alt="Okkul" class="floating-okkul" />
+          <img :src="okkulSvg" alt="Okkul" class="floating-okkul" />
         </div>
       </div>
 

@@ -774,7 +774,7 @@ onUnmounted(() => {
   min-height: 100vh;
   background: var(--bg-primary);
   /* Override global styles */
-  padding: 0 !important;
+  padding: 24px !important;
   display: block !important;
 }
 
@@ -885,7 +885,7 @@ onUnmounted(() => {
 
 /* 1. 주제 선택 */
 .topic-section {
-  margin-bottom: 3px;
+  margin-bottom: 32px; /* 간격 추가 */
   width: 100%;
 }
 .topic-grid {
@@ -908,7 +908,6 @@ onUnmounted(() => {
 @media (max-width: 1200px) {
   .topic-grid {
     grid-template-columns: repeat(4, 1fr);
-    max-height: 168px; /* 3줄 노출 */
   }
 }
 
@@ -916,7 +915,6 @@ onUnmounted(() => {
 @media (max-width: 768px) {
   .topic-grid {
     grid-template-columns: repeat(2, 1fr);
-    max-height: 280px; /* 여러 줄 노출 허용 */
     gap: 8px;
   }
 }
@@ -934,10 +932,9 @@ onUnmounted(() => {
   height: 44px;
   padding: 0 16px;
   border-radius: 12px;
-  border: var(--border-primary);
-  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  background: #FFFFFF; /* 선택 안됐을 때 흰색 배경 */
   cursor: pointer;
-  /* 화면 너비에 따라 폰트 크기 자동 조절 (최소 0.7rem ~ 최대 0.875rem) */
   font-size: clamp(0.7rem, 0.9vw + 0.4rem, 0.875rem);
   font-weight: 600;
   white-space: nowrap;

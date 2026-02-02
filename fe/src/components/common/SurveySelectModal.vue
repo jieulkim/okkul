@@ -455,18 +455,19 @@ const getTopicsSummary = (topics) => {
   padding: 0 32px 10px;
   display: flex;
   gap: 12px;
-  flex-wrap: nowrap; /* 버튼 한 줄 유지 */
+  flex-wrap: wrap; /* 버튼이 여러 줄로 나뉘도록 변경 */
+  justify-content: center; /* 버튼들을 가운데 정렬 */
 }
 
 button {
-  flex: 1;
+  flex-grow: 1; /* 공간이 있을 때 늘어나도록 변경 */
   padding: 14px;
   border-radius: 12px;
   border: none;
   font-weight: 700;
   cursor: pointer;
-  min-width: 140px; /* 최소 너비 */
-  white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+  min-width: 140px;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -478,15 +479,15 @@ button {
 }
 
 .recommended-btn {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: #ffffff;
-  border: 1px solid #2563eb;
+  background: #dcfce7; /* 파스텔 연두 */
+  color: #166534; /* 어두운 녹색 텍스트 */
+  border: 1px solid #86efac;
   box-shadow: var(--shadow-sm);
   font-size: 0.95rem;
 }
 
 .recommended-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  background: #bbf7d0;
   transform: translate(-0.02em, -0.02em);
   box-shadow: var(--shadow-md);
 }

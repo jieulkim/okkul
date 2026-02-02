@@ -345,7 +345,7 @@ const showGuide = ref(false);
 <style scoped>
 .page-container {
   min-height: 100vh;
-  background: var(--bg-primary);
+  background: #FFFFFF; /* 흰색 배경으로 고정 */
 }
 
 .page-content {

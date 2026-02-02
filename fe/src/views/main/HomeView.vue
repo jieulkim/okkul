@@ -110,8 +110,8 @@ const handleCardClick = (path) => {
         <div class="content-wrapper fade-in">
           <header class="home-header">
             <h1 class="main-title">
-              진짜 나를 알아가는 과정,<br/>
-              <span class="highlight">오꿀쌤</span>과 준비하기
+              나만의 AI 선생님<br/>
+              <span class="highlight">오꿀쌤과 오픽 준비하기</span>
             </h1>
             <p class="description">
               AI 분석, 실전 모의고사, 유형별 연습을 통해<br>

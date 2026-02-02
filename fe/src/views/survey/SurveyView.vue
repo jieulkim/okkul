@@ -5,7 +5,6 @@ import { useSurveyStore } from "@/stores/survey";
 
 const router = useRouter();
 const route = useRoute();
-const isDarkMode = inject("isDarkMode", ref(false));
 
 const currentStep = ref(1); // 1, 2, 3, 4
 const totalSteps = 4;
@@ -351,19 +350,6 @@ const goNext = () => {
 // 설문 임시 저장 및 레벨 선택 페이지로 이동
 const submitSurvey = () => {
   try {
-    // 선택지 순서(1, 2, 3, 4...)
-    // 프론트엔드 내부 ID를 그대로 전송
-
-    // [Backend Compatibility Workaround]
-    // 백엔드 이슈: SurveyMapper.java에서 `teachAt`(강사 근무처) 필드에 
-    // `teachAnswerId`가 아닌 `classTypeAnswerId`(수강 강의) 값을 잘못 매핑하고 있습니다.
-    // `classTypeAnswerId`가 4(5년 이상)일 경우, `TeachingLevel` Enum(1~3) 범위를 벗어나 400 에러가 발생합니다.
-    // 이를 방지하기 위해 4번 값은 null로 변환하여 전송합니다. (백엔드 수정 시 해당 로직 제거 가능)
-    let safeClassTypeAnswerId = surveyData.value.classTypeAnswerId;
-    if (safeClassTypeAnswerId === 4) {
-      safeClassTypeAnswerId = null;
-    }
-
     const payload = {
       occupationAnswerId: surveyData.value.occupationAnswerId, // 1, 2, 3, 4
       hasJob: surveyData.value.hasJob,
@@ -371,7 +357,7 @@ const submitSurvey = () => {
       teachAnswerId: surveyData.value.teachAnswerId, // 1, 2, 3
       manager: surveyData.value.manager,
       student: surveyData.value.student,
-      classTypeAnswerId: safeClassTypeAnswerId, // Sanitized Value
+      classTypeAnswerId: surveyData.value.classTypeAnswerId, // 1, 2, 3, 4
       residenceAnswerId: surveyData.value.residenceAnswerId, // 1, 2, 3, 4, 5
       leisure: surveyData.value.leisure,
       hobby: surveyData.value.hobby,
@@ -403,20 +389,18 @@ const showGuide = ref(false);
 
 <template>
   <div class="page-container">
-    <header class="survey-header">
-      <div class="header-top">
-        <button @click="router.push('/')" class="quit-btn">
-          <span class="material-symbols-outlined">close</span>
-          나가기
-        </button>
-        <button @click="showGuide = true" class="info-btn">
-          <span class="material-symbols-outlined">info</span>
-        </button>
-      </div>
-    </header>
-
     <main class="page-content">
       <div class="survey-container">
+        <div class="survey-header-section">
+          <button @click="router.push('/')" class="quit-btn">
+            <span class="material-symbols-outlined">close</span>
+            나가기
+          </button>
+          <button @click="showGuide = true" class="info-btn">
+            <span class="material-symbols-outlined">info</span>
+          </button>
+        </div>
+
         <!-- Step Progress -->
         <nav class="step-progress">
           <div class="step active">
@@ -1012,25 +996,33 @@ const showGuide = ref(false);
       <div v-if="showGuide" class="modal-overlay" @click="showGuide = false">
         <div class="modal-card" @click.stop>
           <div class="modal-header">
-            <h3>Guide</h3>
+            <h3>가이드</h3>
+            <p class="subtitle">설문 작성 안내</p>
           </div>
-          <div class="modal-body">
-            <ul class="guide-list">
-              <li>· Background Survey 화면입니다.</li>
-              <li>
-                · 선택하신 항목을 기초로 개인별 문항이 출제되니, 모든 설문에
-                빠짐없이 답변해 주십시오.
-              </li>
-              <li>· Part 4에서는 총 12개 이상의 항목을 선택해야 합니다.</li>
-              <li>
-                · 시험 문항은 설문에 포함되지 않은 일반 주제의 질문도 출제되니
-                유의바랍니다.
-              </li>
-            </ul>
+          <div class="guide-content">
+            <div class="guide-item">
+              <span class="material-icons guide-icon">assignment</span>
+              <div class="guide-text">
+                <strong>Background Survey</strong>
+                <p>선택하신 항목을 기초로 개인별 문항이 출제됩니다</p>
+              </div>
+            </div>
+            <div class="guide-item">
+              <span class="material-icons guide-icon">checklist</span>
+              <div class="guide-text">
+                <strong>필수 선택 개수</strong>
+                <p>Part 4에서는 총 12개 이상의 항목을 선택해야 합니다</p>
+              </div>
+            </div>
+            <div class="guide-item">
+              <span class="material-icons guide-icon">info</span>
+              <div class="guide-text">
+                <strong>추가 문항 안내</strong>
+                <p>시험 문항은 설문에 포함되지 않은 일반 주제의 질문도 출제됩니다</p>
+              </div>
+            </div>
           </div>
-          <div class="modal-footer">
-            <button @click="showGuide = false" class="close-btn">닫기</button>
-          </div>
+          <button @click="showGuide = false" class="modal-close-btn">확인</button>
         </div>
       </div>
     </transition>
@@ -1043,6 +1035,8 @@ const showGuide = ref(false);
 
 .survey-page {
   min-height: 100vh;
+  /* max-height 제거하여 자연스러운 스크롤 허용, 필요시 내부 스크롤로 변경 */
+  /* max-height: 100vh; */
   background: var(--bg-primary);
   font-family: "Noto Sans KR", sans-serif;
   display: flex;
@@ -1052,7 +1046,10 @@ const showGuide = ref(false);
 .page-content {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 32px 64px;
+  padding: 24px 64px; /* 상단 패딩 축소 (32px -> 24px) */
+  flex: 1;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 @media (max-width: 1024px) {
@@ -1071,7 +1068,7 @@ const showGuide = ref(false);
 .step-progress {
   display: flex;
   height: 44px;
-  margin-bottom: 40px;
+  margin-bottom: 32px; /* 하단 여백 축소 (40px -> 32px) */
   width: 100%;
   border-radius: 12px;
   overflow: hidden;
@@ -1209,16 +1206,13 @@ const showGuide = ref(false);
   font-weight: 500;
 }
 
-/* Survey Header */
-.survey-header {
-  padding: 24px 32px 0;
-}
-
-.header-top {
+/* Survey Header Section */
+.survey-header-section {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 16px; /* 하단 여백 축소 (24px -> 16px) */
+  padding: 0;
 }
 
 .quit-btn {
@@ -1247,6 +1241,9 @@ const showGuide = ref(false);
   cursor: pointer;
   transition: color 0.2s;
   padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .info-btn:hover {
@@ -1256,8 +1253,8 @@ const showGuide = ref(false);
 /* Navigation Controls */
 .navigation-controls {
   max-width: 1280px;
-  margin: 32px auto;
-  padding: 0 32px;
+  margin: 32px auto 0;
+  padding: 0;
   display: flex;
   justify-content: center;
   gap: 16px;
@@ -1302,7 +1299,7 @@ const showGuide = ref(false);
   cursor: not-allowed;
 }
 
-/* Modal */
+/* Modal - ExamQuestionView 스타일 적용 (일관성 유지) */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -1315,73 +1312,92 @@ const showGuide = ref(false);
 }
 
 .modal-card {
-  background: var(--bg-secondary);
-  border-radius: 20px;
-  max-width: 500px;
+  background: #FFFFFF;
+  border-radius: 24px;
+  max-width: 520px;
   width: 90%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-  border: var(--border-primary);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  padding-bottom: 32px;
 }
 
 .modal-header {
-  padding: 24px;
-  border-bottom: 1px solid var(--border-primary);
+  padding: 40px 40px 20px;
+  text-align: center;
+  background: inherit;
 }
 
 .modal-header h3 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  margin: 0;
-  color: var(--text-primary);
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0 0 12px;
+  color: #0f172a;
 }
 
-.modal-body {
-  padding: 24px;
+.modal-header .subtitle {
+  font-size: 1rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
 }
 
-.guide-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.guide-content {
+  padding: 24px 40px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
 }
 
-.guide-list li {
-  color: var(--text-secondary);
-  line-height: 1.6;
-  position: relative;
-  padding-left: 20px;
-}
-
-.guide-list li::before {
-  content: "•";
-  position: absolute;
-  left: 0;
-  color: var(--primary-color);
-  font-weight: bold;
-}
-
-.modal-footer {
-  padding: 16px 24px;
+.guide-item {
   display: flex;
-  justify-content: flex-end;
+  gap: 16px;
+  align-items: flex-start;
 }
 
-.close-btn {
-  padding: 10px 24px;
-  background: var(--bg-tertiary);
-  border: none;
-  border-radius: 10px;
+.guide-icon {
+  color: var(--primary-color);
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.guide-text {
+  flex: 1;
+}
+
+.guide-text strong {
+  display: block;
+  font-size: 1rem;
   font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+
+.guide-text p {
+  font-size: 0.9rem;
+  color: #64748b;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.modal-close-btn {
+  width: calc(100% - 80px); /* 좌우 여백 적용 */
+  margin: 0 40px;
+  padding: 16px;
+  background: var(--primary-color);
+  border: none;
+  font-weight: 700;
+  font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s;
-  color: var(--text-primary);
+  color: #0f172a;
+  border-radius: 12px;
 }
 
-.close-btn:hover {
-  background: #e2e8f0;
+.modal-close-btn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 /* Animations */

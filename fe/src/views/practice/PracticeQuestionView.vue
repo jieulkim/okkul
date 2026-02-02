@@ -71,27 +71,31 @@ const localTopics = ref([]); // Props or Mock topics
 const selectTopic = (topicId) => {
   currentTopic.value = topicId;
   emit("topic-changed", topicId);
+
+  // 0.5초 후 자동으로 접기
+  setTimeout(() => {
+    isTopicExpanded.value = false;
+  }, 50);
 };
 
-// 표시할 주제 목록 (선택된 주제를 맨 앞으로, 12개씩 페이징)
+// 표시할 주제 목록 (정렬 변경 없음, 12개씩 페이징)
 const displayedTopics = computed(() => {
   const source =
     localTopics.value.length > 0 ? localTopics.value : props.availableTopics;
 
-  // 전체 목록 복사
-  let sorted = [...source];
+  // Collapse = empty list (logic now handled by CSS max-height/opacity), Expanded = full list
+  // Always return source so DOM elements exist for animation
+  return source;
+});
 
-  if (currentTopic.value) {
-    const index = sorted.findIndex(
-      (t) => (t.topic_id || t.topicId) === currentTopic.value,
-    );
-    if (index > -1) {
-      const selected = sorted.splice(index, 1)[0];
-      sorted.unshift(selected);
-    }
-  }
-
-  return isTopicExpanded.value ? sorted : sorted.slice(0, 12);
+// 현재 선택된 주제 이름
+const currentTopicName = computed(() => {
+  const source =
+    localTopics.value.length > 0 ? localTopics.value : props.availableTopics;
+  const found = source.find(
+    (t) => (t.topic_id || t.topicId) === currentTopic.value
+  );
+  return found ? (found.name || found.topic_name) : "";
 });
 
 // ============================================
@@ -561,6 +565,10 @@ onUnmounted(() => {
 <template>
   <div class="page-container">
     <nav class="topic-section">
+      <button class="expand-btn" @click="isTopicExpanded = !isTopicExpanded">
+        {{ isTopicExpanded ? "접기 ▲" : "주제 더보기 ▼" }}
+      </button>
+
       <div class="topic-grid" :class="{ expanded: isTopicExpanded }">
         <button
           v-for="topic in displayedTopics"
@@ -571,9 +579,6 @@ onUnmounted(() => {
           {{ topic.name || topic.topic_name }}
         </button>
       </div>
-      <button class="expand-btn" @click="isTopicExpanded = !isTopicExpanded">
-        {{ isTopicExpanded ? "접기 ▲" : "주제 더보기 ▼" }}
-      </button>
     </nav>
 
     <main class="page-content">
@@ -583,6 +588,7 @@ onUnmounted(() => {
         <div class="question-container" v-if="currentQuestion">
           <div class="question-header">
             <div class="q-id-group">
+              <span v-if="currentTopicName" class="current-topic-badge">{{ currentTopicName }}</span>
               <h2 class="q-number">Q{{ questionNumber }}</h2>
               <button class="audio-btn" @click="playQuestionAudio">
                 <span class="material-icons">volume_up</span>
@@ -767,12 +773,15 @@ onUnmounted(() => {
 .page-container {
   min-height: 100vh;
   background: var(--bg-primary);
+  /* Override global styles */
+  padding: 0 !important;
+  display: block !important;
 }
 
 .page-content {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 32px 64px;
+  padding: 0;
 }
 
 @media (max-width: 1024px) {
@@ -788,6 +797,11 @@ onUnmounted(() => {
 }
 
 /* 질문 영역 스타일 */
+.input-area {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
 .question-container {
   margin-bottom: 20px;
 }
@@ -806,6 +820,18 @@ onUnmounted(() => {
   font-size: 32px;
   font-weight: 800;
   margin: 0;
+}
+.current-topic-badge {
+  background-color: var(--primary-color);
+  color: #212529;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 1rem;
+  box-shadow: var(--shadow-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .audio-btn {
   width: 44px;
@@ -859,7 +885,7 @@ onUnmounted(() => {
 
 /* 1. 주제 선택 */
 .topic-section {
-  margin-bottom: 30px;
+  margin-bottom: 3px;
   width: 100%;
 }
 .topic-grid {
@@ -867,11 +893,15 @@ onUnmounted(() => {
   /* 한 줄에 6개씩 배치 */
   grid-template-columns: repeat(6, 1fr); 
   gap: 12px;
-  /* 2줄(44px * 2 + 간격) 높이에 맞춰 초기 높이 제한 */
-  max-height: 112px; 
+  /* Animation - Collapsed State */
+  max-height: 0;
+  opacity: 0;
+  padding: 0 4px; /* Horizontal padding kept, vertical 0 */
+  margin-bottom: 0px;
+  margin-top: 0px;
+
   overflow: hidden;
-  transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  padding: 4px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* 태블릿 환경: 4열 */
@@ -891,8 +921,12 @@ onUnmounted(() => {
   }
 }
 
+
 .topic-grid.expanded {
   max-height: 2000px;
+  opacity: 1;
+  padding: 4px;
+  margin-top: 12px; /* Add margin when expanded */
 }
 
 .tab-btn {
@@ -932,7 +966,7 @@ onUnmounted(() => {
 
 .expand-btn {
   display: block;
-  margin: 16px auto 0;
+  margin: 12px auto 0;
   background: var(--bg-tertiary);
   border: none;
   border-radius: 20px;
@@ -955,7 +989,7 @@ onUnmounted(() => {
   gap: 30px;
 }
 .card {
-  background: var(--bg-secondary);
+  background: #FFFFFF;
   border-radius: 20px;
   padding: 32px;
   border: var(--border-primary);
@@ -982,7 +1016,7 @@ textarea {
   min-height: 140px;
   border: var(--border-primary);
   border-radius: 12px;
-  padding: 16px;
+  padding: 10px;
   font-family: inherit;
   font-size: 1rem;
   font-weight: 500;
@@ -1005,7 +1039,7 @@ textarea:focus {
   background: var(--bg-tertiary);
   border: 2px dashed var(--primary-light);
   border-radius: 12px;
-  padding: 16px;
+  padding: 10px;
   font-size: 1rem;
   color: var(--text-primary);
   transition: all 0.2s;

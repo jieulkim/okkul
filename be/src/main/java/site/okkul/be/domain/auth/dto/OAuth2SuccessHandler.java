@@ -12,10 +12,12 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
+import site.okkul.be.domain.auth.exception.AuthErrorCode;
 import site.okkul.be.domain.auth.service.JwtProvider;
 import site.okkul.be.domain.user.entity.OAuthProvider;
 import site.okkul.be.domain.user.entity.User;
 import site.okkul.be.domain.user.repository.UserJpaRepository;
+import site.okkul.be.global.exception.BusinessException;
 
 @Slf4j
 @Component
@@ -45,7 +47,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
 		// 2. DB에서 유저 조회 (여기서 확실하게 가져옵니다)
 		User user = userRepository.findByProviderAndProviderId(provider, providerId)
-				.orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+				.orElseThrow(() -> new BusinessException(AuthErrorCode.USER_NOT_REGISTERED));
 
 		// 3. 첫 로그인 판단 로직 (User 엔티티 상태로 판단)
 		boolean isFirst = (user.getTargetLevel() == null);

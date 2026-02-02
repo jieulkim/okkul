@@ -8,7 +8,7 @@ import site.okkul.be.domain.user.dto.request.UpdateNicknameRequest;
 import site.okkul.be.domain.user.dto.request.UpdateTargetLevelRequest;
 import site.okkul.be.domain.user.dto.response.UserResponse;
 import site.okkul.be.domain.user.entity.User;
-import site.okkul.be.domain.user.entity.UserErrorCode;
+import site.okkul.be.domain.user.exception.UserErrorCode;
 import site.okkul.be.domain.user.repository.UserJpaRepository;
 import site.okkul.be.global.exception.BusinessException;
 import site.okkul.be.infra.storage.FileStorageService;

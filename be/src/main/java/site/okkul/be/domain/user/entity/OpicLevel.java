@@ -3,6 +3,8 @@ package site.okkul.be.domain.user.entity;
 import java.util.Arrays;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import site.okkul.be.domain.user.exception.UserErrorCode;
+import site.okkul.be.global.exception.BusinessException;
 
 /**
  * OPIC 등급을 나타내는 열거형
@@ -27,6 +29,6 @@ public enum OpicLevel {
 		return Arrays.stream(values())
 				.filter(level -> level.grade.equals(grade))
 				.findFirst()
-				.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 등급입니다: " + grade));
+				.orElseThrow(() -> new BusinessException(UserErrorCode.INVALID_OPIC_LEVEL));
 	}
 }

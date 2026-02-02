@@ -1,7 +1,9 @@
 package site.okkul.be.domain.exam.service;
 
 import java.util.List;
-import site.okkul.be.domain.qustion.entity.QuestionType;
+import site.okkul.be.domain.exam.exception.ExamErrorCode;
+import site.okkul.be.domain.question.entity.QuestionType;
+import site.okkul.be.global.exception.BusinessException;
 
 public class ExamLevelDesign {
 
@@ -62,7 +64,7 @@ public class ExamLevelDesign {
 			case QuestionType.INTRODUCE, QuestionType.ROLE_PLAYING1 -> 1;
 			case QuestionType.COMBO2, QuestionType.ROLE_PLAYING2, QuestionType.ADVANCED2 -> 2;
 			case QuestionType.COMBO3, QuestionType.ROLE_PLAYING3 -> 3;
-			default -> throw new IllegalArgumentException("Unknown typeCode: " + type);
+			default -> throw new BusinessException(ExamErrorCode.UNKNOWN_QUESTION_TYPE);
 		};
 	}
 }

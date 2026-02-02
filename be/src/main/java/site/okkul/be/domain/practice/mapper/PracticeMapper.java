@@ -2,15 +2,13 @@ package site.okkul.be.domain.practice.mapper;
 
 import org.springframework.stereotype.Component;
 import site.okkul.be.domain.practice.dto.response.PracticeQuestionInfo;
-import site.okkul.be.domain.practice.dto.response.ScriptCorrection;
 import site.okkul.be.domain.practice.dto.response.SentenceCorrection;
-import site.okkul.be.domain.practice.entity.FeedbackStatus;
 import site.okkul.be.domain.practice.entity.Practice;
 import site.okkul.be.domain.practice.entity.PracticeAnswer;
 import site.okkul.be.domain.practice.entity.PracticeSentenceFeedback;
-import site.okkul.be.domain.qustion.entity.Question;
-import site.okkul.be.domain.qustion.entity.QuestionSet;
-import site.okkul.be.domain.qustion.entity.QuestionType;
+import site.okkul.be.domain.question.entity.Question;
+import site.okkul.be.domain.question.entity.QuestionSet;
+import site.okkul.be.domain.question.entity.QuestionType;
 import site.okkul.be.domain.topic.entity.Topic;
 import site.okkul.be.domain.user.entity.User;
 import site.okkul.be.infra.ai.dto.SentenceFeedbackResponse;

@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import site.okkul.be.domain.survey.dto.request.SurveyCreateRequest;
 import site.okkul.be.domain.survey.dto.response.*;
-import site.okkul.be.domain.survey.entity.SurveyErrorCode;
+import site.okkul.be.domain.survey.exception.SurveyErrorCode;
 import site.okkul.be.domain.survey.mapper.SurveyMapper;
 import site.okkul.be.domain.survey.repository.SurveyJpaRepository;
 import site.okkul.be.domain.survey.entity.Survey;

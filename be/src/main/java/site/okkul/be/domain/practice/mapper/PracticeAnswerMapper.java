@@ -4,7 +4,7 @@ import org.springframework.stereotype.Component;
 import site.okkul.be.domain.practice.dto.request.PracticeFeedbackRequest;
 import site.okkul.be.domain.practice.entity.Practice;
 import site.okkul.be.domain.practice.entity.PracticeAnswer;
-import site.okkul.be.domain.qustion.entity.Question;
+import site.okkul.be.domain.question.entity.Question;
 
 @Component
 public class PracticeAnswerMapper {

@@ -6,14 +6,13 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-import site.okkul.be.domain.qustion.entity.QuestionSet;
-import site.okkul.be.domain.qustion.entity.QuestionType;
-import site.okkul.be.domain.qustion.entity.converter.QuestionTypeConverter;
+import site.okkul.be.domain.question.entity.QuestionSet;
+import site.okkul.be.domain.question.entity.QuestionType;
+import site.okkul.be.domain.question.entity.converter.QuestionTypeConverter;
 import site.okkul.be.domain.topic.entity.Topic;
 import site.okkul.be.domain.user.entity.User;
 
 import java.time.Instant;
-import java.util.HashSet;
 import java.util.Set;
 
 @Entity

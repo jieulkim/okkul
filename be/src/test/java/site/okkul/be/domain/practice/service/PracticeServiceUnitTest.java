@@ -12,9 +12,9 @@ import site.okkul.be.domain.practice.dto.response.PracticeQuestionResponse;
 import site.okkul.be.domain.practice.entity.Practice;
 import site.okkul.be.domain.practice.mapper.PracticeMapper;
 import site.okkul.be.domain.practice.repository.PracticeJpaRepository;
-import site.okkul.be.domain.qustion.entity.Question;
-import site.okkul.be.domain.qustion.entity.QuestionSet;
-import site.okkul.be.domain.qustion.repository.QuestionRepository;
+import site.okkul.be.domain.question.entity.Question;
+import site.okkul.be.domain.question.entity.QuestionSet;
+import site.okkul.be.domain.question.repository.QuestionRepository;
 
 import java.util.Arrays;
 import java.util.Collections;

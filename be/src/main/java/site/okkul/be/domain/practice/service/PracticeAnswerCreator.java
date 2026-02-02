@@ -8,11 +8,14 @@ import org.springframework.web.multipart.MultipartFile;
 import site.okkul.be.domain.practice.dto.request.PracticeFeedbackRequest;
 import site.okkul.be.domain.practice.entity.Practice;
 import site.okkul.be.domain.practice.entity.PracticeAnswer;
+import site.okkul.be.domain.practice.exception.PracticeErrorCode;
 import site.okkul.be.domain.practice.mapper.PracticeAnswerMapper;
 import site.okkul.be.domain.practice.repository.PracticeAnswerJpaRepository;
 import site.okkul.be.domain.practice.repository.PracticeJpaRepository;
-import site.okkul.be.domain.qustion.entity.Question;
-import site.okkul.be.domain.qustion.repository.QuestionRepository;
+import site.okkul.be.domain.question.entity.Question;
+import site.okkul.be.domain.question.exception.QuestionErrorCode;
+import site.okkul.be.domain.question.repository.QuestionRepository;
+import site.okkul.be.global.exception.BusinessException;
 import site.okkul.be.infra.storage.FileStorageService;
 
 @Component
@@ -31,9 +34,9 @@ public class PracticeAnswerCreator {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Long createAndSaveAnswer(Long practiceId, PracticeFeedbackRequest request, MultipartFile audioFile) {
         Practice practice = practiceJpaRepository.findById(practiceId)
-                .orElseThrow(() -> new IllegalArgumentException("Practice not found"));
+                .orElseThrow(() -> new BusinessException(PracticeErrorCode.PRACTICE_NOT_FOUND));
         Question question = questionRepository.findById(request.getQuestionId())
-                .orElseThrow(() -> new IllegalArgumentException("Question not found"));
+                .orElseThrow(() -> new BusinessException(QuestionErrorCode.QUESTION_NOT_FOUND));
         String audioUrl = fileStorageService.upload(audioFile, "answer");
 
         PracticeAnswer practiceAnswer = practiceAnswerMapper.toEntity(request, audioUrl, practice, question);

@@ -1,6 +1,5 @@
 package site.okkul.be.domain.exam.service;
 
-import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,12 +14,12 @@ import site.okkul.be.domain.exam.dto.request.ExamQuestionAnswerRequest;
 import site.okkul.be.domain.exam.dto.response.ExamDetailResponse;
 import site.okkul.be.domain.exam.entity.Exam;
 import site.okkul.be.domain.exam.entity.ExamAnswer;
-import site.okkul.be.domain.exam.entity.ExamErrorCode;
+import site.okkul.be.domain.exam.exception.ExamErrorCode;
 import site.okkul.be.domain.exam.repository.ExamAnswerJpaRepository;
 import site.okkul.be.domain.exam.repository.ExamJpaRepository;
-import site.okkul.be.domain.qustion.entity.QuestionSet;
-import site.okkul.be.domain.qustion.entity.QuestionType;
-import site.okkul.be.domain.qustion.repository.QuestionSetRepository;
+import site.okkul.be.domain.question.entity.QuestionSet;
+import site.okkul.be.domain.question.entity.QuestionType;
+import site.okkul.be.domain.question.repository.QuestionSetRepository;
 import site.okkul.be.domain.survey.entity.Survey;
 import site.okkul.be.domain.survey.repository.SurveyJpaRepository;
 import site.okkul.be.domain.topic.entity.Topic;
@@ -166,17 +165,21 @@ public class ExamService {
 		// 문제 가져오기
 		for (QuestionType questionType : questionTypes) {
 			Optional<QuestionSet> questionSet = Optional.empty();
-			Collections.shuffle(topics);
-			for (Topic topic : topics) {
-				questionSet = questionSetRepository.findRandomByLevelAndTopic(
-						level,
-						topic.getId(),
-						questionType
-				);
-				if (questionSet.isPresent()) {
-					break;
-				}
-			}
+            if (questionType.equals(QuestionType.INTRODUCE))
+                questionSet = questionSetRepository.findIntroQuestion(QuestionType.INTRODUCE.getId());
+            else {
+                Collections.shuffle(topics);
+                for (Topic topic : topics) {
+                    questionSet = questionSetRepository.findRandomByLevelAndTopic(
+                            level,
+                            topic.getId(),
+                            questionType
+                    );
+                    if (questionSet.isPresent()) {
+                        break;
+                    }
+                }
+            }
 
 			if (questionSet.isPresent()) {
 				exam.getQuestionSets().add(questionSet.get());

@@ -1,6 +1,8 @@
 package site.okkul.be.domain.survey.entity;
 
 import lombok.Getter;
+import site.okkul.be.domain.survey.exception.SurveyErrorCode;
+import site.okkul.be.global.exception.BusinessException;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -35,7 +37,7 @@ public enum OccupationType {
             return null;
         }
         if (!VALUE_MAP.containsKey(value)) {
-            throw new IllegalArgumentException("잘못된 OccupationType value입니다: " + value);
+            throw new BusinessException(SurveyErrorCode.INVALID_SURVEY_OCCUPATION_VALUE);
         }
         return VALUE_MAP.get(value);
     }

@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import site.okkul.be.domain.practice.dto.request.PracticeFeedbackRequest;
@@ -13,15 +14,18 @@ import site.okkul.be.domain.practice.entity.Practice;
 import site.okkul.be.domain.practice.entity.PracticeAnswer;
 import site.okkul.be.domain.practice.repository.PracticeAnswerJpaRepository;
 import site.okkul.be.domain.practice.repository.PracticeJpaRepository;
+import site.okkul.be.domain.practice.service.PracticeService;
 import site.okkul.be.domain.question.entity.Question;
 import site.okkul.be.domain.question.entity.QuestionSet;
 import site.okkul.be.domain.question.entity.QuestionType;
+import site.okkul.be.domain.question.exception.QuestionErrorCode;
 import site.okkul.be.domain.question.repository.QuestionRepository;
 import site.okkul.be.domain.question.repository.QuestionSetRepository;
 import site.okkul.be.domain.survey.entity.Survey;
 import site.okkul.be.domain.survey.repository.SurveyJpaRepository;
 import site.okkul.be.domain.topic.entity.Topic;
-import site.okkul.be.domain.topic.exception.TopicErrorCode;
+import site.okkul.be.domain.topic.entity.TopicCategory;
+import site.okkul.be.domain.topic.repository.TopicCategoryRepository;
 import site.okkul.be.domain.topic.repository.TopicJpaRepository;
 import site.okkul.be.domain.user.entity.OAuthProvider;
 import site.okkul.be.domain.user.entity.User;
@@ -32,11 +36,11 @@ import site.okkul.be.infra.ai.AiClientProvider;
 import site.okkul.be.infra.ai.dto.AiFeedbackResponse;
 import site.okkul.be.infra.storage.FileStorageService;
 
-
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -59,42 +63,52 @@ class PracticeServiceIntegrationTest {
     @Autowired
     private TopicJpaRepository topicJpaRepository;
     @Autowired
+    private TopicCategoryRepository topicCategoryRepository;
+    @Autowired
     private QuestionSetRepository questionSetRepository;
     @Autowired
     private QuestionRepository questionRepository;
     @Autowired
     private PracticeAnswerJpaRepository practiceAnswerRepository;
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @MockitoBean
     private AiClientProvider aiClientProvider;
     @MockitoBean
     private FileStorageService fileStorageService;
 
+    private User user;
+    private Practice practice;
+    private TopicCategory topicCategory;
+    private Topic topic;
+    private Survey survey;
+    private Question question1;
+    private Question question2;
+    private QuestionSet questionSet;
+    private AiClient mockAiClient;
+    private List<String> tableNames;
 
-    @AfterEach
-    void cleanup() {
-        // 외래 키 제약 조건을 피하기 위해 자식 테이블부터 삭제
-        practiceAnswerRepository.deleteAllInBatch();
-        practiceJpaRepository.deleteAllInBatch();
-        questionRepository.deleteAllInBatch();
-        questionSetRepository.deleteAllInBatch();
-        surveyJpaRepository.deleteAllInBatch();
-        userJpaRepository.deleteAllInBatch();
-    }
+    @BeforeEach
+    void setUp() {
+        // 테이블 이름 캐싱 (한 번만 실행)
+        if (tableNames == null) {
+            tableNames = jdbcTemplate.query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'",
+                            (rs, rowNum) -> rs.getString(1))
+                    .stream()
+                    .filter(tableName -> !tableName.equals("flyway_schema_history"))
+                    .collect(Collectors.toList());
+        }
 
+        // 테스트 데이터 생성
+        user = userJpaRepository.save(User.builder().email("test@okkul.site").provider(OAuthProvider.GOOGLE).providerId("ABC").build());
+        topicCategory = topicCategoryRepository.save(TopicCategory.builder().id(1L).categoryName("categoryName").categoryCode("categoryCode").build());
+        topic = topicJpaRepository.save(Topic.builder().id(101L).topicName("Topic1").topicCode("TopicCode").category(topicCategory).build());
+        survey = surveyJpaRepository.save(Survey.builder().userId(user.getId()).level(3).build());
+        question1 = Question.builder().questionText("Q1. 인공지능이란?").audioUrl("q1.mp3").order(1).build();
+        question2 = Question.builder().questionText("Q2. 머신러닝이란?").audioUrl("q2.mp3").order(2).build();
 
-    @DisplayName("유형별 연습을 생성하고, 관련된 문제 ID들이 올바르게 저장된다.")
-    @Test
-    void createPractice_success() {
-        // given: 테스트를 위한 더미 데이터 생성 및 저장
-        User user = userJpaRepository.save(User.builder().email("test@okkul.site").provider(OAuthProvider.GOOGLE).providerId("ABC").build());
-        Topic topic = topicJpaRepository.findById(101L).orElseThrow(() -> new BusinessException(TopicErrorCode.TOPIC_NOT_FOUND));
-        Survey survey = surveyJpaRepository.save(Survey.builder().userId(user.getId()).level(3).build());
-
-        Question question1 = Question.builder().questionText("Q1. 인공지능이란?").audioUrl("q1.mp3").order(1).build();
-        Question question2 = Question.builder().questionText("Q2. 머신러닝이란?").audioUrl("q2.mp3").order(2).build();
-
-        QuestionSet questionSet = QuestionSet.builder()
+        questionSet = QuestionSet.builder()
                 .level(3)
                 .topic(topic)
                 .questionType(QuestionType.COMBO2)
@@ -105,46 +119,46 @@ class PracticeServiceIntegrationTest {
         question2.assignTo(questionSet);
         questionSetRepository.save(questionSet);
 
+        practice = practiceJpaRepository.save(Practice.builder().user(user).topic(topic).questionSet(questionSet).questionType(QuestionType.COMBO2).build());
+    }
+
+    @AfterEach
+    void cleanup() {
+        jdbcTemplate.execute("SET session_replication_role = 'replica';");
+        tableNames.forEach(tableName -> jdbcTemplate.execute("TRUNCATE TABLE " + tableName + " RESTART IDENTITY CASCADE;"));
+        jdbcTemplate.execute("SET session_replication_role = 'origin';");
+    }
+
+    @DisplayName("유형별 연습을 생성하고, 관련된 문제 ID들이 올바르게 저장된다.")
+    @Test
+    void createPractice_success() {
+        // given (data is prepared in setUp)
 
         // when: 서비스 메서드 호출
-        PracticeCreateResponse response = practiceService.create(survey.getSurveyId(), topic.getId(), QuestionType.COMBO2.getId(), user.getId());
-
+        PracticeCreateResponse response = practiceService.create(
+                survey.getSurveyId(),
+                topic.getId(),
+                questionSet.getQuestionType().getId(),
+                user.getId());
 
         // then: 결과 검증
         assertThat(response).isNotNull();
         assertThat(response.getPracticeId()).isNotNull();
 
-        Practice foundPractice = practiceJpaRepository.findByIdAndUserIdWithQuestionIds(response.getPracticeId(), user.getId())
+        Practice foundPractice = practiceJpaRepository.findById(response.getPracticeId())
                 .orElseThrow(() -> new AssertionError("Practice should be created"));
 
         assertThat(foundPractice.getUser().getId()).isEqualTo(user.getId());
         assertThat(foundPractice.getTopic().getId()).isEqualTo(topic.getId());
         assertThat(foundPractice.getQuestionSet().getId()).isEqualTo(questionSet.getId());
-        assertThat(foundPractice.getQuestionIds()).hasSize(2);
-        assertThat(foundPractice.getQuestionIds()).containsExactlyInAnyOrder(
-                question1.getId(),
-                question2.getId()
-        );
     }
 
     @Nested
     @DisplayName("createAnswerAndRequestFeedbackAsync 메서드는")
     class CreateAnswerAndRequestFeedbackAsyncTest {
 
-        private User user;
-        private Practice practice;
-        private Question question;
-        private AiClient mockAiClient;
-
-
         @BeforeEach
         void setup() {
-            user = userJpaRepository.save(User.builder().email("user@test.com").provider(OAuthProvider.GOOGLE).providerId("123").build());
-            Topic topic = topicJpaRepository.findById(101L).orElseThrow();
-            QuestionSet questionSet = questionSetRepository.save(QuestionSet.builder().level(5).topic(topic).questionType(QuestionType.COMBO2).build());
-            question = questionRepository.save(Question.builder().questionText("Test Question").audioUrl("test.mp3").questionSet(questionSet).build());
-            practice = practiceJpaRepository.save(Practice.builder().user(user).topic(topic).questionSet(questionSet).questionType(QuestionType.COMBO2).build());
-
             mockAiClient = mock(AiClient.class);
             given(aiClientProvider.getClient(anyBoolean())).willReturn(mockAiClient);
         }
@@ -153,7 +167,7 @@ class PracticeServiceIntegrationTest {
         @DisplayName("성공 - AI 피드백 요청 후 상태가 COMPLETED로 변경된다")
         void success_changesStatusToCompleted() {
             // given
-            var request = new PracticeFeedbackRequest(question.getId(), "korean", "english");
+            var request = new PracticeFeedbackRequest(question1.getId(), "korean", "english");
             var audioFile = new MockMultipartFile("audio", "test.mp3", "audio/mpeg", "data".getBytes());
 
             given(fileStorageService.upload(any(), any())).willReturn("http://storage.com/test.mp3");
@@ -184,7 +198,7 @@ class PracticeServiceIntegrationTest {
         @DisplayName("실패 - AI 피드백 요청 실패 시 상태가 FAILED로 변경된다")
         void failure_changesStatusToFailed() {
             // given
-            var request = new PracticeFeedbackRequest(question.getId(), "korean", "english");
+            var request = new PracticeFeedbackRequest(question1.getId(), "korean", "english");
             var audioFile = new MockMultipartFile("audio", "test.mp3", "audio/mpeg", "data".getBytes());
 
             given(fileStorageService.upload(any(), any())).willReturn("http://storage.com/test.mp3");

@@ -10,9 +10,12 @@ const isDarkMode = inject('isDarkMode', ref(false));
 const feedbackData = ref(null);
 const selectedCorrectionIndex = ref(null);
 
-// 초기화
+// 초기화 (즉시 실행하여 로딩화면 방지)
+loadFeedback();
+
+// 컴포넌트 마운트 시 추가 로직이 필요하다면 여기에 작성
 onMounted(() => {
-  loadFeedback();
+  // ...
 });
 
 const loadFeedback = () => {
@@ -76,13 +79,7 @@ const selectCorrection = (index) => {
 
 <template>
   <div class="practice-feedback-page" :class="{ 'dark-mode': isDarkMode }">
-    <div v-if="!feedbackData" class="loading-screen">
-      <div class="spinner"></div>
-      <p>피드백을 불러오는 중...</p>
-    </div>
-
-    <template v-else>
-      <div class="feedback-container">
+    <div v-if="feedbackData" class="feedback-container">
         <!-- 헤더 -->
         <div class="feedback-header">
           <button @click="router.push('/practice')" class="back-btn">
@@ -187,8 +184,11 @@ const selectCorrection = (index) => {
             홈으로
           </button>
         </div>
-      </div>
-    </template>
+    </div>
+    <div v-else class="error-screen">
+      <p>피드백 데이터를 불러올 수 없습니다.</p>
+      <button @click="router.push('/practice')" class="back-link">돌아가기</button>
+    </div>
   </div>
 </template>
 
@@ -213,33 +213,22 @@ const selectCorrection = (index) => {
   color: var(--text-primary);
 }
 
-/* 로딩 */
-.loading-screen {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 80vh;
-  gap: 24px;
-}
-
-.spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid var(--bg-tertiary);
-  border-top-color: var(--primary-color);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* 컨테이너 */
 .feedback-container {
   max-width: 1000px;
   margin: 0 auto;
+  animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* 헤더 */

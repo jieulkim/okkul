@@ -4,7 +4,9 @@ import { useRouter } from 'vue-router';
 
 const router = useRouter();
 const isDarkMode = inject('isDarkMode', ref(false));
-const isLoading = ref(true);
+const isLoading = ref(false); // remove this line entirely if unused, but tool requires replacement. I will just comment it out.
+// const isLoading = ref(false);
+const isFiltering = ref(false); // 필터링 로딩 추가
 const currentCategory = ref(null); // 'EXAM', 'PRACTICE', or null
 
 // 가상 데이터 (API 연결 전)
@@ -46,10 +48,7 @@ const feedbackHistory = ref([
 ]);
 
 onMounted(async () => {
-  // 실제 API 연동 시 이곳에서 데이터 로드
-  setTimeout(() => {
-    isLoading.value = false;
-  }, 500);
+  // 초기 데이터 로드는 즉시 완료된 것으로 처리 (이미 가상 데이터 사용 중)
 });
 
 const filteredHistory = computed(() => {
@@ -59,6 +58,15 @@ const filteredHistory = computed(() => {
 
 const selectCategory = (category) => {
   currentCategory.value = category;
+  loadFilteredHistory();
+};
+
+const loadFilteredHistory = () => {
+  isFiltering.value = true;
+  // 카테고리 선택 시 로딩 시뮬레이션
+  setTimeout(() => {
+    isFiltering.value = false;
+  }, 600);
 };
 
 const goBackToCategories = () => {
@@ -91,40 +99,42 @@ const goToDetail = (item) => {
         <p class="page-subtitle">지금까지의 성장을 확인해보세요!</p>
       </header>
 
-      <div v-if="isLoading" class="loading-state">
-        <div class="spinner"></div>
-        <p>기록을 불러오는 중...</p>
-      </div>
-
-      <div v-else>
-        <!-- 카테고리 선택 화면 -->
-        <div v-if="!currentCategory" class="categories-grid">
-          <div class="category-card" @click="selectCategory('EXAM')">
-            <div class="category-icon">
-              <span class="material-icons">school</span>
-            </div>
-            <h2>실전 모의고사</h2>
-            <p>전체 시험에 대한 종합적인 피드백을 확인하세요.</p>
-            <div class="category-footer">
-              <span>내역 보기</span>
-              <span class="material-icons">chevron_right</span>
-            </div>
+      <!-- 카테고리 선택 화면 -->
+      <div v-if="!currentCategory" class="categories-grid visible-animation">
+        <div class="category-card" @click="selectCategory('EXAM')">
+          <div class="category-icon">
+            <span class="material-icons">school</span>
           </div>
-          <div class="category-card" @click="selectCategory('PRACTICE')">
-            <div class="category-icon">
-              <span class="material-icons">track_changes</span>
-            </div>
-            <h2>유형별 연습</h2>
-            <p>각 주제별 집중 연습에 대한 피드백을 확인하세요.</p>
-            <div class="category-footer">
-              <span>내역 보기</span>
-              <span class="material-icons">chevron_right</span>
-            </div>
+          <h2>실전 모의고사</h2>
+          <p>전체 시험에 대한 종합적인 피드백을 확인하세요.</p>
+          <div class="category-footer">
+            <span>내역 보기</span>
+            <span class="material-icons">chevron_right</span>
           </div>
         </div>
+        <div class="category-card" @click="selectCategory('PRACTICE')">
+          <div class="category-icon">
+            <span class="material-icons">track_changes</span>
+          </div>
+          <h2>유형별 연습</h2>
+          <p>각 주제별 집중 연습에 대한 피드백을 확인하세요.</p>
+          <div class="category-footer">
+            <span>내역 보기</span>
+            <span class="material-icons">chevron_right</span>
+          </div>
+        </div>
+      </div>
 
-        <!-- 필터링된 리스트 화면 -->
-        <div v-else class="feedback-grid">
+      <!-- 필터링된 리스트 화면 (카테고리 선택 시) -->
+      <div v-else>
+        <!-- 로딩 중일 때 표시 -->
+        <div v-if="isFiltering" class="loading-state">
+          <div class="spinner"></div>
+          <p>기록을 불러오는 중...</p>
+        </div>
+
+        <!-- 로딩 완료 후 리스트 표시 -->
+        <div v-else class="feedback-grid visible-animation">
           <div 
             v-for="item in filteredHistory" 
             :key="`${item.type}-${item.id}`" 
@@ -217,6 +227,21 @@ const goToDetail = (item) => {
 .page-subtitle {
   font-size: 1.1rem;
   color: var(--text-secondary);
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.visible-animation {
+  animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* 카테고리 선택 스타일 */

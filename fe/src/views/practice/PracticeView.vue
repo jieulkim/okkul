@@ -322,11 +322,23 @@ onMounted(async () => {
   justify-content: center;
 }
 
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .page-content {
   max-width: 1400px;
   margin: 0 auto;
   padding: 20px 40px;
   width: 100%;
+  animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @media (max-width: 1024px) {
@@ -345,7 +357,7 @@ onMounted(async () => {
   font-size: 2rem;
   font-weight: 800;
   color: var(--text-primary);
-  margin-bottom: 24px;
+  margin-bottom: 60px;
   text-align: center;
 }
 

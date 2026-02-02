@@ -48,6 +48,24 @@ spring:
 
 server:
   forward-headers-strategy: framework
+  port: 8080
+
+management:
+  server:
+    port: 8081 # 엑추에이터 및 모니터링 포트 분리
+  endpoints:
+    web:
+      exposure:
+        include: "prometheus,health,info" # 프로메테우스와 기본 정보 노출
+  endpoint:
+    prometheus:
+      access: read_only
+    health:
+      show-details: always # 상세 건강상태 확인 (선택 사항)
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      profile: ${SPRING_PROFILES_ACTIVE:default} # 프로필 정보 추가 (기본값 default)
 
 springdoc:
   override-with-generic-response: false

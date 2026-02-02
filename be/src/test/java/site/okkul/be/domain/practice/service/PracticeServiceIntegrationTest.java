@@ -13,18 +13,20 @@ import site.okkul.be.domain.practice.entity.Practice;
 import site.okkul.be.domain.practice.entity.PracticeAnswer;
 import site.okkul.be.domain.practice.repository.PracticeAnswerJpaRepository;
 import site.okkul.be.domain.practice.repository.PracticeJpaRepository;
-import site.okkul.be.domain.qustion.entity.Question;
-import site.okkul.be.domain.qustion.entity.QuestionSet;
-import site.okkul.be.domain.qustion.entity.QuestionType;
-import site.okkul.be.domain.qustion.repository.QuestionRepository;
-import site.okkul.be.domain.qustion.repository.QuestionSetRepository;
+import site.okkul.be.domain.question.entity.Question;
+import site.okkul.be.domain.question.entity.QuestionSet;
+import site.okkul.be.domain.question.entity.QuestionType;
+import site.okkul.be.domain.question.repository.QuestionRepository;
+import site.okkul.be.domain.question.repository.QuestionSetRepository;
 import site.okkul.be.domain.survey.entity.Survey;
 import site.okkul.be.domain.survey.repository.SurveyJpaRepository;
 import site.okkul.be.domain.topic.entity.Topic;
+import site.okkul.be.domain.topic.exception.TopicErrorCode;
 import site.okkul.be.domain.topic.repository.TopicJpaRepository;
 import site.okkul.be.domain.user.entity.OAuthProvider;
 import site.okkul.be.domain.user.entity.User;
 import site.okkul.be.domain.user.repository.UserJpaRepository;
+import site.okkul.be.global.exception.BusinessException;
 import site.okkul.be.infra.ai.AiClient;
 import site.okkul.be.infra.ai.AiClientProvider;
 import site.okkul.be.infra.ai.dto.AiFeedbackResponse;
@@ -86,7 +88,7 @@ class PracticeServiceIntegrationTest {
     void createPractice_success() {
         // given: 테스트를 위한 더미 데이터 생성 및 저장
         User user = userJpaRepository.save(User.builder().email("test@okkul.site").provider(OAuthProvider.GOOGLE).providerId("ABC").build());
-        Topic topic = topicJpaRepository.findById(101L).orElseThrow(() -> new IllegalArgumentException("존재하지 않는 토픽입니다."));
+        Topic topic = topicJpaRepository.findById(101L).orElseThrow(() -> new BusinessException(TopicErrorCode.TOPIC_NOT_FOUND));
         Survey survey = surveyJpaRepository.save(Survey.builder().userId(user.getId()).level(3).build());
 
         Question question1 = Question.builder().questionText("Q1. 인공지능이란?").audioUrl("q1.mp3").order(1).build();

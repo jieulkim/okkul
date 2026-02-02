@@ -11,7 +11,7 @@ import site.okkul.be.domain.exam.entity.ExamReport;
 import site.okkul.be.domain.exam.repository.ExamAnswerJpaRepository;
 import site.okkul.be.domain.exam.repository.ExamJpaRepository;
 import site.okkul.be.domain.exam.repository.ExamReportJpaRepository;
-import site.okkul.be.domain.history.domain.HistoryErrorCode;
+import site.okkul.be.domain.history.exception.HistoryErrorCode;
 import site.okkul.be.domain.history.dto.*;
 import site.okkul.be.domain.practice.entity.Practice;
 import site.okkul.be.domain.practice.entity.PracticeAnswer;
@@ -159,7 +159,7 @@ public class HistoryService {
             List<PracticeAnswer> questionAnswers = answersByQuestionMap.get(questionId);
 
             // 질문 내용은 첫 번째 답변에서 꺼냄
-            site.okkul.be.domain.qustion.entity.Question questionEntity = questionAnswers.get(0).getQuestion();
+            site.okkul.be.domain.question.entity.Question questionEntity = questionAnswers.get(0).getQuestion();
 
             // 해당 질문에 대한 시도(Attempt) 리스트 생성
             List<PracticeCycleDetail> attempts = new ArrayList<>();

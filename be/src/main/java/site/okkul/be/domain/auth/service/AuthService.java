@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import site.okkul.be.domain.auth.domain.AuthErrorCode;
+import site.okkul.be.domain.auth.exception.AuthErrorCode;
 import site.okkul.be.domain.auth.dto.AccessTokenResponse;
 import site.okkul.be.domain.auth.dto.JwtUserDetails;
 import site.okkul.be.domain.user.entity.User;

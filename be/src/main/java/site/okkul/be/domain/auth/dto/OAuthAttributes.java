@@ -1,5 +1,8 @@
 package site.okkul.be.domain.auth.dto;
 
+import site.okkul.be.domain.auth.exception.AuthErrorCode;
+import site.okkul.be.global.exception.BusinessException;
+
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
@@ -28,7 +31,7 @@ public class OAuthAttributes {
 		OAuth2UserInfo oauth2UserInfo = switch (provider) {
 			case GOOGLE -> new GoogleOAuth2UserInfo(attributes);
 			// case KAKAO -> new KakaoOAuth2UserInfo(attributes); // 추후 추가
-			default -> throw new IllegalArgumentException("지원하지 않는 소셜 로그인입니다: " + provider);
+			default -> throw new BusinessException(AuthErrorCode.UNSUPPORTED_OAUTH_PROVIDER);
 		};
 
 		return OAuthAttributes.builder()

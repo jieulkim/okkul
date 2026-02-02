@@ -22,7 +22,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import site.okkul.be.domain.qustion.entity.QuestionSet;
+import site.okkul.be.domain.exam.exception.ExamErrorCode;
+import site.okkul.be.domain.question.entity.QuestionSet;
+import site.okkul.be.global.exception.BusinessException;
 
 /**
  * 모의고사 응시 세션 엔티티
@@ -149,7 +151,7 @@ public class Exam {
 			this.adjustedDifficulty = newDifficulty;
 			this.updatedAt = Instant.now();
 		} else {
-			throw new IllegalArgumentException("잘못된 값을 넣었다");
+			throw new BusinessException(ExamErrorCode.INVALID_DIFFICULTY_VALUE);
 		}
 	}
 }

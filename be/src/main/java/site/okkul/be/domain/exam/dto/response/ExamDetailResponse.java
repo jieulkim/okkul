@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import site.okkul.be.domain.exam.entity.Exam;
-import site.okkul.be.domain.qustion.dto.ExamQuestionResponse;
+import site.okkul.be.domain.question.dto.ExamQuestionResponse;
 
 
 @Schema(description = "모의고사용 문제 정보")

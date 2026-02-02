@@ -9,13 +9,13 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
 import site.okkul.be.domain.practice.entity.FeedbackStatus;
 import site.okkul.be.domain.practice.entity.PracticeAnswer;
 import site.okkul.be.domain.practice.entity.PracticeSentenceFeedback;
+import site.okkul.be.domain.practice.exception.PracticeErrorCode;
 import site.okkul.be.domain.practice.mapper.PracticeMapper;
 import site.okkul.be.domain.practice.repository.PracticeAnswerJpaRepository;
+import site.okkul.be.global.exception.BusinessException;
 import site.okkul.be.infra.ai.AiClient;
 import site.okkul.be.infra.ai.AiClientProvider;
 import site.okkul.be.infra.ai.dto.AiFeedbackRequest;
@@ -52,7 +52,7 @@ public class AiFeedbackTrigger {
 
         // Step 2: 새 트랜잭션에서 데이터를 다시 로드하여 지연로딩 문제 해결
         PracticeAnswer answer = practiceAnswerRepository.findById(practiceAnswerId)
-                .orElseThrow(() -> new IllegalStateException("PracticeAnswer disappeared after status update"));
+                .orElseThrow(() -> new BusinessException(PracticeErrorCode.PRACTICE_ANSWER_NOT_FOUND));
 
         AiFeedbackRequest aiRequest = AiFeedbackRequest.builder()
                 .question_text(answer.getQuestion().getQuestionText())
@@ -82,7 +82,7 @@ public class AiFeedbackTrigger {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void updateStatusToProcessing(Long practiceAnswerId) {
         PracticeAnswer answer = practiceAnswerRepository.findById(practiceAnswerId)
-                .orElseThrow(() -> new IllegalArgumentException("PracticeAnswer not found"));
+                .orElseThrow(() -> new BusinessException(PracticeErrorCode.PRACTICE_ANSWER_NOT_FOUND));
         answer.updateStatus(FeedbackStatus.PROCESSING);
         log.info("상태를 PROCESSING으로 변경. PracticeAnswer ID: {}", practiceAnswerId);
     }
@@ -92,7 +92,7 @@ public class AiFeedbackTrigger {
         log.info("AI 응답 성공. DB 업데이트 시작. PracticeAnswer ID: {}", practiceAnswerId);
         try {
             PracticeAnswer answer = practiceAnswerRepository.findById(practiceAnswerId)
-                    .orElseThrow(() -> new IllegalArgumentException("PracticeAnswer not found"));
+                    .orElseThrow(() -> new BusinessException(PracticeErrorCode.PRACTICE_ANSWER_NOT_FOUND));
             // 피드백 적용
             applyAiFeedbackToAnswer(answer, aiResponse);
         } catch (Exception e) {
@@ -121,7 +121,7 @@ public class AiFeedbackTrigger {
         log.error("AI 요청 처리 실패. DB 상태 변경. PracticeAnswer ID: {}", practiceAnswerId, error);
         try {
             PracticeAnswer answer = practiceAnswerRepository.findById(practiceAnswerId)
-                    .orElseThrow(() -> new IllegalArgumentException("PracticeAnswer not found"));
+                    .orElseThrow(() -> new BusinessException(PracticeErrorCode.PRACTICE_ANSWER_NOT_FOUND));
             answer.updateStatus(FeedbackStatus.FAILED);
         } catch (Exception e) {
             log.error("AI 실패 처리 중 DB 업데이트 실패. PracticeAnswer ID: {}", practiceAnswerId, e);

@@ -6,9 +6,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-import site.okkul.be.domain.qustion.entity.Question;
-import site.okkul.be.domain.qustion.entity.QuestionSet;
-import site.okkul.be.infra.ai.dto.AiFeedbackResponse;
+import site.okkul.be.domain.question.entity.Question;
+import site.okkul.be.domain.question.entity.QuestionSet;
 
 import java.time.Instant;
 import java.util.ArrayList;

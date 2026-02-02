@@ -340,7 +340,7 @@ onMounted(async () => {
 }
 
 .page-content {
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0; /* 패딩 제거 */
   width: 100%;
@@ -360,7 +360,7 @@ onMounted(async () => {
 }
 
 .page-title {
-  font-size: 2.8rem;
+  font-size: 2.6rem;
   font-weight: 800;
   color: var(--text-primary);
   margin-bottom: 24px;
@@ -368,7 +368,7 @@ onMounted(async () => {
 }
 
 .subtitle {
-  font-size: 1.15rem;
+  font-size: 1rem;
   color: var(--text-secondary);
   margin-bottom: 50px;
   line-height: 1.6;
@@ -409,7 +409,7 @@ onMounted(async () => {
   position: relative;
   transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
   /* 고정 높이 사용 및 오버레이 처리를 위한 설정 */
-  height: 250px;
+  height: 240px;
   display: flex;
   flex-direction: column;
   align-items: center;

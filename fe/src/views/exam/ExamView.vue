@@ -234,14 +234,14 @@ onMounted(async () => {
 }
 
 .page-title {
-  font-size: 2.8rem;
+  font-size: 2.6rem;
   font-weight: 800;
   color: var(--text-main);
   margin-bottom: 24px;
 }
 
 .subtitle {
-  font-size: 1.15rem;
+  font-size: 1rem;
   color: var(--text-sub);
   margin-bottom: 50px;
   line-height: 1.6;

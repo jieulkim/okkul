@@ -446,6 +446,11 @@ const handleCardClick = (path) => {
   font-weight: 700;
   color: var(--text-main);
   margin-bottom: 8px;
+  transition: color 0.3s;
+}
+
+.dashboard-card:hover .card-title {
+  color: var(--honey-600);
 }
 
 .card-desc {

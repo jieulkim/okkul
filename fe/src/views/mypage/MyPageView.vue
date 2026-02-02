@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { usersApi } from '@/api'
+import { usersApi, historyApi } from '@/api'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -28,7 +28,7 @@ const levelOptions = [
   { value: 'INTERMEDIATE_LOW', label: 'IL (Intermediate Low)' }
 ]
 
-const startEdit = () => {
+function startEdit() {
   editForm.value = {
     nickname: authStore.user?.nickname || '',
     targetLevel: authStore.user?.targetLevel || 'INTERMEDIATE_HIGH'
@@ -36,11 +36,11 @@ const startEdit = () => {
   isEditing.value = true
 }
 
-const cancelEdit = () => {
+function cancelEdit() {
   isEditing.value = false
 }
 
-const saveProfile = async () => {
+async function saveProfile() {
   try {
     // API 호출
     if (editForm.value.nickname !== authStore.user?.nickname) {
@@ -54,16 +54,12 @@ const saveProfile = async () => {
     // 최신 사용자 정보 조회
     const response = await usersApi.getMyInfo()
     
-    // authStore 업데이트 - updateUser 함수 사용
+    // authStore 업데이트
     if (response.data) {
-      // localStorage 먼저 업데이트
       if (localStorage.getItem('user')) {
         localStorage.setItem('user', JSON.stringify(response.data))
       }
-      
-      // authStore의 updateUser 함수를 사용하여 반응성 보장
       authStore.updateUser(response.data)
-      
       console.log('[MyPageView] 프로필 업데이트 완료:', authStore.user)
     }
     
@@ -80,38 +76,23 @@ const saveProfile = async () => {
 const examHistory = ref([])
 const isLoadingExams = ref(false)
 
-const loadExamHistory = async () => {
+async function loadExamHistory() {
   try {
     isLoadingExams.value = true
+    const { data } = await historyApi.getExamHistories({ size: 20, sort: ['createdAt,desc'] }) // 통계 계산을 위해 사이즈 늘림
     
-    examHistory.value = [
-      {
-        examId: 1,
-        title: '제 12회 실전 모의고사',
-        createdAt: '2026-01-20T10:30:00',
-        grade: 'IH',
-        totalScore: 85.5,
-        status: 'COMPLETED'
-      },
-      {
-        examId: 2,
-        title: '제 11회 실전 모의고사',
-        createdAt: '2026-01-15T14:20:00',
-        grade: 'IM3',
-        totalScore: 78.2,
-        status: 'COMPLETED'
-      },
-      {
-        examId: 3,
-        title: '제 10회 실전 모의고사',
-        createdAt: '2026-01-10T09:15:00',
-        grade: 'IM2',
-        totalScore: 72.8,
-        status: 'COMPLETED'
-      }
-    ]
+    const total = data.page?.totalElements || data.content?.length || 0;
+    
+    examHistory.value = data.content?.map((exam, index) => ({
+      examId: exam.examId,
+      num: total - index, // 최신순 정렬이므로 total - index가 회차임
+      title: `제 ${total - index}회 실전 모의고사`,
+      createdAt: exam.createdAt,
+      grade: exam.grade || '채점 중'
+    })) || []
   } catch (error) {
     console.error('시험 내역 로드 실패:', error)
+    examHistory.value = []
   } finally {
     isLoadingExams.value = false
   }
@@ -121,63 +102,60 @@ const loadExamHistory = async () => {
 const practiceHistory = ref([])
 const isLoadingPractice = ref(false)
 
-const loadPracticeHistory = async () => {
+async function loadPracticeHistory() {
   try {
     isLoadingPractice.value = true
+    const { data } = await historyApi.getPracticeHistories({ size: 20, sort: ['startedAt,desc'] }) // 통계 계산을 위해 사이즈 늘림
     
-    practiceHistory.value = [
-      {
-        practiceId: 1,
-        questionId: 101,
-        typeName: '롤플레이',
-        topicName: '여행 중 겪은 경험',
-        createdAt: '2026-01-23T16:40:00',
-        status: 'REVIEWED'
-      },
-      {
-        practiceId: 2,
-        questionId: 202,
-        typeName: '콤보',
-        topicName: '음악 감상 및 기기',
-        createdAt: '2026-01-22T11:20:00',
-        status: 'REVIEWED'
-      },
-      {
-        practiceId: 3,
-        questionId: 303,
-        typeName: '자유주제',
-        topicName: '좋아하는 음식',
-        createdAt: '2026-01-18T15:30:00',
-        status: 'REVIEWED'
-      }
-    ]
+    practiceHistory.value = data.content?.map(practice => ({
+      practiceId: practice.practiceId,
+      questionId: null, 
+      typeName: practice.typeName,
+      topicName: practice.topic || '토픽 없음',
+      createdAt: practice.startedAt,
+      status: 'COMPLETED'
+    })) || []
   } catch (error) {
     console.error('연습 내역 로드 실패:', error)
+    practiceHistory.value = []
   } finally {
     isLoadingPractice.value = false
   }
 }
 
-// 학습 통계
-const learningStats = computed(() => ({
-  totalExams: examHistory.value.length,
-  totalPractice: practiceHistory.value.length,
-  studyDays: 23,
-  totalMinutes: 1420
-}))
+// 학습 통계 (실제 데이터 기반 계산)
+const learningStats = computed(() => {
+  // 중복 없는 학습 일수 계산
+  const allDates = [
+    ...examHistory.value.map(e => e.createdAt),
+    ...practiceHistory.value.map(p => p.createdAt)
+  ].filter(Boolean);
+
+  const uniqueDays = new Set(allDates.map(d => new Date(d).toDateString()));
+
+  return {
+    totalExams: examHistory.value.length,
+    totalPractice: practiceHistory.value.length,
+    studyDays: uniqueDays.size,
+    totalMinutes: 0 // API에서 Duration 정보를 제공하지 않으므로 0 (혹은 추후 구현)
+  }
+})
 
 // 결과 보기
-const viewExamResult = (examId) => {
-  router.push({ path: '/exam/result', query: { examId } })
+function viewExamResult(examId, num) {
+  router.push({ path: '/exam/feedback', query: { examId, num } })
 }
 
-const viewPracticeFeedback = (practiceId, questionId) => {
-  router.push({ path: '/practice/feedback', query: { practiceId, questionId } })
+function viewPracticeFeedback(practiceId) {
+  router.push({ path: '/practice/feedback', query: { practiceId } })
 }
 
 onMounted(() => {
   loadExamHistory()
   loadPracticeHistory()
+  if (authStore.isAuthenticated) {
+      authStore.fetchUser();
+  }
 })
 </script>
 
@@ -248,28 +226,36 @@ onMounted(() => {
           </div>
           <div class="stats-grid">
             <div class="stat-item">
-              <div class="stat-icon">📝</div>
+              <div class="stat-icon full-icon">
+                <span class="material-icons-outlined">assignment</span>
+              </div>
               <div class="stat-content">
                 <p class="stat-label">실전 모의고사</p>
                 <p class="stat-value">{{ learningStats.totalExams }}회</p>
               </div>
             </div>
             <div class="stat-item">
-              <div class="stat-icon">🎯</div>
+              <div class="stat-icon full-icon">
+                <span class="material-icons-outlined">category</span>
+              </div>
               <div class="stat-content">
                 <p class="stat-label">유형별 연습</p>
                 <p class="stat-value">{{ learningStats.totalPractice }}회</p>
               </div>
             </div>
             <div class="stat-item">
-              <div class="stat-icon">📅</div>
+              <div class="stat-icon full-icon">
+                <span class="material-icons-outlined">calendar_today</span>
+              </div>
               <div class="stat-content">
                 <p class="stat-label">학습 일수</p>
                 <p class="stat-value">{{ learningStats.studyDays }}일</p>
               </div>
             </div>
             <div class="stat-item">
-              <div class="stat-icon">⏱️</div>
+              <div class="stat-icon full-icon">
+                <span class="material-icons-outlined">schedule</span>
+              </div>
               <div class="stat-content">
                 <p class="stat-label">학습 시간</p>
                 <p class="stat-value">{{ Math.floor(learningStats.totalMinutes / 60) }}시간</p>
@@ -297,7 +283,7 @@ onMounted(() => {
               v-for="exam in examHistory" 
               :key="exam.examId"
               class="history-item"
-              @click="viewExamResult(exam.examId)"
+              @click="viewExamResult(exam.examId, exam.num)"
             >
               <div class="item-icon">
                 <span class="material-icons-outlined">assignment</span>
@@ -308,7 +294,7 @@ onMounted(() => {
               </div>
               <div class="item-meta">
                 <span class="grade-badge">{{ exam.grade }}</span>
-                <span class="score">{{ exam.totalScore }}점</span>
+                <span class="score" v-if="exam.totalScore">{{ exam.totalScore }}점</span>
               </div>
               <span class="material-icons-outlined arrow">chevron_right</span>
             </div>
@@ -331,7 +317,7 @@ onMounted(() => {
               v-for="practice in practiceHistory" 
               :key="practice.practiceId"
               class="history-item"
-              @click="viewPracticeFeedback(practice.practiceId, practice.questionId)"
+              @click="viewPracticeFeedback(practice.practiceId)"
             >
               <div class="item-icon">
                 <span class="material-icons-outlined">category</span>
@@ -640,6 +626,18 @@ onMounted(() => {
 .stat-icon {
   font-size: 2.5rem;
 }
+
+.stat-icon.full-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stat-icon .material-icons-outlined {
+  font-size: 3rem;
+  color: #F9A825; /* 아이콘 색상 직접 지정 */
+}
+
 .stat-content {
   display: flex;
   flex-direction: column;

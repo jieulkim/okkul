@@ -15,7 +15,7 @@ const isRecording = ref(false)
 const hasRecording = ref(false)
 const isLoading = ref(false)
 
-const audio = new Audio('https://opickoreademo.multicampus.com/Audio/EN/0.mp3')
+const audio = new Audio('https://audio-dataset.minio.okkul.site/opic_audio_all/okkul.mp3')
 
 const togglePlay = () => {
   if (isPlaying.value) {

@@ -72,3 +72,7 @@ minio:
 ai:
   server:
     url: ${AI_SERVER_ENDPOINT:https://ai.dev.okkul.site}
+
+notification:
+  mattermost:
+    webhook-url: ${MATTERMOST_WEBHOOK_URL:https://meeting.ssafy.com/hooks/wy4zz3nhypfbfeeq6nn7f5mqhy}

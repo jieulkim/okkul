@@ -15,6 +15,7 @@ import site.okkul.be.domain.exam.dto.request.ExamQuestionAnswerRequest;
 import site.okkul.be.domain.exam.dto.response.ExamDetailResponse;
 import site.okkul.be.domain.exam.entity.Exam;
 import site.okkul.be.domain.exam.entity.ExamAnswer;
+import site.okkul.be.domain.exam.entity.ExamErrorCode;
 import site.okkul.be.domain.exam.repository.ExamAnswerJpaRepository;
 import site.okkul.be.domain.exam.repository.ExamJpaRepository;
 import site.okkul.be.domain.qustion.entity.QuestionSet;
@@ -24,6 +25,8 @@ import site.okkul.be.domain.survey.entity.Survey;
 import site.okkul.be.domain.survey.repository.SurveyJpaRepository;
 import site.okkul.be.domain.topic.entity.Topic;
 import site.okkul.be.domain.topic.repository.TopicRepository;
+import site.okkul.be.global.exception.BusinessException;
+import site.okkul.be.infra.alarm.AlarmService;
 import site.okkul.be.infra.storage.FileStorageService;
 
 /**
@@ -70,6 +73,8 @@ public class ExamService {
 	 */
 	private final FileStorageService fileStorageService;
 
+	private final AlarmService alarmService;
+
 
 	/**
 	 * 1단계 문제 생성
@@ -79,7 +84,7 @@ public class ExamService {
 	@Transactional
 	public ExamDetailResponse createExam(Long userId, Long surveyId) {
 		Survey survey = surveyRepository.findBySurveyIdAndUserId(surveyId, userId)
-				.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 설문 데이터입니다."));
+				.orElseThrow(() -> new BusinessException(ExamErrorCode.SURVEY_NOT_FOUND));
 
 		Exam exam = examRepository.save(
 				Exam.create(
@@ -95,7 +100,7 @@ public class ExamService {
 	@Transactional(readOnly = true)
 	public ExamDetailResponse getExamInfoDetails(Long userId, Long examId) {
 		Exam exam = examRepository.findByIdAndUserId(examId, userId).orElseThrow(
-				() -> new IllegalArgumentException("존재하지 않는 시험 세션입니다. ID: " + examId)
+				() -> new BusinessException(ExamErrorCode.EXAM_NOT_FOUND)
 		);
 
 		return ExamDetailResponse.from(exam);
@@ -112,7 +117,7 @@ public class ExamService {
 	@Transactional
 	public ExamDetailResponse updateLevel(Long userId, Long examId, Integer newLevel) {
 		Exam exam = examRepository.findByIdAndUserId(examId, userId).orElseThrow(
-				() -> new IllegalArgumentException("존재하지 않는 시험 세션입니다. ID: " + examId)
+				() -> new BusinessException(ExamErrorCode.EXAM_NOT_FOUND)
 		);
 		exam.updateAdjustedDifficulty(newLevel);
 		return ExamDetailResponse.from(exam);
@@ -133,11 +138,11 @@ public class ExamService {
 	public void allocateQuestion(Long examId) {
 		log.info("비동기처리: 문제를 할당합니다");
 		Exam exam = examRepository.findById(examId).orElseThrow(
-				() -> new IllegalArgumentException("존재하지 않는 시험 세션입니다. ID: " + examId)
+				() -> new BusinessException(ExamErrorCode.EXAM_NOT_FOUND)
 		);
 
 		Survey survey = surveyRepository.findBySurveyIdAndUserId(exam.getSurveyId(), exam.getUserId()).orElseThrow(
-				() -> new IllegalArgumentException("존재하지 않는 설문 데이터입니다.")
+				() -> new BusinessException(ExamErrorCode.SURVEY_NOT_FOUND)
 		);
 
 		// 설문조사에 맞게 불러온 문제 유형들
@@ -177,6 +182,7 @@ public class ExamService {
 				exam.getQuestionSets().add(questionSet.get());
 			} else {
 				log.error("님들아 큰일남 문제가 없음!!!");
+				throw new BusinessException(ExamErrorCode.QUESTION_ALLOCATION_FAILED);
 			}
 		}
 		log.info("비동기처리: 문제 할당이 완료 되었습니다.");
@@ -222,7 +228,7 @@ public class ExamService {
 	public void submitAnswer(Long examId, Integer questionOrder, ExamQuestionAnswerRequest examQuestionAnswerRequest, Long userId) {
 
 		Exam exam = examRepository.findByIdAndUserId(examId, userId).orElseThrow(
-				() -> new IllegalArgumentException("존재하지 않는 시험 세션입니다. ID: " + examId)
+				() -> new BusinessException(ExamErrorCode.EXAM_NOT_FOUND)
 		);
 
 		String url = fileStorageService.upload(examQuestionAnswerRequest.file(), "exam/" + examId + "/answer/");
@@ -243,7 +249,7 @@ public class ExamService {
 	@Transactional
 	public void completeExam(Long examId) {
 		Exam exam = examRepository.findById(examId)
-				.orElseThrow(() -> new EntityNotFoundException("시험 세션을 찾을 수 없습니다."));
+				.orElseThrow(() -> new BusinessException(ExamErrorCode.EXAM_NOT_FOUND));
 		exam.completeExam();
 	}
 }

@@ -538,17 +538,18 @@ onUnmounted(() => {
         <!-- 질문 섹션 -->
         <section class="question-section">
           <div class="question-card">
-            <div class="question-header">
-              <h2>{{ currentQuestion?.questionText || '문제를 불러오는 중...' }}</h2>
-            </div>
-            <div class="audio-controls" v-if="currentQuestion?.audioUrl">
-              <button @click="togglePlay" class="play-button" 
-                      :class="{ playing: isPlaying }"
-                      :disabled="!isPlaying && (playCount >= 2 || (playCount === 1 && !canReplay))">
-                <span class="material-icons">{{ isPlaying ? 'stop' : 'play_arrow' }}</span>
-                {{ isPlaying ? 'Stop' : (playCount === 0 ? 'Play Audio' : (playCount === 1 && canReplay ? '다시 듣기' : 'Played')) }}
-              </button>
-            </div>
+              <div class="question-header">
+                <h2>Question {{ currentQuestionIndex + 1 }} of {{ totalQuestions }}</h2>
+              </div>
+              <div class="audio-controls" v-if="currentQuestion?.audioUrl">
+                <img src="@/assets/images/okkul.png" alt="OKKUL Mascot" class="mascot-img">
+                <button @click="togglePlay" class="play-button" 
+                        :class="{ playing: isPlaying }"
+                        :disabled="!isPlaying && (playCount >= 2 || (playCount === 1 && !canReplay))">
+                  <span class="material-icons">{{ isPlaying ? 'stop' : 'play_arrow' }}</span>
+                  {{ isPlaying ? 'Stop' : (playCount === 0 ? 'Play Audio' : (playCount === 1 && canReplay ? '다시 듣기' : 'Played')) }}
+                </button>
+              </div>
           </div>
         </section>
 
@@ -771,7 +772,14 @@ onUnmounted(() => {
 
 .audio-controls {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.mascot-img {
+  width: 240px;
+  height: auto;
 }
 
 .play-button {

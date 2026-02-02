@@ -241,6 +241,7 @@ onUnmounted(() => audio.pause())
       <div class="setup-grid">
         <div class="character-card">
           <div class="okkul-mini-container">
+            <img src="@/assets/images/okkul.png" alt="OKKUL Mascot" class="mascot-img">
             <div class="platypus-body">
               <div class="platypus-hat"></div>
               <div class="platypus-eye left"></div>
@@ -394,6 +395,12 @@ onUnmounted(() => audio.pause())
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+
+.mascot-img {
+  width: 240px;
+  height: auto;
+  margin-bottom: 20px;
 }
 
 .play-btn { 

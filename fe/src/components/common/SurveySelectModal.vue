@@ -12,7 +12,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["close", "start-new", "use-selected", "delete-survey"]);
+const emit = defineEmits(["close", "start-new", "use-selected", "delete-survey", "use-recommended"]);
 
 const isDarkMode = inject("isDarkMode", ref(false));
 const selectedSurveyId = ref(null);
@@ -32,6 +32,29 @@ const handleUseSelected = () => {
   if (selectedSurveyId.value) {
     emit("use-selected", selectedSurveyId.value);
   }
+};
+
+const handleUseRecommended = () => {
+  // 추천 설문 데이터 (사용자 요청사항에 따라 하드코딩)
+  // [Backend Compatibility Workaround]
+  // 백엔드 이슈: classTypeAnswerId가 4(5년 이상)일 경우, TeachingLevel Enum(1~3) 범위를 벗어나 400 에러 발생
+  // 따라서 null로 전송 (SurveyView.vue의 동일한 워크어라운드 적용)
+  const recommendedSurvey = {
+    occupationAnswerId: 4, // 일 경험 없음
+    hasJob: null,
+    workPeriodAnswerId: null,
+    teachAnswerId: null,
+    manager: null,
+    student: false, // 학생 아니오
+    classTypeAnswerId: null, // 수강 후 5년 이상 지남 (원래 4였으나 백엔드 호환성을 위해 null로 변경)
+    residenceAnswerId: 1, // 개인주택이나 아파트에 홀로 거주
+    leisure: [101, 106, 103, 104], // 영화 보기, 공원 가기, 공연 보기, 콘서트 보기
+    hobby: [202], // 음악 감상하기
+    exercise: [316, 317, 322], // 조깅, 걷기, 운동을 전혀 하지 않음
+    holiday: [403, 404, 405], // 집에서 보내는 휴가, 국내 여행, 해외 여행
+  };
+  
+  emit("use-recommended", recommendedSurvey);
 };
 
 const handleDeleteSurvey = (event, surveyId) => {
@@ -201,9 +224,15 @@ const getTopicsSummary = (topics) => {
           {{ existingSurveys.length >= 3 ? '저장 용량 초과' : '새 설문 작성' }}
         </button>
         <button
+          @click="handleUseRecommended"
+          class="recommended-btn"
+        >
+          추천 설문으로 시작
+        </button>
+        <button
+          v-if="selectedSurveyId"
           @click="handleUseSelected"
           class="primary-btn"
-          :disabled="!selectedSurveyId"
         >
           선택한 설문으로 시작
         </button>
@@ -469,6 +498,7 @@ const getTopicsSummary = (topics) => {
   padding: 0 32px 10px;
   display: flex;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 button {
@@ -478,11 +508,16 @@ button {
   border: none;
   font-weight: 700;
   cursor: pointer;
+  min-width: 140px;
+  white-space: nowrap; /* 줄바꿈 방지 */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .secondary-btn {
   background: #f1f5f9;
   color: #64748b;
+  font-size: 0.9rem; /* 약간 작은 폰트 */
 }
 
 .dark-mode-btn {
@@ -490,11 +525,26 @@ button {
   color: #f1f5f9;
 }
 
+.recommended-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  border: 1px solid #2563eb;
+  box-shadow: var(--shadow-sm);
+  font-size: 0.95rem; /* 적절한 폰트 크기 */
+}
+
+.recommended-btn:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
+}
+
 .primary-btn {
   background: var(--primary-color);
   color: #000000;
   border: var(--border-secondary);
   box-shadow: var(--shadow-sm);
+  font-size: 0.9rem; /* 긴 텍스트 대응 */
 }
 
 .primary-btn:hover:not(:disabled) {
@@ -514,6 +564,7 @@ button {
   color: var(--text-primary);
   transition: all 0.2s;
   box-shadow: var(--shadow-sm);
+  font-size: 0.9rem;
 }
 
 .cancel-btn:hover {
@@ -530,6 +581,11 @@ button {
 .dark-mode-btn.cancel-btn:hover {
   transform: translate(-0.02em, -0.02em);
   box-shadow: var(--shadow-md);
+}
+
+.secondary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* 주제 및 상세 태그 스타일 */

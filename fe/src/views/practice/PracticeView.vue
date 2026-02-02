@@ -178,6 +178,17 @@ const useSelectedSurvey = async (surveyId) => {
   showSurveySelectModal.value = false;
 };
 
+const useRecommendedSurvey = (surveyData) => {
+  console.log('[PracticeView] Using recommended survey:', surveyData);
+  // Store에 추천 설문 데이터 저장
+  surveyStore.setSurveyData(surveyData);
+  // 레벨 선택 페이지로 이동 (연습 모드)
+  router.push({ 
+    path: '/survey/level', 
+    query: { from: 'practice', type: selectedType.value?.id } 
+  });
+};
+
 const selectTopic = (topic) => {
   selectedTopic.value = topic;
 }
@@ -293,6 +304,7 @@ onMounted(async () => {
       :existingSurveys="existingSurveys"
       @start-new="startNewSurvey"
       @use-selected="useSelectedSurvey"
+      @use-recommended="useRecommendedSurvey"
       @delete-survey="handleDeleteSurvey"
       @close="showSurveySelectModal = false"
     />

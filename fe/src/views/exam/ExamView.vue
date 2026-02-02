@@ -79,6 +79,17 @@ const useSelectedSurvey = (surveyId) => {
   });
 };
 
+const useRecommendedSurvey = (surveyData) => {
+  console.log('[ExamView] Using recommended survey:', surveyData);
+  // Store에 추천 설문 데이터 저장
+  surveyStore.setSurveyData(surveyData);
+  // 레벨 선택 페이지로 이동 (시험 모드)
+  router.push({ 
+    path: '/survey/level', 
+    query: { from: 'exam' } 
+  });
+};
+
 const handleDeleteSurvey = (surveyId) => {
   surveyStore.deleteSurvey(surveyId);
   existingSurveys.value = surveyStore.filterSurveys(existingSurveys.value);
@@ -167,6 +178,7 @@ onMounted(async () => {
       :existingSurveys="existingSurveys"
       @start-new="startNewSurvey"
       @use-selected="useSelectedSurvey"
+      @use-recommended="useRecommendedSurvey"
       @delete-survey="handleDeleteSurvey"
       @close="showSurveySelectModal = false"
     />

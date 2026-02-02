@@ -213,7 +213,11 @@ const showGuide = ref(false);
 <template>
   <div class="page-container">
     <header class="assessment-header">
-      <div class="info-section">
+      <div class="header-top">
+        <button @click="router.push('/')" class="quit-btn" :disabled="isSubmitting">
+          <span class="material-icons">close</span>
+          나가기
+        </button>
         <button @click="showGuide = true" class="info-btn">
           <span class="material-icons">info</span>
         </button>
@@ -291,9 +295,8 @@ const showGuide = ref(false);
       </div>
     </main>
 
-    <footer class="assessment-footer">
+    <div class="navigation-controls">
       <button @click="router.back()" class="nav-btn back-btn" :disabled="isSubmitting">Back</button>
-      <button @click="router.push('/')" class="nav-btn quit-btn" :disabled="isSubmitting">Quit</button>
       <button
         @click="goNext"
         class="nav-btn next-btn"
@@ -301,7 +304,7 @@ const showGuide = ref(false);
       >
         {{ isSubmitting ? '저장 중...' : 'Next' }}
       </button>
-    </footer>
+    </div>
 
     <transition name="fade">
       <div v-if="showGuide" class="modal-overlay" @click="showGuide = false">
@@ -359,12 +362,38 @@ const showGuide = ref(false);
   max-width: 1280px;
   margin: 0 auto;
   width: 100%;
+  padding: 24px 32px 0;
 }
 
-.info-section {
+.header-top {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 16px;
+}
+
+.quit-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text-secondary);
+}
+
+.quit-btn:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.quit-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .info-btn {
@@ -373,6 +402,7 @@ const showGuide = ref(false);
   color: var(--text-tertiary);
   cursor: pointer;
   transition: color 0.2s;
+  padding: 8px;
 }
 
 .info-btn:hover {
@@ -567,20 +597,14 @@ const showGuide = ref(false);
   color: #8B7300;
 }
 
-/* Footer */
-.assessment-footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+/* Navigation Controls */
+.navigation-controls {
+  max-width: 1280px;
+  margin: 32px auto;
+  padding: 0 32px;
   display: flex;
   justify-content: center;
   gap: 16px;
-  padding: 20px 40px;
-  background: var(--bg-secondary);
-  border-top: 1px solid var(--border-primary);
-  z-index: 100;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .nav-btn {
@@ -616,19 +640,9 @@ const showGuide = ref(false);
 }
 
 .next-btn:disabled,
-.back-btn:disabled,
-.quit-btn:disabled {
+.back-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-
-.quit-btn {
-  background: #fee2e2;
-  color: #ef4444;
-}
-
-.quit-btn:hover:not(:disabled) {
-  background: #fecaca;
 }
 
 /* Modal */

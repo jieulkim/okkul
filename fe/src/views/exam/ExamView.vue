@@ -270,7 +270,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   padding: 20px 64px;
-  background: var(--primary-gradient);
+  background: var(--primary-color);
   color: #3E2723;
   border: none;
   border-radius: var(--radius-full);
@@ -286,6 +286,7 @@ onMounted(async () => {
 
 .start-exam-btn:hover {
   transform: translateY(-4px);
+  background: var(--primary-hover);
   box-shadow: 0 15px 35px rgba(255, 215, 0, 0.4);
 }
 

@@ -5,17 +5,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import site.okkul.be.domain.survey.dto.request.SurveyCreateRequest;
 import site.okkul.be.domain.survey.dto.response.*;
+import site.okkul.be.domain.survey.entity.SurveyErrorCode;
 import site.okkul.be.domain.survey.mapper.SurveyMapper;
 import site.okkul.be.domain.survey.repository.SurveyJpaRepository;
 import site.okkul.be.domain.survey.entity.Survey;
 import site.okkul.be.domain.topic.response.SelectedTopics;
 import site.okkul.be.domain.topic.response.TopicCategory;
 import site.okkul.be.domain.topic.service.TopicService;
-import site.okkul.be.domain.user.repository.UserJpaRepository;
+import site.okkul.be.global.exception.BusinessException;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 @Transactional
@@ -36,7 +36,7 @@ public class SurveyService {
         allTopicIds.addAll(request.getHoliday());
         List<TopicCategory> validTopicCategories = topicService.getTopicList(new ArrayList<>(allTopicIds));
         if (validTopicCategories.size() != allTopicIds.size()) {
-            throw new IllegalArgumentException("Invalid Topic IDs provided");
+            throw new BusinessException(SurveyErrorCode.INVALID_TOPIC_ID);
         }
         // DTO를 엔티티로 변환 후 저장
         Survey survey = surveyMapper.toEntity(userId, request);
@@ -56,7 +56,7 @@ public class SurveyService {
     @Transactional(readOnly = true)
     public SurveyResponse findById(Long surveyId, Long userId) {
         Survey survey = surveyJpaRepository.findBySurveyIdAndUserId(surveyId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("Survey not found or access denied"));
+                .orElseThrow(() -> new BusinessException(SurveyErrorCode.SURVEY_NOT_FOUND));
         List<TopicCategory> topicCategories = topicService.getTopicList(new ArrayList<>(survey.getTopicIds()));
         return surveyMapper.toResponseDto(survey, topicCategories);
     }
@@ -64,7 +64,7 @@ public class SurveyService {
     @Transactional(readOnly = true)
     public SelectedTopics findTopicsBySurveyId(Long surveyId, Long userId) {
         Survey survey = surveyJpaRepository.findBySurveyIdAndUserId(surveyId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("Survey not found or access denied"));
+                .orElseThrow(() -> new BusinessException(SurveyErrorCode.SURVEY_NOT_FOUND));
         List<Long> topicIds = new ArrayList<>(survey.getTopicIds());
         List<TopicCategory> topicCategories = topicService.getTopicList(topicIds);
         List<SelectedTopic> selectedTopics = topicCategories.stream()
@@ -72,6 +72,4 @@ public class SurveyService {
                 .collect(Collectors.toList());
         return new SelectedTopics(selectedTopics);
     }
-
-
 }

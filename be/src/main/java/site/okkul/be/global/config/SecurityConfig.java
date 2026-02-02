@@ -12,6 +12,8 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import site.okkul.be.domain.auth.JwtAccessDeniedHandler;
+import site.okkul.be.domain.auth.JwtAuthenticationEntryPoint;
 import site.okkul.be.domain.auth.dto.OAuth2SuccessHandler;
 import site.okkul.be.domain.auth.filter.JwtAuthenticationFilter;
 import site.okkul.be.domain.auth.service.CustomOAuth2UserService;
@@ -23,6 +25,9 @@ public class SecurityConfig {
 	private final CustomOAuth2UserService customOAuth2UserService;
 	private final OAuth2SuccessHandler oAuth2SuccessHandler;
 	private final JwtAuthenticationFilter jwtAuthenticationFilter;
+	private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+	private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
+
 
 	@Bean
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -40,11 +45,18 @@ public class SecurityConfig {
 						.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
 				)
 
+				.exceptionHandling(exception -> exception
+						.authenticationEntryPoint(jwtAuthenticationEntryPoint) // 401 처리
+						.accessDeniedHandler(jwtAccessDeniedHandler)           // 403 처리
+				)
+
 				// 4. URL 권한 설정
 				.authorizeHttpRequests(auth -> auth
 						.requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
 						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-						.requestMatchers("/auth/**").permitAll()
+						.requestMatchers("/auth/**", "/login/**", "/oauth2/**").permitAll() // ★ /login과 /oauth2 관련 경로 허용
+						// 특정 도메인은 GET 다 걸려야 함
+						.requestMatchers(HttpMethod.GET, "/exam/**", "/practices/**", "/history/**", "/surveys/**", "/users/**").authenticated()
 						// 2. 모든 GET 요청 허용 (상단에 위치할수록 우선순위가 높음)
 						.requestMatchers(HttpMethod.GET, "/**").permitAll()
 						// 3. 그 외 (POST, PATCH, DELETE 등)는 인증 필요

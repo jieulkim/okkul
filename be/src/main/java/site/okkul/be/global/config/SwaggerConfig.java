@@ -48,7 +48,7 @@ public class SwaggerConfig {
 						## Okkul REST API
 						
 						## Authentication
-						[Oauth 로그인 리스트 확인](/login)
+						[Google 소셜 로그인](/oauth2/authorization/google)
 						
 						로그인 시 자동으로 JWT 토큰 발급 후 FE로 리다이렉트 됩니다.
 						

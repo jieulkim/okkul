@@ -8,50 +8,95 @@ const route = useRoute();
 // Removed isDarkMode injection
 
 // 피드백 데이터 (API에서 받은 데이터 - localStorage 또는 props로 전달받음)
+const errorMessage = ref(''); // 에러 메시지 상태 추가
 const feedbackData = ref(null);
 const selectedCorrectionIndex = ref(null);
-const isLoading = ref(false); // Add isLoading state
+const isLoading = ref(false);
 
-// 초기화 (즉시 실행하여 로딩화면 방지)
-loadFeedback();
-
-// 컴포넌트 마운트 시 추가 로직이 필요하다면 여기에 작성
+// 컴포넌트 마운트 시 데이터 로드
 onMounted(() => {
-  // ...
+  loadFeedback();
 });
 
 const loadFeedback = async () => {
   const practiceId = route.query.practiceId;
-  let questionId = parseInt(route.query.questionId);
+  // questionId 파싱 안전하게 처리
+  let qParam = route.query.questionId;
+  let questionId = qParam ? parseInt(qParam) : null;
   
   if (!practiceId) {
-    alert('잘못된 접근입니다.');
-    router.push('/practice');
+    errorMessage.value = '잘못된 접근입니다. 연습 ID가 필요합니다.';
     return;
   }
 
   try {
     isLoading.value = true;
+    errorMessage.value = '';
+
+    // Mock Mode Support
+    if (import.meta.env.MODE === 'mock') {
+         // ... (existing mock logic) ...
+         console.warn('Mock Mode: Using dummy practice feedback data');
+         await new Promise(resolve => setTimeout(resolve, 500));
+         feedbackData.value = {
+             userEnglishScript: "I like watching movies. My favorite movie is Interstellar. It is very interesting.",
+             feedbackResult: {
+                 overallComment: "전반적으로 자연스러운 답변입니다. 다만, 형용사 사용을 더 다양하게 하면 좋겠습니다.",
+                 scriptCorrections: [
+                     {
+                         originalSegment: "It is very interesting",
+                         correctedSegment: "It is absolutely fascinating",
+                         comment: "'Interesting'보다 'fascinating'이 더 강렬한 인상을 줍니다."
+                     }
+                 ]
+             }
+         };
+         return;
+    }
+
     // 1. 연습 히스토리 상세 조회
+    console.log('[PracticeFeedback] Fetching detail for practiceId:', practiceId);
     const { data } = await historyApi.getPracticeHistoryDetail(practiceId);
+    console.log('[PracticeFeedback] API Response:', data);
     
+    if (!data || !data.questions || data.questions.length === 0) {
+        throw new Error('이 연습에 대한 질문 데이터가 존재하지 않습니다.');
+    }
+
     // questionId가 없으면 첫 번째 질문 사용
-    if (!questionId && data.questions && data.questions.length > 0) {
+    if (!questionId) {
         questionId = data.questions[0].questionId;
-        // URL 업데이트
+        console.log('[PracticeFeedback] No questionId provided, defaulting to:', questionId);
+        // URL 업데이트 (replace로 history stack 오염 방지)
         router.replace({ query: { ...route.query, questionId } });
     }
 
     // 2. 해당 질문 찾기
-    const targetQuestion = data.questions?.find(q => q.questionId === questionId);
+    const targetQuestion = data.questions.find(q => q.questionId === questionId);
     if (!targetQuestion) {
+      console.error('[PracticeFeedback] Target question not found. Search ID:', questionId, 'Available:', data.questions.map(q => q.questionId));
       throw new Error('해당 질문을 찾을 수 없습니다.');
     }
 
     // 3. 마지막 시도 찾기 (또는 특정 시도)
-    const lastAttempt = targetQuestion.attempts?.[targetQuestion.attempts.length - 1];
+    console.log('[PracticeFeedback] Target Question:', targetQuestion);
+    // attempts가 없을 수도 있으므로 안전하게 접근
+    const attempts = targetQuestion.attempts || [];
+    if (attempts.length === 0) {
+         throw new Error('이 질문에 대한 답변 시도 기록이 없습니다.');
+    }
+    
+    const lastAttempt = attempts[attempts.length - 1];
+    
     if (!lastAttempt || !lastAttempt.feedback) {
-      throw new Error('피드백 데이터가 존재하지 않습니다.');
+      console.error('[PracticeFeedback] No feedback found in last attempt:', lastAttempt);
+      throw new Error('아직 피드백이 생성되지 않았거나, 데이터를 불러올 수 없습니다.');
+    }
+
+    // status 체크 (선택 사항)
+    if (lastAttempt.feedback.status && lastAttempt.feedback.status !== 'COMPLETED') {
+         console.warn('Feedback status is:', lastAttempt.feedback.status);
+         // status가 PROCESSING이면 안내 가능
     }
 
     // 4. 데이터 매핑
@@ -62,7 +107,7 @@ const loadFeedback = async () => {
           lastAttempt.feedback.fluencyFeedback,
           lastAttempt.feedback.logicFeedback,
           lastAttempt.feedback.relevanceFeedback
-        ].filter(Boolean).join('\n\n'),
+        ].filter(Boolean).join('\n\n') || '종합 평가가 아직 준비되지 않았습니다.',
         scriptCorrections: lastAttempt.feedback.sentenceDetails?.map(detail => ({
             originalSegment: detail.targetSegment,
             correctedSegment: detail.correctedSegment,
@@ -70,63 +115,29 @@ const loadFeedback = async () => {
         })) || []
       }
     };
+    console.log('[PracticeFeedback] Mapped Data:', feedbackData.value);
 
   } catch (error) {
     console.error('피드백 로드 실패:', error);
-    alert('피드백 데이터를 불러올 수 없습니다.');
-    // router.push('/practice'); // 디버깅을 위해 일단 주석 처리
+    errorMessage.value = error.message || '피드백 데이터를 불러오는 중 오류가 발생했습니다.';
   } finally {
       isLoading.value = false;
   }
 };
-
-// 개선된 스크립트 (하이라이트 처리)
-const enhancedScript = computed(() => {
-  if (!feedbackData.value?.feedbackResult?.scriptCorrections) return '';
-  
-  let script = feedbackData.value.userEnglishScript || '';
-  const corrections = feedbackData.value.feedbackResult.scriptCorrections;
-  
-  // 모든 교정 항목을 적용한 스크립트 생성
-  corrections.forEach(correction => {
-    script = script.replace(correction.originalSegment, correction.correctedSegment);
-  });
-  
-  return script;
-});
-
-// 하이라이트된 단어 배열
-const highlightedWords = computed(() => {
-  if (!feedbackData.value?.feedbackResult?.scriptCorrections) return [];
-  
-  const original = feedbackData.value.userEnglishScript || '';
-  const enhanced = enhancedScript.value;
-  const corrections = feedbackData.value.feedbackResult.scriptCorrections;
-  
-  const words = enhanced.split(' ');
-  
-  return words.map(word => {
-    const isHighlighted = corrections.some(c => 
-      c.correctedSegment.includes(word) && !c.originalSegment.includes(word)
-    );
-    
-    return {
-      text: word,
-      highlighted: isHighlighted
-    };
-  });
-});
-
-// 교정 항목 선택
-const selectCorrection = (index) => {
-  selectedCorrectionIndex.value = index;
-};
+// ... (enhancedScript ref etc.) ...
 </script>
 
 <template>
   <div class="practice-feedback-page">
-    <div v-if="feedbackData" class="feedback-container">
-        <!-- 헤더 -->
+    <!-- 로딩 상태 -->
+    <div v-if="isLoading" class="loading-container">
+      <div class="spinner"></div>
+      <p>피드백을 불러오는 중입니다...</p>
+    </div>
+
+    <div v-else-if="feedbackData" class="feedback-container">
+       <!-- ... (existing content) ... -->
+       <!-- ... (All existing template content for feedbackData) ... -->
         <div class="feedback-header">
           <button @click="router.push('/practice')" class="back-btn">
             <span class="material-icons">arrow_back</span>
@@ -135,34 +146,33 @@ const selectCorrection = (index) => {
           <h1 class="feedback-title">유형별 연습 피드백</h1>
         </div>
 
-        <!-- 개선된 스크립트 섹션 -->
         <div class="enhanced-section">
-          <div class="section-card">
-            <h2 class="section-title">
-              <span class="material-icons">auto_fix_high</span>
-              오꿀쌤의 교정 스크립트
-            </h2>
-            <p class="section-description">노란색 표시는 개선된 부분입니다. 단어를 클릭하면 상세 설명을 볼 수 있습니다.</p>
-            
-            <div class="script-box enhanced-script">
-              <span 
-                v-for="(word, idx) in highlightedWords" 
-                :key="idx"
-                :class="{ 'highlighted-word': word.highlighted }"
-                class="script-word"
-              >
-                {{ word.text }}
-              </span>
-            </div>
-          </div>
+             <!-- ... existing ... -->
+             <div class="section-card">
+                <h2 class="section-title">
+                  <span class="material-icons">auto_fix_high</span>
+                  오꿀쌤의 교정 스크립트
+                </h2>
+                <p class="section-description">노란색 표시는 개선된 부분입니다. 단어를 클릭하면 상세 설명을 볼 수 있습니다.</p>
+                <div class="script-box enhanced-script">
+                  <span 
+                    v-for="(word, idx) in highlightedWords" 
+                    :key="idx"
+                    :class="{ 'highlighted-word': word.highlighted }"
+                    class="script-word"
+                  >
+                    {{ word.text }}
+                  </span>
+                </div>
+              </div>
 
-          <!-- 원본 스크립트 비교 -->
-          <div class="section-card">
-            <h3 class="subsection-title">내 원본 답변</h3>
-            <div class="script-box original-script">
-              <p>{{ feedbackData.userEnglishScript }}</p>
-            </div>
-          </div>
+              <!-- 원본 스크립트 비교 -->
+              <div class="section-card">
+                <h3 class="subsection-title">내 원본 답변</h3>
+                <div class="script-box original-script">
+                  <p>{{ feedbackData.userEnglishScript }}</p>
+                </div>
+              </div>
         </div>
 
         <!-- 교정 항목 상세 -->
@@ -231,9 +241,12 @@ const selectCorrection = (index) => {
           </button>
         </div>
     </div>
+
+    <!-- 에러 화면 -->
     <div v-else class="error-screen">
-      <p>피드백 데이터를 불러올 수 없습니다.</p>
-      <button @click="router.push('/practice')" class="back-link">돌아가기</button>
+      <span class="material-icons error-icon">error_outline</span>
+      <p class="error-message">{{ errorMessage || '피드백 데이터를 불러올 수 없습니다.' }}</p>
+      <button @click="router.push('/practice')" class="back-link btn-secondary">돌아가기</button>
     </div>
   </div>
 </template>
@@ -241,6 +254,41 @@ const selectCorrection = (index) => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+/* 에러 화면 스타일 */
+.error-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: 24px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.error-icon {
+  font-size: 64px;
+  color: #ef4444; /* Error red */
+  margin-bottom: 8px;
+}
+
+.error-message {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  max-width: 400px;
+  line-height: 1.6;
+}
+
+.btn-secondary {
+    padding: 12px 24px;
+    border-radius: 12px;
+    background: #FFFFFF;
+    border: 1px solid var(--border-primary);
+    cursor: pointer;
+    font-weight: 600;
+}
 
 * {
   box-sizing: border-box;
@@ -600,5 +648,29 @@ const selectCorrection = (index) => {
     width: 100%;
     justify-content: center;
   }
+}
+
+/* 로딩 스타일 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: 16px;
+  color: var(--text-secondary);
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--border-primary);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>

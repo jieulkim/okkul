@@ -190,6 +190,8 @@ onMounted(async () => {
 
 .page-container {
   height: calc(100vh - var(--header-height, 60px));
+  min-height: 0 !important;
+  padding: 0 !important;
   max-height: 100vh;
   overflow: hidden;
   background: var(--bg-color);

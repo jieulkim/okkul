@@ -96,7 +96,7 @@ const goToDetail = (item) => {
         <h1 class="page-title">
           {{ !currentCategory ? '오꿀쌤 피드백 내역' : (currentCategory === 'EXAM' ? '모의고사 피드백' : '유형별 연습 피드백') }}
         </h1>
-        <p class="page-subtitle">지금까지의 성장을 확인해보세요!</p>
+        <p class="page-subtitle">지금까지의 <span class="highlight">성장을 확인</span>해보세요!</p>
       </header>
 
       <!-- 카테고리 선택 화면 -->
@@ -218,15 +218,35 @@ const goToDetail = (item) => {
 }
 
 .page-title {
-  font-size: 2.5rem;
+  font-size: 2.8rem;
   font-weight: 800;
   color: var(--text-primary);
-  margin-bottom: 12px;
+  margin-bottom: 24px;
 }
 
 .page-subtitle {
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 50px;
+}
+
+.highlight {
+  color: #F9A825;
+  font-weight: 700;
+  position: relative;
+}
+
+.highlight::after {
+  content: "";
+  position: absolute;
+  bottom: 0px;
+  left: 0;
+  width: 100%;
+  height: 8px;
+  background: var(--honey-200);
+  z-index: -1;
+  opacity: 0.6;
 }
 
 @keyframes slideUpFade {

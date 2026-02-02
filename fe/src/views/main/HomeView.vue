@@ -365,7 +365,9 @@ const handleCardClick = (path) => {
 .dashboard-container {
   display: flex;
   justify-content: center;
-  padding: 60px 20px;
+  align-items: center;
+  min-height: calc(95vh - var(--header-height));
+  padding: 20px;
   background: var(--bg-color);
 }
 

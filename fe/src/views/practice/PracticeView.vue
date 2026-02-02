@@ -247,6 +247,10 @@ onMounted(async () => {
   <div class="page-container">
     <main v-if="currentStep === 'type'" class="page-content">
       <h1 class="page-title">유형별 연습</h1>
+      <p class="subtitle">
+        OPIc 시험을 대비해<br>
+        <span class="highlight">부족한 유형</span>을 연습해보세요.
+      </p>
       <div class="types-grid">
         <div 
           v-for="type in practiceTypes" 
@@ -315,6 +319,8 @@ onMounted(async () => {
 <style scoped>
 .page-container {
   height: calc(100vh - var(--header-height));
+  min-height: 0 !important; /* Override global min-height */
+  padding: 0 !important;    /* Override global padding */
   overflow: hidden;
   background: var(--bg-color);
   display: flex;
@@ -336,7 +342,7 @@ onMounted(async () => {
 .page-content {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 20px 40px;
+  padding: 0; /* 패딩 제거 */
   width: 100%;
   animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -354,11 +360,37 @@ onMounted(async () => {
 }
 
 .page-title {
-  font-size: 2rem;
+  font-size: 2.8rem;
   font-weight: 800;
   color: var(--text-primary);
-  margin-bottom: 60px;
+  margin-bottom: 24px;
   text-align: center;
+}
+
+.subtitle {
+  font-size: 1.15rem;
+  color: var(--text-secondary);
+  margin-bottom: 50px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.highlight {
+  color: #F9A825;
+  font-weight: 700;
+  position: relative;
+}
+
+.highlight::after {
+  content: "";
+  position: absolute;
+  bottom: 0px;
+  left: 0;
+  width: 100%;
+  height: 8px;
+  background: var(--honey-200);
+  z-index: -1;
+  opacity: 0.6;
 }
 
 .types-grid { 

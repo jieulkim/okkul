@@ -638,7 +638,7 @@ onUnmounted(() => {
 <style scoped>
 .exam-container {
   min-height: 100vh;
-  background: var(--bg-primary);
+  background: #FFFFFF; /* 흰색 배경으로 고정 */
 }
 
 /* 로딩 & 에러 */

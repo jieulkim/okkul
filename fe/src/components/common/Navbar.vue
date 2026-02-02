@@ -11,9 +11,18 @@ const authStore = useAuthStore()
 // 로그인 여부
 const isLoggedIn = computed(() => !!authStore.user)
 
-// 사용자 닉네임 (우선순위: nickname > name > '사용자')
 const userName = computed(() => {
   return authStore.user?.nickname || authStore.user?.name || '사용자'
+})
+
+// 기본 이미지 : 오꿀
+const displayAvatar = computed(() => {
+  const url = authStore.user?.profileImageUrl
+  // URL이 없거나 구글 기본 이미지 경로인 경우 기본 오꿀 이미지 반환
+  if (!url || url.includes('googleusercontent.com')) {
+    return defaultProfile
+  }
+  return url
 })
 
 // 네비게이션 메뉴
@@ -68,7 +77,7 @@ const isActive = (path) => {
           <!-- 프로필 -->
           <router-link to="/mypage" class="user-profile" :class="{ active: isActive('/mypage') }">
             <div class="profile-avatar">
-              <img :src="authStore.user?.profileImageUrl || defaultProfile" alt="프로필" class="profile-image" />
+              <img :src="displayAvatar" alt="프로필" class="profile-image" />
             </div>
             <span class="profile-name">{{ userName }}님</span>
           </router-link>

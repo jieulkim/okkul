@@ -8,9 +8,18 @@ import defaultProfile from '@/assets/images/default-profile.png'
 const router = useRouter()
 const authStore = useAuthStore()
 
-// 사용자 닉네임
 const userName = computed(() => {
   return authStore.user?.nickname || authStore.user?.name || '사용자'
+})
+
+// 프로필 기본 이미지 : 오꿀
+const displayAvatar = computed(() => {
+  const url = authStore.user?.profileImageUrl
+  // URL이 없거나 구글 기본 이미지 경로인 경우 기본 오꿀 이미지 반환
+  if (!url || url.includes('googleusercontent.com')) {
+    return defaultProfile
+  }
+  return url
 })
 
 // 프로필 편집
@@ -67,7 +76,7 @@ const levelOptions = [
 
 function startEdit() {
   editForm.value = {
-    nickname: authStore.user?.nickname || '',
+    nickname: '', // placeholder를 보여주기 위해 빈칸으로 초기화
     targetLevel: authStore.user?.targetLevel || 'INTERMEDIATE_HIGH'
   }
   isEditing.value = true
@@ -79,9 +88,11 @@ function cancelEdit() {
 
 async function saveProfile() {
   try {
-    // API 호출
-    if (editForm.value.nickname !== authStore.user?.nickname) {
-      await usersApi.updateNickname({ nickname: editForm.value.nickname })
+    // 닉네임이 빈칸이면 기존 닉네임 유지
+    const finalNickname = editForm.value.nickname.trim() || authStore.user?.nickname || authStore.user?.name;
+    
+    if (finalNickname && finalNickname !== authStore.user?.nickname) {
+      await usersApi.updateNickname({ nickname: finalNickname })
     }
     
     if (editForm.value.targetLevel !== authStore.user?.targetLevel) {
@@ -122,7 +133,7 @@ async function loadExamHistory() {
     
     examHistory.value = data.content?.map((exam, index) => ({
       examId: exam.examId,
-      num: total - index, // 최신순 정렬이므로 total - index가 회차임
+      num: total - index,
       title: `제 ${total - index}회 실전 모의고사`,
       createdAt: exam.createdAt,
       grade: exam.grade || '채점 중'
@@ -214,7 +225,7 @@ onMounted(() => {
             <!-- 프로필 이미지 -->
             <div class="profile-avatar-display" :class="{ 'editable': isEditing }" @click="triggerFileInput">
               <div class="avatar-circle">
-                <img :src="authStore.user?.profileImageUrl || defaultProfile" alt="프로필" class="profile-image" />
+                <img :src="displayAvatar" alt="프로필" class="profile-image" />
                 <div v-if="isEditing" class="avatar-overlay">
                   <span class="material-icons-outlined">photo_camera</span>
                 </div>
@@ -245,7 +256,14 @@ onMounted(() => {
             <div v-else class="profile-edit">
               <div class="form-group">
                 <label class="label">닉네임</label>
-                <input v-model="editForm.nickname" type="text" class="input" />
+                <input 
+                  v-model="editForm.nickname" 
+                  type="text" 
+                  class="input" 
+                  :placeholder="userName"
+                  @focus="$event.target.placeholder = ''"
+                  @blur="$event.target.placeholder = userName"
+                />
               </div>
               <div class="form-group">
                 <label class="label">목표 등급</label>
@@ -382,7 +400,7 @@ onMounted(() => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Material+Icons+Outlined&display=swap');
 
-/* 공통 카드 스타일 오버라이드 (호버 시 움직임 제거) */
+/* 공통 카드 스타일 */
 .card:hover {
   transform: none !important;
 }
@@ -599,6 +617,12 @@ onMounted(() => {
   gap: 8px;
 }
 
+.form-group .input::placeholder {
+  color: #BDBDBD;
+  opacity: 0.8;
+  font-weight: 400;
+}
+
 .form-actions {
   display: flex;
   gap: 12px;
@@ -736,7 +760,7 @@ onMounted(() => {
 
 .stat-icon .material-icons-outlined {
   font-size: 3rem;
-  color: #F9A825; /* 아이콘 색상 직접 지정 */
+  color: #F9A825;
 }
 
 .stat-content {

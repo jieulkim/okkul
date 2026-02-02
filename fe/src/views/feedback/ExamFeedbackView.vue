@@ -517,7 +517,7 @@ onMounted(() => {
 .score-card,
 .radar-chart-card,
 .comment-card {
-  background: var(--bg-secondary);
+  background: #FFFFFF; /* 흰색 배경 적용 */
   border-radius: 24px;
   padding: 40px;
   border: var(--border-primary);
@@ -687,6 +687,14 @@ onMounted(() => {
 }
 
 /* 문항별 피드백 */
+.questions-section {
+  background: #FFFFFF; /* 흰색 배경 적용 */
+  padding: 40px;
+  border-radius: 24px;
+  border: var(--border-primary);
+  box-shadow: var(--shadow-md);
+}
+
 .section-title {
   font-size: 1.75rem;
   font-weight: 800;

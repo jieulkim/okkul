@@ -10,17 +10,18 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: validate
 
     show-sql: true
     properties:
       hibernate.format_sql: true
-    defer-datasource-initialization: true
 
-
-  sql:
-    init:
-      mode: always
+  flyway:
+    enabled: true
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/okkul_db}
+    user: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
+    locations: classpath:db/migration/common # 기본 경로는 common으로 설정
 
   data:
     redis:
@@ -94,3 +95,11 @@ ai:
 notification:
   mattermost:
     webhook-url: ${MATTERMOST_WEBHOOK_URL:https://meeting.ssafy.com/hooks/wy4zz3nhypfbfeeq6nn7f5mqhy}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+  flyway:
+    locations: classpath:db/migration/common,classpath:db/migration/local # local 프로필에서는 local 경로 추가

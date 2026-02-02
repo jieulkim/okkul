@@ -34,23 +34,10 @@ onMounted(async () => {
     // ✅ 로그인 성공 시 항상 홈으로 (설문 강제 진입 방지)
     console.log('[App] Successful login from URL. Redirecting to Home...');
     router.push('/');
-  } else if (authStore.token) {
-    // 2. 이미 토큰이 있는 경우 유저 정보 가져오기
-    await authStore.fetchUser();
   }
+
 })
 
-// 다크모드 제거로 인해 관련 provide도 제거됨
-
-// 전역 상태 제공
-// provide('isDarkMode', isDarkMode) // 삭제
-// provide('toggleDarkMode', toggleDarkMode) // 삭제
-
-// userProfile과 authStore는 다른 컴포넌트에서 사용할 수 있으므로 유지 또는 필요 시 제거 고려 
-// (Navbar로 prop 전달하고 있지만, 깊은 곳에서 inject로 쓸 수도 있음)
-// 여기서는 Navbar에 prop으로 넘기므로, provide는 유지하되 다크모드만 제거
-// provide('userProfile', userProfile)
-// provide('authStore', authStore)
 </script>
 
 <template>

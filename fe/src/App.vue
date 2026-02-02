@@ -1,31 +1,8 @@
 <script setup>
-import { ref, watch, provide, computed, onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { RouterView, useRouter } from 'vue-router'
 import Navbar from '@/components/common/Navbar.vue'
 import { useAuthStore } from '@/stores/auth'
-
-// 1. 다크모드 상태 관리
-const isDarkMode = ref(localStorage.getItem('theme') === 'dark')
-
-// 2. 다크모드 토글 함수
-const toggleDarkMode = () => {
-  isDarkMode.value = !isDarkMode.value
-}
-
-// 3. 상태 변화에 따른 실제 클래스 적용 및 저장
-watch(isDarkMode, (val) => {
-  if (val) {
-    document.documentElement.classList.add('dark-mode')
-    localStorage.setItem('theme', 'dark')
-  } else {
-    document.documentElement.classList.remove('dark-mode')
-    localStorage.setItem('theme', 'light')
-  }
-}, { immediate: true })
-
-// 전역 상태 제공
-provide('isDarkMode', isDarkMode)
-provide('toggleDarkMode', toggleDarkMode)
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -63,8 +40,17 @@ onMounted(async () => {
   }
 })
 
-provide('userProfile', userProfile)
-provide('authStore', authStore)
+// 다크모드 제거로 인해 관련 provide도 제거됨
+
+// 전역 상태 제공
+// provide('isDarkMode', isDarkMode) // 삭제
+// provide('toggleDarkMode', toggleDarkMode) // 삭제
+
+// userProfile과 authStore는 다른 컴포넌트에서 사용할 수 있으므로 유지 또는 필요 시 제거 고려 
+// (Navbar로 prop 전달하고 있지만, 깊은 곳에서 inject로 쓸 수도 있음)
+// 여기서는 Navbar에 prop으로 넘기므로, provide는 유지하되 다크모드만 제거
+// provide('userProfile', userProfile)
+// provide('authStore', authStore)
 </script>
 
 <template>

@@ -5,7 +5,6 @@ import { examApi } from '@/api';
 
 const router = useRouter();
 const route = useRoute();
-const isDarkMode = inject('isDarkMode', ref(false));
 
 // 상태 관리
 const examId = ref(null);
@@ -157,18 +156,6 @@ const initializeExam = async () => {
   }
 };
 
-// 5초 리플레이 타이머 시작
-const startReplayTimer = () => {
-  if (playCount.value === 1) {
-    canReplay.value = true;
-    if (replayTimer) clearTimeout(replayTimer);
-    
-    replayTimer = setTimeout(() => {
-      canReplay.value = false;
-    }, 5000); // 5초간만 다시 듣기 허용
-  }
-};
-
 // 오디오 재생
 const togglePlay = () => {
   if (!currentQuestion.value?.audioUrl) return;
@@ -177,8 +164,6 @@ const togglePlay = () => {
   if (isPlaying.value && currentAudio.value) {
     currentAudio.value.pause();
     isPlaying.value = false;
-    // 정지 시에도 카운트나 윈도우는 그대로 진행 또는 만료됨
-    // (기획: "질문 듣다가 5초 이내에만...")
     return;
   }
 
@@ -198,23 +183,21 @@ const togglePlay = () => {
     currentAudio.value.pause();
   }
   
-  // 리플레이 타이머 초기화 (새로 재생할 때마다 5초 룰 갱신? 아니면 첫 재생 후 5초? 
-  // "기본적으로 질문은 한번만 나오는데 5초 이내에는 다시 듣기가 가능" -> 첫 재생 시작 시점부터 5초일 가능성이 높으나,
-  // 보통 "다시 듣기" 버튼은 첫 재생 "후" 또는 "도중"에 활성화됨.
-  // 여기선 "재생 시작" 시점에 5초 카운트다운 시작으로 처리하여 엄격하게 적용)
-  if (replayTimer) clearTimeout(replayTimer);
-  canReplay.value = true; // 일단 true로 시작
-  
-  // 5초 후 리플레이 불가 처리
-  replayTimer = setTimeout(() => {
-    canReplay.value = false;
-  }, 5000);
-
   currentAudio.value = new Audio(currentQuestion.value.audioUrl);
   
-  // onended 설정
+  // onended 설정 - 질문이 끝난 후 5초 타이머 시작
   currentAudio.value.onended = () => {
     isPlaying.value = false;
+    
+    // 첫 재생이 끝났을 때만 5초 타이머 시작
+    if (playCount.value === 1) {
+      canReplay.value = true;
+      if (replayTimer) clearTimeout(replayTimer);
+      
+      replayTimer = setTimeout(() => {
+        canReplay.value = false;
+      }, 5000); // 질문 종료 후 5초간만 다시 듣기 허용
+    }
   };
 
   // 재생 시작 (Promise 에러 핸들링 추가)
@@ -226,8 +209,6 @@ const togglePlay = () => {
     .catch(err => {
       console.warn('[ExamQuestionView] 오디오 재생 실패 (유효하지 않은 URL 등):', err);
       isPlaying.value = false;
-      // 더미 데이터 등 테스트 환경에서는 알림만 띄움
-      // alert('오디오를 재생할 수 없습니다.'); 
     });
 };
 

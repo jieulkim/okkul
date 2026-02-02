@@ -1,5 +1,5 @@
 <script setup>
-import { computed, inject } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -20,10 +20,6 @@ const navItems = [
   { path: '/practice', label: '유형별 연습', icon: 'category' },
   { path: '/feedback', label: '오꿀쌤 피드백', icon: 'feedback' }
 ]
-
-// 다크모드
-const isDarkMode = inject('isDarkMode')
-const toggleDarkMode = inject('toggleDarkMode')
 
 // 로그아웃
 const handleLogout = () => {
@@ -66,11 +62,6 @@ const isActive = (path) => {
 
       <!-- 우측 컨트롤 -->
       <div class="nav-controls">
-        <!-- 다크모드 토글 -->
-        <button class="icon-btn theme-toggle" @click="toggleDarkMode" title="테마 변경">
-          <span class="material-icons-outlined">{{ isDarkMode ? 'light_mode' : 'dark_mode' }}</span>
-        </button>
-
         <template v-if="isLoggedIn">
           <!-- 프로필 -->
           <router-link to="/mypage" class="user-profile" :class="{ active: isActive('/mypage') }">
@@ -108,11 +99,6 @@ const isActive = (path) => {
   height: var(--header-height);
   display: flex;
   align-items: center;
-}
-
-.dark-mode .main-navbar {
-  background: rgba(18, 18, 18, 0.8);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .navbar-content {

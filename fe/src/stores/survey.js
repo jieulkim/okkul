@@ -40,9 +40,6 @@ export const useSurveyStore = defineStore('survey', () => {
     return surveys.filter(s => {
       const targetId = Number(s.surveyId)
       const isDeleted = deletedIds.includes(targetId)
-      if (isDeleted) {
-        console.log(`%c[Filtered] ID ${targetId}는 로컬 삭제 목록에 있어 제외됨`, "color: #ff4d4f");
-      }
       return !isDeleted
     })
   }

@@ -12,9 +12,8 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["close", "start-new", "use-selected", "delete-survey"]);
+const emit = defineEmits(["close", "start-new", "use-selected", "delete-survey", "use-recommended"]);
 
-const isDarkMode = inject("isDarkMode", ref(false));
 const selectedSurveyId = ref(null);
 
 // 디버깅: 모달에 전달된 설문 데이터 확인
@@ -32,6 +31,26 @@ const handleUseSelected = () => {
   if (selectedSurveyId.value) {
     emit("use-selected", selectedSurveyId.value);
   }
+};
+
+const handleUseRecommended = () => {
+  // 추천 설문 데이터 (사용자 요청사항에 따라 하드코딩)
+  const recommendedSurvey = {
+    occupationAnswerId: 4, // 일 경험 없음
+    hasJob: null,
+    workPeriodAnswerId: null,
+    teachAnswerId: null,
+    manager: null,
+    student: false, // 학생 아니오
+    classTypeAnswerId: 4, // 수강 후 5년 이상 지남
+    residenceAnswerId: 1, // 개인주택이나 아파트에 홀로 거주
+    leisure: [101, 106, 103, 104], // 영화 보기, 공원 가기, 공연 보기, 콘서트 보기
+    hobby: [202], // 음악 감상하기
+    exercise: [316, 317, 322], // 조깅, 걷기, 운동을 전혀 하지 않음
+    holiday: [403, 404, 405], // 집에서 보내는 휴가, 국내 여행, 해외 여행
+  };
+  
+  emit("use-recommended", recommendedSurvey);
 };
 
 const handleDeleteSurvey = (event, surveyId) => {
@@ -130,7 +149,7 @@ const getTopicsSummary = (topics) => {
 
 <template>
   <div v-if="isVisible" class="modal-overlay">
-    <div class="modal-card" :class="{ 'dark-mode-card': isDarkMode }">
+    <div class="modal-card">
       <div class="modal-header">
         <button class="modal-close-btn" @click="$emit('close')" title="닫기">
           <span class="material-icons">close</span>
@@ -151,7 +170,6 @@ const getTopicsSummary = (topics) => {
           class="survey-card-item"
           :class="{
             active: selectedSurveyId === survey.surveyId,
-            'dark-mode-item': isDarkMode,
           }"
           @click="selectedSurveyId = survey.surveyId"
         >
@@ -195,22 +213,27 @@ const getTopicsSummary = (topics) => {
         <button
           @click="handleStartNew"
           class="secondary-btn"
-          :class="{ 'dark-mode-btn': isDarkMode }"
           :disabled="existingSurveys.length >= 3"
         >
           {{ existingSurveys.length >= 3 ? '저장 용량 초과' : '새 설문 작성' }}
         </button>
         <button
+          @click="handleUseRecommended"
+          class="recommended-btn"
+          :disabled="existingSurveys.length >= 3"
+        >
+          {{ existingSurveys.length >= 3 ? '추천 설문으로 시작' : '추천 설문으로 시작' }}
+        </button>
+        <button
+          v-if="selectedSurveyId"
           @click="handleUseSelected"
           class="primary-btn"
-          :disabled="!selectedSurveyId"
         >
           선택한 설문으로 시작
         </button>
         <button
           @click="$emit('close')"
           class="cancel-btn"
-          :class="{ 'dark-mode-btn': isDarkMode }"
         >
           취소
         </button>
@@ -232,20 +255,15 @@ const getTopicsSummary = (topics) => {
 }
 
 .modal-card {
-  background: #FFFFFF; /* 배경을 불투명한 흰색으로 고정 */
+  background: #FFFFFF;
   border-radius: var(--radius-lg);
-  max-width: 600px;
+  max-width: 700px;
   width: 90%;
-  border: 1px solid rgba(0,0,0,0.1); /* 미세한 테두리 */
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2); /* 강한 그림자로 팝업 느낌 강조 */
+  border: 1px solid rgba(0,0,0,0.1);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
   padding-bottom: 20px;
-  position: relative; /* z-index 적용을 위해 */
+  position: relative;
   z-index: 1001;
-}
-
-.dark-mode-card {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
 }
 
 .modal-header {
@@ -272,12 +290,7 @@ const getTopicsSummary = (topics) => {
 
 .modal-close-btn:hover {
   background: #f1f5f9;
-  color: var(--text-primary);
-}
-
-.dark-mode-card .modal-close-btn:hover {
-  background: #334155;
-  color: #f1f5f9;
+  color: #0f172a;
 }
 
 .modal-header h3 {
@@ -287,18 +300,10 @@ const getTopicsSummary = (topics) => {
   color: var(--text-primary);
 }
 
-.dark-mode-card .modal-header h3 {
-  color: #f1f5f9;
-}
-
 .subtitle {
   font-size: 15px;
   color: #64748b;
   margin: 0;
-}
-
-.dark-mode-card .subtitle {
-  color: #94a3b8;
 }
 
 .limit-warning {
@@ -310,10 +315,6 @@ const getTopicsSummary = (topics) => {
   padding: 8px 12px;
   border-radius: 8px;
   display: inline-block;
-}
-
-.dark-mode-card .limit-warning {
-  background: rgba(239, 68, 68, 0.1);
 }
 
 .survey-list-container {
@@ -338,12 +339,6 @@ const getTopicsSummary = (topics) => {
   box-shadow: var(--shadow-sm);
 }
 
-.dark-mode-item {
-  background: var(--bg-tertiary) !important;
-  border-color: #FFFFFF !important;
-  color: var(--text-primary);
-}
-
 .survey-card-item:hover {
   transform: translate(-0.02em, -0.02em);
   box-shadow: var(--shadow-md);
@@ -355,14 +350,9 @@ const getTopicsSummary = (topics) => {
   color: #000000;
 }
 
-.dark-mode-item.active {
-  background: var(--primary-color) !important;
-  border-color: var(--primary-color) !important;
-  color: #000000;
-}
-
 .survey-info {
   flex: 1;
+  min-width: 0; /* flex item text truncation fix */
 }
 
 .date {
@@ -375,6 +365,15 @@ const getTopicsSummary = (topics) => {
 .tags {
   display: flex;
   gap: 8px;
+  flex-wrap: nowrap; /* 한 줄 유지 */
+  overflow-x: auto; /* 넘치면 스크롤 */
+  padding-bottom: 4px; /* 스크롤바 공간 확보 */
+  scrollbar-width: none; /* 파이어폭스 스크롤바 숨김 */
+  -ms-overflow-style: none; /* IE 스크롤바 숨김 */
+}
+
+.tags::-webkit-scrollbar {
+  display: none; /* 크롬 스크롤바 숨김 */
 }
 
 .tag {
@@ -388,12 +387,7 @@ const getTopicsSummary = (topics) => {
   align-items: center;
   gap: 4px;
   border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.dark-mode-item .tag {
-  background: rgba(255, 255, 255, 0.08);
-  color: #cbd5e1;
-  border-color: rgba(255, 255, 255, 0.1);
+  white-space: nowrap; /* 태그 내부 텍스트 줄바꿈 방지 */
 }
 
 .level-tag {
@@ -402,18 +396,13 @@ const getTopicsSummary = (topics) => {
   border-color: #fde68a !important;
 }
 
-.dark-mode-item .level-tag {
-  background: rgba(251, 191, 36, 0.1) !important;
-  color: #fbbf24 !important;
-  border-color: rgba(251, 191, 36, 0.2) !important;
-}
-
 .radio-circle {
   width: 20px;
   height: 20px;
   border: 2px solid #cbd5e1;
   border-radius: 50%;
   position: relative;
+  flex-shrink: 0; /* 줄어들지 않도록 설정 */
 }
 
 .radio-circle.selected {
@@ -437,6 +426,7 @@ const getTopicsSummary = (topics) => {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0; /* 액션 버튼 영역 고정 */
 }
 
 .delete-icon-btn {
@@ -457,10 +447,6 @@ const getTopicsSummary = (topics) => {
   color: #ef4444;
 }
 
-.dark-mode-item .delete-icon-btn:hover {
-  background: rgba(239, 68, 68, 0.2);
-}
-
 .delete-icon-btn .material-icons {
   font-size: 20px;
 }
@@ -469,6 +455,7 @@ const getTopicsSummary = (topics) => {
   padding: 0 32px 10px;
   display: flex;
   gap: 12px;
+  flex-wrap: nowrap; /* 버튼 한 줄 유지 */
 }
 
 button {
@@ -478,16 +465,38 @@ button {
   border: none;
   font-weight: 700;
   cursor: pointer;
+  min-width: 140px; /* 최소 너비 */
+  white-space: nowrap; /* 텍스트 줄바꿈 방지 */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .secondary-btn {
   background: #f1f5f9;
   color: #64748b;
+  font-size: 0.9rem;
 }
 
-.dark-mode-btn {
-  background: #334155;
-  color: #f1f5f9;
+.recommended-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  border: 1px solid #2563eb;
+  box-shadow: var(--shadow-sm);
+  font-size: 0.95rem;
+}
+
+.recommended-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  transform: translate(-0.02em, -0.02em);
+  box-shadow: var(--shadow-md);
+}
+
+.recommended-btn:disabled {
+  background: #cbd5e1;
+  border-color: #cbd5e1;
+  color: #64748b;
+  cursor: not-allowed;
+  box-shadow: none;
 }
 
 .primary-btn {
@@ -495,6 +504,7 @@ button {
   color: #000000;
   border: var(--border-secondary);
   box-shadow: var(--shadow-sm);
+  font-size: 0.9rem;
 }
 
 .primary-btn:hover:not(:disabled) {
@@ -514,6 +524,7 @@ button {
   color: var(--text-primary);
   transition: all 0.2s;
   box-shadow: var(--shadow-sm);
+  font-size: 0.9rem;
 }
 
 .cancel-btn:hover {
@@ -521,21 +532,9 @@ button {
   box-shadow: var(--shadow-md);
 }
 
-.dark-mode-btn.cancel-btn {
-  background: var(--bg-tertiary);
-  border-color: #FFFFFF;
-  color: var(--text-primary);
-}
-
-.dark-mode-btn.cancel-btn:hover {
-  transform: translate(-0.02em, -0.02em);
-  box-shadow: var(--shadow-md);
-}
-
-/* 주제 및 상세 태그 스타일 */
-.level-tag {
-  background: #fef3c7 !important;
-  color: #92400e !important;
+.secondary-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .topics-preview {
@@ -547,9 +546,5 @@ button {
   color: #64748b;
   font-weight: 600;
   letter-spacing: -0.2px;
-}
-
-.dark-mode-item .topic-summary-text {
-  color: #94a3b8;
 }
 </style>

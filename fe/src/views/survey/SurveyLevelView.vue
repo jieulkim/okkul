@@ -6,7 +6,6 @@ import { surveysApi } from '@/api'
 
 const router = useRouter();
 const route = useRoute();
-const isDarkMode = inject("isDarkMode", ref(false));
 
 const currentStep = ref(2);
 const selectedLevel = ref(null);
@@ -213,7 +212,11 @@ const showGuide = ref(false);
 <template>
   <div class="page-container">
     <header class="assessment-header">
-      <div class="info-section">
+      <div class="header-top">
+        <button @click="router.push('/')" class="quit-btn" :disabled="isSubmitting">
+          <span class="material-icons">close</span>
+          나가기
+        </button>
         <button @click="showGuide = true" class="info-btn">
           <span class="material-icons">info</span>
         </button>
@@ -291,9 +294,8 @@ const showGuide = ref(false);
       </div>
     </main>
 
-    <footer class="assessment-footer">
+    <div class="navigation-controls">
       <button @click="router.back()" class="nav-btn back-btn" :disabled="isSubmitting">Back</button>
-      <button @click="router.push('/')" class="nav-btn quit-btn" :disabled="isSubmitting">Quit</button>
       <button
         @click="goNext"
         class="nav-btn next-btn"
@@ -301,30 +303,39 @@ const showGuide = ref(false);
       >
         {{ isSubmitting ? '저장 중...' : 'Next' }}
       </button>
-    </footer>
+    </div>
 
     <transition name="fade">
       <div v-if="showGuide" class="modal-overlay" @click="showGuide = false">
         <div class="modal-card" @click.stop>
           <div class="modal-header">
-            <h3>Guide</h3>
+            <h3>가이드</h3>
+            <p class="subtitle">난이도 선택 안내</p>
           </div>
-          <div class="modal-body">
-            <ul class="guide-list">
-              <li>· Self Assessment 화면입니다.</li>
-              <li>
-                · 선택한 내용에 따라 시험 문항의 난이도가 결정됩니다. 반드시
-                본인의 실력과 가장 근접하다고 생각되는 수준을 선택하십시오.
-              </li>
-              <li>
-                · 선택을 완료한 후 Next를 누르면 이전 단계로 되돌릴 수 없으니
-                신중하게 선택하시기 바랍니다.
-              </li>
-            </ul>
+          <div class="guide-content">
+            <div class="guide-item">
+              <span class="material-icons guide-icon">assessment</span>
+              <div class="guide-text">
+                <strong>Self Assessment</strong>
+                <p>선택한 내용에 따라 시험 문항의 난이도가 결정됩니다</p>
+              </div>
+            </div>
+            <div class="guide-item">
+              <span class="material-icons guide-icon">priority_high</span>
+              <div class="guide-text">
+                <strong>정확한 선택</strong>
+                <p>본인의 실력과 가장 근접하다고 생각되는 수준을 선택하십시오</p>
+              </div>
+            </div>
+            <div class="guide-item">
+              <span class="material-icons guide-icon">warning</span>
+              <div class="guide-text">
+                <strong>주의사항</strong>
+                <p>선택 완료 후 Next를 누르면 이전 단계로 되돌릴 수 없습니다</p>
+              </div>
+            </div>
           </div>
-          <div class="modal-footer">
-            <button @click="showGuide = false" class="close-btn">닫기</button>
-          </div>
+          <button @click="showGuide = false" class="modal-close-btn">확인</button>
         </div>
       </div>
     </transition>
@@ -359,12 +370,38 @@ const showGuide = ref(false);
   max-width: 1280px;
   margin: 0 auto;
   width: 100%;
+  padding: 24px 32px 0;
 }
 
-.info-section {
+.header-top {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 16px;
+}
+
+.quit-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--text-secondary);
+}
+
+.quit-btn:hover:not(:disabled) {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.quit-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .info-btn {
@@ -373,6 +410,7 @@ const showGuide = ref(false);
   color: var(--text-tertiary);
   cursor: pointer;
   transition: color 0.2s;
+  padding: 8px;
 }
 
 .info-btn:hover {
@@ -567,20 +605,14 @@ const showGuide = ref(false);
   color: #8B7300;
 }
 
-/* Footer */
-.assessment-footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+/* Navigation Controls */
+.navigation-controls {
+  max-width: 1280px;
+  margin: 32px auto;
+  padding: 0 32px;
   display: flex;
   justify-content: center;
   gap: 16px;
-  padding: 20px 40px;
-  background: var(--bg-secondary);
-  border-top: 1px solid var(--border-primary);
-  z-index: 100;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .nav-btn {
@@ -616,22 +648,12 @@ const showGuide = ref(false);
 }
 
 .next-btn:disabled,
-.back-btn:disabled,
-.quit-btn:disabled {
+.back-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-.quit-btn {
-  background: #fee2e2;
-  color: #ef4444;
-}
-
-.quit-btn:hover:not(:disabled) {
-  background: #fecaca;
-}
-
-/* Modal */
+/* Modal - ExamQuestionView 스타일 적용 */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -645,62 +667,85 @@ const showGuide = ref(false);
 
 .modal-card {
   background: var(--bg-secondary);
-  border-radius: 20px;
-  max-width: 500px;
+  border-radius: 24px;
+  max-width: 520px;
   width: 90%;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   border: var(--border-primary);
+  overflow: hidden;
 }
 
 .modal-header {
-  padding: 24px;
-  border-bottom: 1px solid var(--border-primary);
+  padding: 32px 32px 16px;
+  text-align: center;
+  background: var(--bg-secondary);
 }
 
 .modal-header h3 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0 0 8px;
   color: var(--text-primary);
 }
 
-.modal-body {
-  padding: 24px;
+.modal-header .subtitle {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin: 0;
 }
 
-.guide-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.guide-content {
+  padding: 24px 32px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
 }
 
-.guide-list li {
-  color: var(--text-secondary);
-  line-height: 1.6;
-}
-
-.modal-footer {
-  padding: 16px 24px;
+.guide-item {
   display: flex;
-  justify-content: flex-end;
+  gap: 16px;
+  align-items: flex-start;
 }
 
-.close-btn {
-  padding: 10px 24px;
-  background: var(--bg-tertiary);
-  border: none;
-  border-radius: 10px;
+.guide-icon {
+  color: var(--primary-color);
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.guide-text {
+  flex: 1;
+}
+
+.guide-text strong {
+  display: block;
+  font-size: 1rem;
   font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.guide-text p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.modal-close-btn {
+  width: 100%;
+  padding: 16px;
+  background: var(--primary-color);
+  border: none;
+  font-weight: 700;
+  font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s;
-  color: var(--text-primary);
+  color: #212529;
 }
 
-.close-btn:hover {
-  background: #e2e8f0;
+.modal-close-btn:hover {
+  background: var(--primary-hover);
 }
 
 /* Animations */

@@ -5,8 +5,11 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -90,7 +93,7 @@ class ExamControllerTest {
 		@DisplayName("201 OK - 시험 시작 성공")
 		@WithMockUser(username = "1")
 		void success() throws Exception {
-			ExamCreateRequest request = new ExamCreateRequest(survey.getSurveyId());
+			ExamCreateRequest request = new ExamCreateRequest(1L);
 
 
 			mockMvc.perform(post("/exam")
@@ -130,7 +133,7 @@ class ExamControllerTest {
 							.with(csrf())
 							.param("adjustedDifficulty", String.valueOf(adjustedDifficulty))
 							.contentType(MediaType.APPLICATION_JSON))
-					.andExpect(status().is4xxClientError()); // 이제 500이 아닌 400을 기대함
+					.andExpect(status().isBadRequest()); // 이제 500이 아닌 400을 기대함
 		}
 	}
 

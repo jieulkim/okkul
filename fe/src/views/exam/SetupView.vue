@@ -2,6 +2,7 @@
 import { ref, onUnmounted, inject, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { examApi } from '@/api';
+import okkulPng from '@/assets/images/okkul.png';
 
 const router = useRouter()
 const route = useRoute()
@@ -108,7 +109,6 @@ const startExam = async () => {
     if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
         // Mock Mode (즉시 리턴)
         console.log('[SetupView] Mock Mode: 임시 데이터 사용')
-        // ... (Mock Logic unchanged for brevity, handled by simple return below if needed, but let's keep logic flow)
          const mockQuestions = Array.from({ length: 7 }, (_, i) => ({
             questionId: 100 + i,
             order: i + 1,
@@ -130,7 +130,7 @@ const startExam = async () => {
         console.log('[SetupView] API 응답:', initialResponse)
     }
 
-    // 2. ID 확인 (API returns 'id')
+    // 2. ID 확인
     const createdExamId = initialResponse.data?.id;
     const initialDifficulty = initialResponse.data?.initialDifficulty || 1; // 기본값 1
 
@@ -241,14 +241,7 @@ onUnmounted(() => audio.pause())
       <div class="setup-grid">
         <div class="character-card">
           <div class="okkul-mini-container">
-            <img src="@/assets/images/okkul.png" alt="OKKUL Mascot" class="mascot-img">
-            <div class="platypus-body">
-              <div class="platypus-hat"></div>
-              <div class="platypus-eye left"></div>
-              <div class="platypus-eye right"></div>
-              <div class="platypus-bill"></div>
-              <div class="platypus-arm-right" :class="{ 'wave': isPlaying }"></div>
-            </div>
+            <img :src="okkulPng" alt="OKKUL" class="okkul-img">
           </div>
           <button @click="togglePlay" class="play-btn" :class="{ active: isPlaying }">
             <span class="material-icons">{{ isPlaying ? 'stop' : 'play_arrow' }}</span>
@@ -272,46 +265,47 @@ onUnmounted(() => audio.pause())
           </div>
         </div>
       </div>
-    </main>
 
-    <footer class="assessment-footer">
-      <button @click="router.back()" class="nav-btn back-btn" :disabled="isLoading">Back</button>
-      <button @click="handleNext" class="nav-btn next-btn" :disabled="isLoading">
-        {{ isLoading ? '시작 중...' : 'Next' }}
-      </button>
-    </footer>
+      <div class="setup-actions">
+        <button @click="router.back()" class="nav-btn back-btn" :disabled="isLoading">Back</button>
+        <button @click="handleNext" class="nav-btn next-btn" :disabled="isLoading">
+          {{ isLoading ? '시작 중...' : 'Next' }}
+        </button>
+      </div>
+    </main>
   </div>
 </template>
 
 <style scoped>
 .page-container {
-  min-height: 100vh;
-  background: #FFFFFF; /* 흰색 배경으로 고정 */
+  height: calc(100vh - var(--header-height, 60px));
+  min-height: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+  background: var(--bg-color, #FFFFFF);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .page-content {
-  max-width: 1400px;
+  flex: 1;
+  max-width: 1200px;
+  width: 100%;
   margin: 0 auto;
-  padding: 32px 64px;
-}
-
-@media (max-width: 1024px) {
-  .page-content {
-    padding: 24px 32px;
-  }
-}
-
-@media (max-width: 768px) {
-  .page-content {
-    padding: 16px 24px;
-  }
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* Lifting content: center but with a slight upward bias */
+  padding-bottom: 5vh;
 }
 
 /* Step Progress */
 .step-progress {
   display: flex;
   height: 44px;
-  margin-bottom: 40px;
+  margin-bottom: 24px;
   width: 100%;
   border-radius: 12px;
   overflow: hidden;
@@ -356,18 +350,21 @@ onUnmounted(() => audio.pause())
 }
 
 .assessment-header {
-  max-width: 1280px;
+  max-width: 1200px;
   margin: 0 auto;
   width: 100%;
+  padding-top: 16px;
+  flex-shrink: 0;
 }
 
 .page-title {
-  font-size: 1.75rem;
+  font-size: 2rem;
   font-weight: 800;
-  margin-top: 24px;
+  margin-top: 16px;
   color: var(--text-primary);
   border-bottom: 1px solid var(--border-primary);
-  padding-bottom: 16px;
+  padding-bottom: 12px;
+  text-align: center;
 }
 
 .setup-grid {
@@ -375,7 +372,10 @@ onUnmounted(() => audio.pause())
   grid-template-columns: 1fr 1fr;
   gap: 32px;
   max-width: 1100px;
-  margin: 40px auto 0;
+  width: 100%;
+  margin: 24px auto 0;
+  flex: 1;
+  align-items: center;
 }
 
 @media (max-width: 768px) {
@@ -388,19 +388,21 @@ onUnmounted(() => audio.pause())
   background: var(--bg-secondary);
   border: var(--border-primary);
   border-radius: 24px;
-  padding: 48px;
+  padding: 32px;
   text-align: center;
   box-shadow: var(--shadow-md);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  height: 100%;
 }
 
-.mascot-img {
-  width: 240px;
+.okkul-img {
+  width: 200px;
   height: auto;
-  margin-bottom: 20px;
+  margin-bottom: 0px;
+  display: block;
 }
 
 .play-btn { 
@@ -500,19 +502,12 @@ onUnmounted(() => audio.pause())
   transform: translateY(-2px);
 }
 
-.assessment-footer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+.setup-actions {
   display: flex;
   justify-content: center;
   gap: 16px;
-  padding: 20px 40px;
-  background: var(--bg-secondary);
-  border-top: 1px solid var(--border-primary);
-  z-index: 100;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
+  padding: 16px 0;
+  flex-shrink: 0;
 }
 
 .nav-btn {

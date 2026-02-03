@@ -1,6 +1,8 @@
 package site.okkul.be.domain.exam.controller;
 
 import java.net.URI;
+import java.util.List;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +22,7 @@ import site.okkul.be.domain.exam.dto.request.ExamCreateRequest;
 import site.okkul.be.domain.exam.dto.request.ExamQuestionAnswerRequest;
 import site.okkul.be.domain.exam.dto.response.ExamDetailResponse;
 import site.okkul.be.domain.exam.service.ExamService;
+import site.okkul.be.domain.question.entity.QuestionSet;
 
 @RestController
 @RequestMapping("/exam")
@@ -40,17 +43,16 @@ public class ExamController implements ExamControllerDocs {
 			@AuthenticationPrincipal UserDetails user,
 			@RequestBody ExamCreateRequest request
 	) {
-		// 문제 생성
 		ExamDetailResponse exam = examService.createExam(
 				Long.parseLong(user.getUsername()),
 				request.surveyId()
 		);
-		// 비동기로 문제 할당
-		examService.allocateQuestion(exam.id());
+
+		List<QuestionSet> questions = examService.allocateQuestion(exam.id());
 
 		return ResponseEntity.created(
 				URI.create("/exam/" + exam.id())
-		).body(exam);
+		).body(ExamDetailResponse.of(exam, questions, 1));
 	}
 
 	/**
@@ -80,15 +82,17 @@ public class ExamController implements ExamControllerDocs {
 			@RequestParam Integer adjustedDifficulty,
 			@AuthenticationPrincipal UserDetails user
 	) {
-		ExamDetailResponse exam = examService.updateLevel(
+		ExamDetailResponse updatedInfo = examService.updateLevel(
 				Long.parseLong(user.getUsername()),
 				examId,
 				adjustedDifficulty
 		);
-		examService.allocateQuestion(exam.id());
+
+		List<QuestionSet> newQuestions = examService.allocateQuestion(examId);
+
 
 		return ResponseEntity.ok(
-				exam
+				ExamDetailResponse.of(updatedInfo, newQuestions, 8)
 		);
 	}
 

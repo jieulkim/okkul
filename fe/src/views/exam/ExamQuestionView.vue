@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, inject } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { examApi } from '@/api';
+import okkulPng from '@/assets/images/okkul.png';
 
 const router = useRouter();
 const route = useRoute();
@@ -66,7 +67,7 @@ const pollForQuestions = async (targetExamId, retries = 5, delay = 1000) => {
   for (let i = 0; i < retries; i++) {
     try {
       console.log(`[ExamQuestionView] 질문 생성 확인 중... (${i + 1}/${retries})`);
-      const response = await examApi.getExamInfo(targetExamId); // getExam -> getExamInfo 수정
+      const response = await examApi.getExamInfo(targetExamId);
       const examData = response.data;
       
       if (examData && examData.questions && examData.questions.length > 0) {
@@ -524,9 +525,9 @@ onUnmounted(() => {
           <span class="material-icons">close</span>
           나가기
         </button>
-        <div class="question-number">
+        <!-- <div class="question-number">
           Question {{ currentQuestionIndex + 1 }} / {{ totalQuestions }}
-        </div>
+        </div> -->
         <div class="time-display">
           <span class="material-icons">timer</span>
           {{ formattedTotalTime }}
@@ -542,7 +543,7 @@ onUnmounted(() => {
                 <h2>Question {{ currentQuestionIndex + 1 }} of {{ totalQuestions }}</h2>
               </div>
               <div class="audio-controls" v-if="currentQuestion?.audioUrl">
-                <img src="@/assets/images/okkul.png" alt="OKKUL Mascot" class="mascot-img">
+                <img :src="okkulPng" alt="OKKUL" class="okkul-img">
                 <button @click="togglePlay" class="play-button" 
                         :class="{ playing: isPlaying }"
                         :disabled="!isPlaying && (playCount >= 2 || (playCount === 1 && !canReplay))">
@@ -585,29 +586,28 @@ onUnmounted(() => {
                    }">
               </div>
             </div>
-
             <!-- 녹음 컨트롤 -->
             <div class="recording-controls">
               <button v-if="!isRecording" @click="startRecording" class="record-btn" :disabled="isSubmitted">
                 <span class="material-icons">{{ isSubmitted ? 'check' : 'mic' }}</span>
-                {{ isSubmitted ? 'Answer Submitted' : 'Start Recording' }}
+                {{ isSubmitted ? 'Submitted' : 'Recording' }}
               </button>
               <button v-else @click="stopRecording" class="stop-btn">
                 <span class="material-icons">stop</span>
                 Stop & Submit
               </button>
             </div>
-
-            <!-- 다음 버튼 -->
-            <div class="navigation-controls">
-              <button @click="goNext" class="next-btn">
-                Next Question
-                <span class="material-icons">arrow_forward</span>
-              </button>
-            </div>
           </div>
         </section>
       </main>
+
+      <!-- 다음 버튼 (카드 외부로 이동하여 중앙 정렬) -->
+      <div class="navigation-controls">
+        <button @click="goNext" class="next-btn">
+          Next Question
+          <span class="material-icons">arrow_forward</span>
+        </button>
+      </div>
     </div>
 
     <!-- 난이도 재조정 모달 -->
@@ -638,8 +638,14 @@ onUnmounted(() => {
 
 <style scoped>
 .exam-container {
-  min-height: 100vh;
-  background: #FFFFFF; /* 흰색 배경으로 고정 */
+  height: calc(100vh - var(--header-height, 60px));
+  min-height: 0 !important;
+  background: #FFFFFF;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 로딩 & 에러 */
@@ -677,20 +683,31 @@ onUnmounted(() => {
 
 /* 메인 콘텐츠 */
 .exam-content {
-  padding: 24px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0 40px 16px;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  min-height: 0;
+  padding-top: 0;
+  overflow-y: auto;
 }
 
 /* 헤더 */
 .exam-header {
+  width: 100%;
   max-width: 1280px;
-  margin: 0 auto 32px;
+  margin: 12px auto 8px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 32px;
+  padding: 12px 32px;
   background: var(--bg-secondary);
   border-radius: 20px;
   box-shadow: var(--shadow-md);
+  flex-shrink: 0;
 }
 
 .exit-btn {
@@ -731,11 +748,16 @@ onUnmounted(() => {
 
 /* 메인 콘텐츠 */
 .content-wrapper {
-  max-width: 1280px;
+  width: 100%;
+  max-width: 1100px;
   margin: 0 auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 32px;
+  gap: 24px;
+  min-height: 0;
+  align-items: start;
+  flex: 1;
+  min-width: 0;
 }
 
 @media (max-width: 992px) {
@@ -752,50 +774,73 @@ onUnmounted(() => {
 
 .question-card {
   background: var(--bg-secondary);
-  border: var(--border-primary);
+  border: 1px solid var(--border-primary);
   border-radius: 24px;
-  padding: 48px;
+  padding: 40px;
   box-shadow: var(--shadow-md);
-  height: 100%;
+  height: 540px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+}
+
+.question-header {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  flex-shrink: 0;
 }
 
 .question-header h2 {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: var(--text-primary);
-  line-height: 1.4;
-  margin-bottom: 40px;
+  line-height: 1;
+  margin: 0;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .audio-controls {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 24px;
 }
 
-.mascot-img {
-  width: 240px;
+.okkul-img {
+  width: 180px;
   height: auto;
 }
 
 .play-button {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
-  padding: 18px 48px;
+  padding: 14px 28px;
   background: var(--primary-color);
   border: none;
   border-radius: 16px;
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 700;
   color: #212529;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: var(--shadow-md);
+  width: 180px;
+  flex-shrink: 0;
+}
+
+.question-card::after {
+  content: "";
+  height: 80px;
+  width: 100%;
+  display: block;
+  flex-shrink: 0;
 }
 
 .play-button:hover {
@@ -810,38 +855,39 @@ onUnmounted(() => {
 }
 
 /* 녹음 섹션 */
-.recording-section {
-  display: flex;
-  flex-direction: column;
-}
-
 .recording-card {
   background: var(--bg-secondary);
-  border: var(--border-primary);
+  border: 1px solid var(--border-primary);
   border-radius: 24px;
-  padding: 48px;
+  padding: 40px;
   display: flex;
   flex-direction: column;
-  gap: 32px;
   box-shadow: var(--shadow-md);
-  height: 100%;
+  height: 540px;
 }
 
 .recording-header {
+  height: 60px;
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-shrink: 0;
+  position: relative;
+  gap: 12px;
+  padding-right: 140px;
 }
 
 .status-indicator {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 28px;
+  gap: 8px;
+  padding: 8px 20px;
   background: var(--bg-tertiary);
   border-radius: 50px;
   font-weight: 700;
   color: var(--text-tertiary);
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   letter-spacing: 0.05em;
 }
 
@@ -873,10 +919,13 @@ onUnmounted(() => {
   justify-content: center;
   align-items: flex-end;
   gap: 6px;
-  height: 100px;
-  padding: 24px;
+  height: 60px;
+  padding: 12px;
   background: var(--bg-tertiary);
-  border-radius: 16px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+  margin-top: 60px; /* Play Audio 버튼과 높이 맞추기 - 조정 */
 }
 
 .volume-bar {
@@ -897,27 +946,34 @@ onUnmounted(() => {
 
 /* 녹음 컨트롤 */
 .recording-controls {
+  flex: 1;
   display: flex;
+  flex-direction: column;
   justify-content: center;
+  align-items: center;
 }
 
 .record-btn, .stop-btn {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
-  padding: 18px 48px;
+  padding: 14px 28px;
   border: none;
   border-radius: 16px;
-  font-size: 1.125rem;
+  font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: var(--shadow-md);
+  width: 180px; /* Match Play Audio button width */
+  flex-shrink: 0;
 }
 
 .record-btn {
   background: var(--primary-color);
   color: #212529;
+  white-space: nowrap;
 }
 
 .record-btn:hover {
@@ -929,6 +985,7 @@ onUnmounted(() => {
 .stop-btn {
   background: #ef4444;
   color: white;
+  white-space: nowrap;
 }
 
 .stop-btn:hover {
@@ -950,15 +1007,10 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 16px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-primary);
-  border-radius: 20px;
-  font-size: 1.125rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  color: var(--text-primary);
-  font-variant-numeric: tabular-nums; /* 숫자 너비 고정 */
-  margin-left: auto;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
 .status-indicator.submitted {
@@ -974,15 +1026,17 @@ onUnmounted(() => {
 .navigation-controls {
   display: flex;
   justify-content: center;
-  padding-top: 24px;
-  border-top: 1px solid var(--border-primary);
+  padding: 16px 0;
+  flex-shrink: 0;
+  width: 100%;
+  margin-top: auto;
 }
 
 .next-btn {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 16px 40px;
+  padding: 14px 40px;
   background: var(--primary-color);
   color: #212529;
   border: none;
@@ -991,7 +1045,7 @@ onUnmounted(() => {
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: var(--shadow-md);
-  width: 100%;
+  width: 280px;
   justify-content: center;
 }
 
@@ -1005,16 +1059,15 @@ onUnmounted(() => {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.85); /* 배경을 더 어둡게 처리 */
+  background: rgba(0, 0, 0, 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  /* backdrop-filter 제거: 일부 환경에서 흐릿하게 보일 수 있음 */
 }
 
 .modal-card {
-  background: white; /* 명확한 가독성을 위해 흰색 배경 지정 (다크모드 변수 대신) */
+  background: white;
   border-radius: 24px;
   max-width: 600px;
   width: 90%;

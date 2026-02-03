@@ -11,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import site.okkul.be.domain.question.dto.QuestionRequest;
@@ -34,6 +35,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+@Sql(statements = {
+		"SELECT setval('question_set_set_id_seq', (SELECT MAX(set_id) FROM question_set))",
+		"SELECT setval('question_bank_question_id_seq', (SELECT MAX(question_id) FROM question_bank))"
+}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 class QuestionControllerTest {
 
 	@Autowired
@@ -61,7 +66,7 @@ class QuestionControllerTest {
 	void setUp() {
 		// 1. TopicCategory 생성 및 저장
 		TopicCategory category = TopicCategory.builder()
-				.id(999L)
+				.id(10000L)
 				.categoryCode("TEST_CATEGORY")
 				.categoryName("테스트 카테고리")
 				.build();
@@ -69,7 +74,7 @@ class QuestionControllerTest {
 
 		// 2. Topic 생성 및 저장
 		Topic topic = Topic.builder()
-				.id(999L)
+				.id(10000L)
 				.topicCode("TEST_TOPIC")
 				.topicName("테스트 토픽")
 				.category(category)

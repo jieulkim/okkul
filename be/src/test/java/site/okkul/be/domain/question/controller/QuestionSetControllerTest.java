@@ -11,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import site.okkul.be.domain.question.dto.QuestionSetRequest;
@@ -33,6 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+@Sql(statements = "SELECT setval('question_set_set_id_seq', (SELECT MAX(set_id) FROM question_set))", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 class QuestionSetControllerTest {
 
 	@Autowired
@@ -58,15 +60,15 @@ class QuestionSetControllerTest {
 	void setUp() {
 		// 1. TopicCategory 생성 및 저장
 		TopicCategory category = TopicCategory.builder()
-				.id(999L)
+				.id(10000L)
 				.categoryCode("TEST_CATEGORY")
 				.categoryName("테스트 카테고리")
 				.build();
 		topicCategoryRepository.save(category);
 
 		// 2. Topic 생성 및 저장
-		Topic topic1 = Topic.builder().id(998L).topicCode("TEST_TOPIC_1").topicName("테스트 토픽 1").category(category).build();
-		Topic topic2 = Topic.builder().id(999L).topicCode("TEST_TOPIC_2").topicName("테스트 토픽 2").category(category).build();
+		Topic topic1 = Topic.builder().id(10001L).topicCode("TEST_TOPIC_1").topicName("테스트 토픽 1").category(category).build();
+		Topic topic2 = Topic.builder().id(10002L).topicCode("TEST_TOPIC_2").topicName("테스트 토픽 2").category(category).build();
 		topicRepository.save(topic1);
 		topicRepository.save(topic2);
 		this.topicId1 = topic1.getId();

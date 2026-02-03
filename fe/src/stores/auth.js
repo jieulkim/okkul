@@ -14,7 +14,6 @@ export const useAuthStore = defineStore('auth', () => {
         // 현재 내가 접속한 주소 (localhost:5173 또는 dev.okkul.site)
         const currentOrigin = window.location.origin
         const redirectUri = `${currentOrigin}/oauth2/redirect`
-        console.log(import.meta.env.VITE_API_BASE_URL)
         window.location.href = `${import.meta.env.VITE_API_BASE_URL}/oauth2/authorization/google?redirect_uri=${redirectUri}`
     }
 

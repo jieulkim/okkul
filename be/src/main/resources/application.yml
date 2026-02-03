@@ -95,11 +95,3 @@ ai:
 notification:
   mattermost:
     webhook-url: ${MATTERMOST_WEBHOOK_URL:https://meeting.ssafy.com/hooks/wy4zz3nhypfbfeeq6nn7f5mqhy}
-
----
-spring:
-  config:
-    activate:
-      on-profile: local
-  flyway:
-    locations: classpath:db/migration/common,classpath:db/migration/local # local 프로필에서는 local 경로 추가

@@ -553,7 +553,7 @@ onMounted(async () => {
   }
 });
 
-onUnmounted(() => {
+onMounted(() => {
   if (timerInterval) clearInterval(timerInterval);
   if (pollInterval) clearInterval(pollInterval);
   if (recognition) recognition.stop();

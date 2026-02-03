@@ -320,9 +320,11 @@ const getTopicsSummary = (topics) => {
   width: 90%;
   border: 1px solid rgba(0,0,0,0.1);
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
-  padding-bottom: 20px;
+  padding-bottom: 24px;
   position: relative;
   z-index: 1001;
+  /* max-height 제거하여 내용만큼 늘어나게 함 */
+  display: block;
 }
 
 .modal-header {
@@ -381,8 +383,9 @@ const getTopicsSummary = (topics) => {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 400px;
-  overflow-y: auto;
+  /* 스크롤 제거 및 높이 제한 해제 */
+  max-height: 600px; /* 충분한 공간 확보 */
+  overflow-y: visible;
 }
 
 .survey-card-item {
@@ -404,9 +407,10 @@ const getTopicsSummary = (topics) => {
 }
 
 .survey-card-item.active {
-  border-color: var(--primary-color) !important;
-  background: var(--primary-color) !important;
+  border-color: #ffd600 !important; /* 진한 노랑 (레이저 느낌) */
+  background: #fffde7 !important;   /* 아주 연한 노랑 */
   color: #000000;
+  box-shadow: 0 0 0 1px #ffd600; /* 테두리 강조 */
 }
 
 .survey-info {
@@ -560,20 +564,25 @@ button {
 }
 
 .primary-btn {
-  background: var(--primary-color);
-  color: #000000;
-  border: var(--border-secondary);
+  background: #fff9c4; /* 연한 노랑 */
+  color: #bf360c; /* 진한 주황/갈색 텍스트 */
+  border: 2px solid #ffd54f; /* 진한 노랑 테두리 (레이저 느낌) */
   box-shadow: var(--shadow-sm);
   font-size: 0.9rem;
 }
 
 .primary-btn:hover:not(:disabled) {
+  background: #fff59d;
+  border-color: #ffca28;
   transform: translate(-0.02em, -0.02em);
   box-shadow: var(--shadow-md);
 }
 
 .primary-btn:disabled {
-  opacity: 0.5;
+  background: #f5f5f5;
+  border-color: #e0e0e0;
+  color: #9e9e9e;
+  opacity: 0.8;
   cursor: not-allowed;
   box-shadow: none;
 }

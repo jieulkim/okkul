@@ -1,11 +1,12 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import okkulSvg from '@/assets/images/okkul.svg'
-import { useRoute } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { practicesApi, surveysApi } from "@/api";
 import { useAuthStore } from "@/stores/auth";
 
 const route = useRoute();
+const router = useRouter();
 const authStore = useAuthStore();
 const userId = computed(() => authStore.user?.id);
 
@@ -96,7 +97,19 @@ const currentTopicName = computed(() => {
   const found = source.find(
     (t) => (t.topic_id || t.topicId) === currentTopic.value
   );
-  return found ? (found.name || found.topic_name) : "";
+  return found ? (found.name || found.topic_name) : (route.query.topicName || "");
+});
+
+// 현재 선택된 유형 이름 (한글)
+const currentTypeName = computed(() => {
+  const typeMap = {
+    'INTRO': '자기소개',
+    'COMBO': '콤보',
+    'ROLEPLAY': '롤플레잉',
+    'ADVANCED': '어드밴스'
+  };
+  const typeKey = route.query.type;
+  return typeMap[typeKey] || typeKey;
 });
 
 // ============================================
@@ -438,7 +451,66 @@ const highlightFromCard = (index) => {
 };
 
 // ============================================
-// 5. 초기화 및 정리 (Refactored)
+// 5. 다음 문제 / 다시 하기 액션
+// ============================================
+
+const resetState = () => {
+  // 입력 및 녹음 데이터 초기화
+  koreanScript.value = "";
+  sttResult.value = "";
+  recordedBlob.value = null;
+  recordedDuration.value = 0;
+  recordingTime.value = 0;
+  finalTranscriptAccumulated.value = "";
+  
+  // 피드백 관련 데이터 초기화
+  isAnalyzed.value = false;
+  isAnalyzing.value = false;
+  feedbackData.value = [];
+  overallFeedback.value = [];
+  aiImprovedAnswer.value = "";
+  feedbackError.value = null;
+  currentTab.value = "sentence";
+  selectedSentenceIndex.value = null;
+  currentPage.value = 0;
+
+  // 인터벌/녹음기 정리
+  if (timerInterval) clearInterval(timerInterval);
+  if (pollInterval) clearInterval(pollInterval);
+  isRecording.value = false;
+};
+
+const retryQuestion = () => {
+  if (confirm("현재 문제를 다시 연습해보시겠습니까?")) {
+    resetState();
+    // 스크롤을 맨 위로 (질문 다시 볼 수 있게)
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+};
+
+const isLastQuestion = computed(() => {
+  const total = localQuestions.value.length;
+  // 디버깅용 로그: 현재 인덱스와 전체 문제 수 확인
+  console.log(`[PracticeQuestionView] isLastCheck: current=${currentQuestionIndex.value}, total=${total}`);
+  if (total === 0) return true;
+  return currentQuestionIndex.value >= total - 1;
+});
+
+const nextQuestion = () => {
+  console.log("다음 문제로 이동합니다.");
+  resetState();
+  currentQuestionIndex.value++;
+  // 스크롤 맨 위로
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+const completePractice = () => {
+  console.log("연습을 종료하고 목록으로 돌아갑니다.");
+  router.push('/practice');
+};
+
+// ============================================
+// 6. 초기화 및 정리 (Refactored)
 // ============================================
 
 // Helper function to determine typeId based on type and level
@@ -466,10 +538,34 @@ const getDynamicTypeId = (type, level) => {
 
 onMounted(async () => {
   // 1. 라우터 쿼리 파라미터 확인
-  const queryTopicId = Number(route.query.topic);
+  let queryTopicId = Number(route.query.topic);
   const queryType = route.query.type; // This is a string like "COMBO"
-  const surveyId = Number(route.query.surveyId);
+  let surveyId = Number(route.query.surveyId);
   let surveyLevel = null;
+
+  // [INTRO 예외 처리] 설문 ID가 없고 INTRO 타입이면, 최근 설문을 자동으로 가져옴
+  if (queryType === 'INTRO' && !surveyId) {
+    try {
+      const res = await surveysApi.getSurveyList();
+      const list = res.data?.surveySummaryResponses || (Array.isArray(res.data) ? res.data : []);
+      if (list.length > 0) {
+        // 가장 최근 설문 사용
+        surveyId = list[0].surveyId;
+        console.log(`[PracticeQuestionView] INTRO 모드: 최근 설문(ID:${surveyId})을 사용합니다.`);
+      } else {
+        alert("자기소개 연습을 위해서는 최소 1개의 설문 데이터가 필요합니다. 설문을 먼저 진행해주세요.");
+        router.push('/survey');
+        return;
+      }
+      // 가상의 토픽 ID 할당
+      if (!queryTopicId) queryTopicId = 1; 
+    } catch (e) {
+      console.error("설문 목록 자동 조회 실패:", e);
+      alert("설문 정보를 불러올 수 없어 연습을 시작할 수 없습니다.");
+      router.push('/practice');
+      return;
+    }
+  }
 
   // 2. 주제 데이터 로드 (surveyId가 있으면 해당 설문 토픽 우선)
   if (surveyId) {
@@ -500,7 +596,7 @@ onMounted(async () => {
     !props.currentQuestionSet?.questions ||
     props.currentQuestionSet.questions.length === 0
   ) {
-    if (surveyId && queryTopicId && queryType) {
+    if (surveyId && queryType) {
       try {
         const dynamicTypeId = getDynamicTypeId(queryType, surveyLevel);
         if (!dynamicTypeId) {
@@ -511,7 +607,7 @@ onMounted(async () => {
 
         const startRes = await practicesApi.startPractice({
           surveyId,
-          topicId: queryTopicId,
+          topicId: queryTopicId || 1, // TopicId가 없으면 1(자기소개)로 default
           typeId: dynamicTypeId,
         });
         practiceIdRef.value = startRes.data.practiceId;
@@ -527,6 +623,7 @@ onMounted(async () => {
             question_text: q.questionText,
             audio_url: q.audioUrl,
           }));
+          console.log(`[PracticeQuestionView] 문제 로드 완료: 총 ${localQuestions.value.length}개`);
         }
       } catch (error) {
         console.error("연습 문제 로드 실패:", error);
@@ -565,7 +662,7 @@ onMounted(() => {
 
 <template>
   <div class="page-container">
-    <nav class="topic-section">
+    <nav class="topic-section" v-if="route.query.type !== 'INTRO'">
       <button class="expand-btn" @click="isTopicExpanded = !isTopicExpanded">
         {{ isTopicExpanded ? "접기 ▲" : "주제 더보기 ▼" }}
       </button>
@@ -587,9 +684,14 @@ onMounted(() => {
       <section class="input-area">
         <!-- 질문 표시 (question_bank 테이블 기반) -->
         <div class="question-container" v-if="currentQuestion">
+          <!-- 유형 배지 (상단 배치) -->
+          <!-- 유형 배지 + 토픽 배지 (상단 배치) -->
+          <div class="type-badge-row">
+            <span v-if="currentTypeName" class="current-type-badge">{{ currentTypeName }}</span>
+            <span v-if="currentTopicName" class="current-topic-badge">{{ currentTopicName }}</span>
+          </div>
           <div class="question-header">
             <div class="q-id-group">
-              <span v-if="currentTopicName" class="current-topic-badge">{{ currentTopicName }}</span>
               <h2 class="q-number">Q{{ questionNumber }}</h2>
               <button class="audio-btn" @click="playQuestionAudio">
                 <span class="material-icons">volume_up</span>
@@ -610,7 +712,7 @@ onMounted(() => {
         <!-- 한글 스크립트 입력 -->
         <div class="card">
           <div class="label-row">
-            <label class="input-label">한글로 써 보세요</label>
+            <label class="input-label">한국어 스크립트를 작성해보세요</label>
             <span class="count"
               >{{ koreanScript.length }} / {{ maxChars }}</span
             >
@@ -618,7 +720,7 @@ onMounted(() => {
           <textarea
             v-model="koreanScript"
             :maxlength="maxChars"
-            placeholder="이곳에 한글로 작성하세요"
+            placeholder="바로 영어로 답하는 게 어려우시다면, 한국어로 먼저 자유롭게 답변을 적어보세요."
           >
           </textarea>
         </div>
@@ -764,6 +866,24 @@ onMounted(() => {
             </div>
           </div>
         </div>
+
+        <!-- 하단 액션 버튼 그룹 -->
+        <div class="feedback-actions">
+          <button class="action-btn secondary" @click="retryQuestion">
+            <span class="material-icons">refresh</span>
+            다시 답변하기
+          </button>
+          
+          <button v-if="!isLastQuestion" class="action-btn primary" @click="nextQuestion">
+            다음 문제로 이동
+            <span class="material-icons">arrow_forward</span>
+          </button>
+          
+          <button v-else class="action-btn primary" @click="completePractice">
+            연습 종료하기
+            <span class="material-icons">check</span>
+          </button>
+        </div>
       </section>
       </div>
     </main>
@@ -816,24 +936,52 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+  padding-left: 12px; /* 왼쪽 여백 추가 */
 }
 .q-number {
   font-size: 32px;
   font-weight: 800;
   margin: 0;
 }
+
+.type-badge-row {
+  margin-bottom: 12px; /* 헤더와의 간격 조정 */
+  display: flex;
+  justify-content: flex-start;
+  gap: 8px; /* 배지 간 간격 */
+}
+
+/* 배지 공통 스타일 적용을 위해 각각 정의하되 속성 통일 */
 .current-topic-badge {
   background-color: var(--primary-color);
   color: #212529;
-  padding: 6px 16px;
-  border-radius: 20px;
+  width: 120px; /* 너비 고정 */
+  height: 36px; /* 높이 고정 */
+  padding: 0;
+  border-radius: 18px; /* 통일 */
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.95rem; /* 통일 */
   box-shadow: var(--shadow-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
+
+.current-type-badge {
+  background-color: #D32F2F; /* 진한 빨간색 */
+  color: #FFFFFF;            /* 흰색 글씨 */
+  width: 120px; /* 너비 고정 */
+  height: 36px; /* 높이 고정 */
+  padding: 0;
+  border-radius: 18px; /* 통일 */
+  font-weight: 700;
+  font-size: 0.95rem; /* 통일 */
+  box-shadow: var(--shadow-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .audio-btn {
   width: 44px;
   height: 44px;
@@ -1031,6 +1179,12 @@ textarea:focus {
   box-shadow: 0 0 0 4px var(--primary-light);
 }
 
+textarea::placeholder {
+  color: var(--text-tertiary);
+  font-style: italic;
+  font-weight: 400;
+}
+
 /* 3. STT 박스 */
 .stt-box {
   min-height: 100px;
@@ -1102,6 +1256,55 @@ textarea:focus {
 }
 
 /* 5. 분석 결과 섹션 */
+.feedback-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 40px;
+  padding-bottom: 40px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px;
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.action-btn .material-icons {
+  font-size: 1.4rem;
+}
+
+.action-btn.secondary {
+  background: #FFEBEE;
+  border: 2px solid #FFCDD2;
+  color: #D32F2F;
+}
+
+.action-btn.secondary:hover {
+  background: #FFCDD2;
+  border-color: #EF9A9A;
+  color: #B71C1C;
+}
+
+.action-btn.primary {
+  background: var(--primary-color);
+  color: #212529;
+  box-shadow: var(--shadow-md);
+}
+
+.action-btn.primary:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
 .bookmark-tabs {
   display: flex;
   gap: 8px;

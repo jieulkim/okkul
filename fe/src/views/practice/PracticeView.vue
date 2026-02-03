@@ -164,6 +164,20 @@ const fetchSurveyDetails = async (surveyId) => {
 
 const selectType = (type) => {
   selectedType.value = type
+  
+  if (type.id === 'INTRO') {
+    // 자기소개(INTRO)는 설문/토픽 선택 없이 바로 시작
+    router.push({ 
+      name: 'practice-question', 
+      query: { 
+        type: 'INTRO', 
+        topicName: '자기소개',
+        // surveyId는 PracticeQuestionView에서 자동 조회하여 처리
+      } 
+    });
+    return;
+  }
+
   showSurveySelectModal.value = true
 }
 

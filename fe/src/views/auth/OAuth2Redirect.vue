@@ -31,9 +31,15 @@ onMounted(async () => {
     console.log('[OAuth2Redirect] Fetching user info...')
     await authStore.fetchUser()
 
-    // 4. 로그인 성공 시 항상 홈으로
-    console.log('[OAuth2Redirect] Redirecting to Home...')
-    router.push('/')
+    // 4. 신규 유저 여부 판단 (Target Level이 없으면 설정 페이지로)
+    if (authStore.user && !authStore.user.targetLevel) {
+      console.log('[OAuth2Redirect] New user detected. Redirecting to Goal Setting...')
+      router.push('/auth/goal')
+    } else {
+      // 5. 기존 유저인 경우 홈으로
+      console.log('[OAuth2Redirect] Exiting user. Redirecting to Home...')
+      router.push('/')
+    }
   } else {
     // 토큰이 없는 경우 로그인 페이지로
     console.error('[OAuth2Redirect] Authentication failed: No access token received')
@@ -51,7 +57,7 @@ onMounted(async () => {
         <div class="honey-drop"></div>
       </div>
       <h2>로그인 중입니다...</h2>
-      <p>잠시만 기다려주세요. 꿀처럼 달콤한 오꿀이 준비되고 있어요! 🍯</p>
+      <p>잠시만 기다려주세요. 오꿀이 준비되고 있어요!</p>
     </div>
   </div>
 </template>

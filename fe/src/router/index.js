@@ -81,6 +81,12 @@ const router = createRouter({
       component: OAuth2Redirect
     },
     {
+      path: '/auth/level',
+      name: 'level-setting',
+      component: () => import('../views/auth/LevelSettingView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/practice/feedback',
       name: 'practice-feedback',
       component: PracticeFeedbackView,
@@ -115,20 +121,29 @@ router.beforeEach(async (to, from, next) => {
   
   // 인증이 필요한 페이지 접근 시
   if (to.meta.requiresAuth) {
-    // 1. 이미 로그인 되어 있으면 통과
+    // 토큰은 있는데 유저 정보가 없으면 가져오기
+    if (!authStore.isAuthenticated && localStorage.getItem('accessToken')) {
+      await authStore.fetchUser()
+    }
+
+    // 로그인 되어 있는 경우
     if (authStore.isAuthenticated) {
+      // 1. 신규 유저(목표 등급 없음)인 경우 목표 설정 페이지로 강제 이동
+      // 무한 루프 방지: 현재 가려는 페이지가 목표 설정 페이지인 경우는 제외
+      if (!authStore.user?.targetLevel && to.name !== 'level-setting') {
+        console.log('[Router] Missing targetLevel. Redirecting to Level Setting...');
+        return next({ name: 'level-setting' })
+      }
+      
+      // 2. 이미 목표 등급이 있는데 목표 설정 페이지로 가려는 경우 홈으로 (선택 사항)
+      if (authStore.user?.targetLevel && to.name === 'level-setting') {
+        return next({ name: 'home' })
+      }
+
       return next()
     }
 
-    // 2. 토큰이 있다면 정보 가져오기 시도
-    if (authStore.token) {
-      await authStore.fetchUser()
-      if (authStore.isAuthenticated) {
-        return next()
-      }
-    }
-
-    // 3. 로그인 안되어 있고 토큰도 유효하지 않으면 로그인 페이지로
+    // 로그인 안되어 있으면 로그인 페이지로
     if (confirm('로그인이 필요한 서비스입니다. 로그인 하시겠습니까?')) {
         return next('/login')
     } else {

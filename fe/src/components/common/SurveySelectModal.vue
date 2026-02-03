@@ -15,6 +15,22 @@ const props = defineProps({
 const emit = defineEmits(["close", "start-new", "use-selected", "delete-survey", "use-recommended"]);
 
 const selectedSurveyId = ref(null);
+const isPreviewingRecommended = ref(false);
+
+const recommendedSurvey = {
+  occupationAnswerId: 4, // 일 경험 없음
+  hasJob: null,
+  workPeriodAnswerId: null,
+  teachAnswerId: null,
+  manager: null,
+  student: false, // 학생 아니오
+  classTypeAnswerId: 4, // 수강 후 5년 이상 지남
+  residenceAnswerId: 1, // 개인주택이나 아파트에 홀로 거주
+  leisure: [101, 106, 103, 104], // 영화 보기, 공원 가기, 공연 보기, 콘서트 보기
+  hobby: [202], // 음악 감상하기
+  exercise: [316, 317, 322], // 조깅, 걷기, 운동을 전혀 하지 않음
+  holiday: [403, 404, 405], // 집에서 보내는 휴가, 국내 여행, 해외 여행
+};
 
 // 디버깅: 모달에 전달된 설문 데이터 확인
 console.log('[SurveySelectModal] Received existingSurveys:', props.existingSurveys);
@@ -34,23 +50,15 @@ const handleUseSelected = () => {
 };
 
 const handleUseRecommended = () => {
-  // 추천 설문 데이터 (사용자 요청사항에 따라 하드코딩)
-  const recommendedSurvey = {
-    occupationAnswerId: 4, // 일 경험 없음
-    hasJob: null,
-    workPeriodAnswerId: null,
-    teachAnswerId: null,
-    manager: null,
-    student: false, // 학생 아니오
-    classTypeAnswerId: 4, // 수강 후 5년 이상 지남
-    residenceAnswerId: 1, // 개인주택이나 아파트에 홀로 거주
-    leisure: [101, 106, 103, 104], // 영화 보기, 공원 가기, 공연 보기, 콘서트 보기
-    hobby: [202], // 음악 감상하기
-    exercise: [316, 317, 322], // 조깅, 걷기, 운동을 전혀 하지 않음
-    holiday: [403, 404, 405], // 집에서 보내는 휴가, 국내 여행, 해외 여행
-  };
-  
   emit("use-recommended", recommendedSurvey);
+};
+
+const handlePreviewRecommended = () => {
+  isPreviewingRecommended.value = true;
+};
+
+const closePreview = () => {
+  isPreviewingRecommended.value = false;
 };
 
 const handleDeleteSurvey = (event, surveyId) => {
@@ -150,93 +158,144 @@ const getTopicsSummary = (topics) => {
 <template>
   <div v-if="isVisible" class="modal-overlay">
     <div class="modal-card">
-      <div class="modal-header">
-        <button class="modal-close-btn" @click="$emit('close')" title="닫기">
-          <span class="material-icons">close</span>
-        </button>
-        <h3>기존 설문 데이터 선택</h3>
-        <p class="subtitle">
-          이전에 완료한 설문을 사용하여 바로 시작할 수 있습니다.
-        </p>
-        <p v-if="existingSurveys.length >= 3" class="limit-warning">
-          ⚠️ 설문은 최대 3개까지만 저장 가능합니다. (새 설문을 위해 기존 데이터를 삭제해주세요)
-        </p>
-      </div>
+      <div v-if="!isPreviewingRecommended" class="list-view">
+        <div class="modal-header">
+          <button class="modal-close-btn" @click="$emit('close')" title="닫기">
+            <span class="material-icons">close</span>
+          </button>
+          <h3>기존 설문 데이터 선택</h3>
+          <p class="subtitle">
+            이전에 완료한 설문을 사용하여 바로 시작할 수 있습니다.
+          </p>
+          <p v-if="existingSurveys.length >= 3" class="limit-warning">
+            ⚠️ 설문은 최대 3개까지만 저장 가능합니다. (새 설문을 위해 기존 데이터를 삭제해주세요)
+          </p>
+        </div>
 
-      <div class="survey-list-container">
-        <div
-          v-for="survey in existingSurveys"
-          :key="survey.surveyId"
-          class="survey-card-item"
-          :class="{
-            active: selectedSurveyId === survey.surveyId,
-          }"
-          @click="selectedSurveyId = survey.surveyId"
-        >
-          <div class="survey-info">
-            <span class="date">{{ formatDate(survey.createdAt) }}</span>
-            <div class="tags">
-              <span class="tag level-tag">난이도 {{ survey.level }}</span>
-              <span class="tag" v-if="survey.occupation && survey.occupation !== 'N/A'">
-                💼 {{ getOccupationLabel(survey.occupation) }}
-              </span>
-              <span class="tag" v-if="survey.student !== null && survey.student !== undefined">
-                🎓 {{ survey.student ? "학생" : "비학생" }}
-              </span>
-              <span class="tag" v-if="survey.residence">
-                🏠 {{ getResidenceLabel(survey.residence) }}
-              </span>
+        <div class="survey-list-container">
+          <div
+            v-for="survey in existingSurveys"
+            :key="survey.surveyId"
+            class="survey-card-item"
+            :class="{
+              active: selectedSurveyId === survey.surveyId,
+            }"
+            @click="selectedSurveyId = survey.surveyId"
+          >
+            <div class="survey-info">
+              <span class="date">{{ formatDate(survey.createdAt) }}</span>
+              <div class="tags">
+                <span class="tag level-tag">난이도 {{ survey.level }}</span>
+                <span class="tag" v-if="survey.occupation && survey.occupation !== 'N/A'">
+                  💼 {{ getOccupationLabel(survey.occupation) }}
+                </span>
+                <span class="tag" v-if="survey.student !== null && survey.student !== undefined">
+                  🎓 {{ survey.student ? "학생" : "비학생" }}
+                </span>
+                <span class="tag" v-if="survey.residence">
+                  🏠 {{ getResidenceLabel(survey.residence) }}
+                </span>
+              </div>
+              <!-- 주제 미리보기 (요약형) -->
+              <div
+                class="topics-preview"
+                v-if="survey.topics && survey.topics.length > 0"
+              >
+                <span class="topic-summary-text">
+                  {{ getTopicsSummary(survey.topics) }}
+                </span>
+              </div>
             </div>
-            <!-- 주제 미리보기 (요약형) -->
-            <div
-              class="topics-preview"
-              v-if="survey.topics && survey.topics.length > 0"
-            >
-              <span class="topic-summary-text">
-                {{ getTopicsSummary(survey.topics) }}
-              </span>
+            <div class="card-actions">
+              <button class="delete-icon-btn" @click="handleDeleteSurvey($event, survey.surveyId)" title="삭제">
+                <span class="material-icons">delete_outline</span>
+              </button>
+              <div
+                class="radio-circle"
+                :class="{ selected: selectedSurveyId === survey.surveyId }"
+              ></div>
             </div>
           </div>
-          <div class="card-actions">
-            <button class="delete-icon-btn" @click="handleDeleteSurvey($event, survey.surveyId)" title="삭제">
-              <span class="material-icons">delete_outline</span>
-            </button>
-            <div
-              class="radio-circle"
-              :class="{ selected: selectedSurveyId === survey.surveyId }"
-            ></div>
-          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button
+            @click="handleStartNew"
+            class="secondary-btn"
+            :disabled="existingSurveys.length >= 3"
+          >
+            {{ existingSurveys.length >= 3 ? '저장 용량 초과' : '새 설문 작성' }}
+          </button>
+          <button
+            @click="handlePreviewRecommended"
+            class="recommended-btn"
+            :disabled="existingSurveys.length >= 3"
+          >
+            추천 설문 보기
+          </button>
+          <button
+            v-if="selectedSurveyId"
+            @click="handleUseSelected"
+            class="primary-btn"
+          >
+            선택한 설문으로 시작
+          </button>
+          <button
+            @click="$emit('close')"
+            class="cancel-btn"
+          >
+            취소
+          </button>
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button
-          @click="handleStartNew"
-          class="secondary-btn"
-          :disabled="existingSurveys.length >= 3"
-        >
-          {{ existingSurveys.length >= 3 ? '저장 용량 초과' : '새 설문 작성' }}
-        </button>
-        <button
-          @click="handleUseRecommended"
-          class="recommended-btn"
-          :disabled="existingSurveys.length >= 3"
-        >
-          {{ existingSurveys.length >= 3 ? '추천 설문으로 시작' : '추천 설문으로 시작' }}
-        </button>
-        <button
-          v-if="selectedSurveyId"
-          @click="handleUseSelected"
-          class="primary-btn"
-        >
-          선택한 설문으로 시작
-        </button>
-        <button
-          @click="$emit('close')"
-          class="cancel-btn"
-        >
-          취소
-        </button>
+      <!-- 추천 설문 미리보기 화면 -->
+      <div v-else class="preview-view animate-fade-in">
+        <div class="modal-header">
+          <button class="modal-close-btn" @click="closePreview" title="돌아가기">
+            <span class="material-icons">arrow_back</span>
+          </button>
+          <h3>추천 설문 상세 내용</h3>
+          <p class="subtitle">오꿀쌤이 제안하는 기본 설문 구성입니다.</p>
+        </div>
+
+        <div class="preview-content">
+          <section class="preview-section">
+            <h4 class="section-title"><span class="material-icons">person</span> 배경 정보</h4>
+            <div class="preview-tags">
+              <span class="preview-tag">무직/경험 없음</span>
+              <span class="preview-tag">비학생</span>
+              <span class="preview-tag">개인 주택/아파트 홀로 거주</span>
+            </div>
+          </section>
+
+          <section class="preview-section">
+            <h4 class="section-title"><span class="material-icons">auto_awesome</span> 선택 주제 (12개)</h4>
+            <div class="preview-topics">
+              <div class="topic-group">
+                <label>여가/취미</label>
+                <p>{{ [101, 106, 103, 104, 202].map(id => topicMapping[id]).join(', ') }}</p>
+              </div>
+              <div class="topic-group">
+                <label>운동</label>
+                <p>{{ [316, 317, 322].map(id => topicMapping[id]).join(', ') }}</p>
+              </div>
+              <div class="topic-group">
+                <label>휴가/여행</label>
+                <p>{{ [403, 404, 405].map(id => topicMapping[id]).join(', ') }}</p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="modal-footer">
+          <button @click="handleUseRecommended" class="primary-btn action-btn">
+            이 설문으로 시작하기
+          </button>
+          <button @click="closePreview" class="cancel-btn">
+            돌아가기
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -538,14 +597,90 @@ button {
   cursor: not-allowed;
 }
 
-.topics-preview {
-  margin-top: 8px;
-}
-
 .topic-summary-text {
   font-size: 13px;
   color: #64748b;
   font-weight: 600;
   letter-spacing: -0.2px;
+}
+
+/* 미리보기 스타일 */
+.preview-content {
+  padding: 0 32px 24px;
+}
+
+.preview-section {
+  margin-bottom: 24px;
+  background: #f8fafc;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 12px;
+}
+
+.section-title .material-icons {
+  color: var(--primary-color);
+  font-size: 20px;
+}
+
+.preview-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.preview-tag {
+  background: #FFFFFF;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.topic-group {
+  margin-bottom: 12px;
+}
+
+.topic-group:last-child {
+  margin-bottom: 0;
+}
+
+.topic-group label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+  margin-bottom: 4px;
+}
+
+.topic-group p {
+  font-size: 14px;
+  color: #334155;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.action-btn {
+  padding: 14px 40px;
 }
 </style>

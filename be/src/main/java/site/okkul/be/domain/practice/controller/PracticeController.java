@@ -12,6 +12,7 @@ import site.okkul.be.domain.practice.docs.PracticeControllerDocs;
 import site.okkul.be.domain.practice.dto.request.PracticeFeedbackRequest;
 import site.okkul.be.domain.practice.dto.response.*;
 import site.okkul.be.domain.practice.service.PracticeService;
+import site.okkul.be.global.config.SwaggerConfig;
 
 @RestController
 @RequiredArgsConstructor
@@ -54,11 +55,12 @@ public class PracticeController implements PracticeControllerDocs {
             @PathVariable Long practiceId,
             @RequestPart("request") PracticeFeedbackRequest request,
             @RequestPart("audio") MultipartFile audioFile,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal UserDetails userDetails,
+			@RequestHeader(value = SwaggerConfig.REAL_AI_USE, defaultValue = "false") boolean useRealAi
+	) {
 
         // 서비스는 PracticeAnswer를 생성하고, 백그라운드에서 AI 요청을 트리거한 후, 생성된 answerId를 즉시 반환합니다.
-        Long practiceAnswerId = practiceService.createAnswerAndRequestFeedbackAsync(
-                practiceId, request, audioFile, Long.parseLong(userDetails.getUsername()));
+        Long practiceAnswerId = practiceService.createAnswerAndRequestFeedbackAsync(practiceId, request, audioFile, Long.parseLong(userDetails.getUsername()), useRealAi);
 
         // 클라이언트에게는 생성된 answerId를 "요청이 접수되었다"는 의미의 202 Accepted 상태와 함께 반환합니다.
         return new ResponseEntity<>(new PracticeAnswerIdResponse(practiceAnswerId), HttpStatus.ACCEPTED);

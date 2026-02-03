@@ -1,11 +1,10 @@
 package site.okkul.be.domain.exam.entity;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Embeddable;
-import jakarta.persistence.Embedded;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -14,12 +13,11 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import java.io.Serializable;
 import java.time.Instant;
 import java.util.List;
-
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -47,9 +45,6 @@ public class ExamAnswer {
 	@JsonBackReference
 	private Exam exam;
 
-	@Column(name = "question_id")
-	private Long questionId;
-
 	/**
 	 * S3에 저장된 사용자 음성 파일 URL
 	 */
@@ -57,10 +52,10 @@ public class ExamAnswer {
 	private String audioUrl;
 
 	/**
-	 * AI가 음성을 텍스트로 변환한 결과 (STT)
+	 * 유저가 생성한 텍스트
 	 */
 	@Column(name = "stt_script", columnDefinition = "TEXT")
-	private String sttScript;
+	private String userAnswer;
 
 	/**
 	 * AI가 개선한 텍스트
@@ -75,24 +70,57 @@ public class ExamAnswer {
 	@Builder.Default
 	private AnswerStatus status = AnswerStatus.READY;
 
+	// 답변 피드백 모음
 	/**
-	 * 답변 피드백 모음
+	 * 논리성 피드백
 	 */
-	@Embedded
-	ExamAnswerFeedback answerFeedbacks;
+	@Column(name = "logic_feedback", columnDefinition = "TEXT")
+	private String logicFeedback;
+
+	/**
+	 * 발음 피드백
+	 */
+	@Column(name = "fluency_feedback", columnDefinition = "TEXT")
+	private String fluencyFeedback;
+
+	/**
+	 * 주제 적합성 피드백
+	 */
+	@Column(name = "relevance_feedback", columnDefinition = "TEXT")
+	private String relevanceFeedback;
 
 	/**
 	 * 답변 점수 모음
+	 * 0~100점 사이의 값을 가짐
 	 */
-	@Embedded
-	private ExamAnswerScore answerScores;
+	@Column(name = "grammar_score")
+	private Integer grammarScore;
 
-	@OneToMany(mappedBy = "examAnswer", cascade = CascadeType.ALL, orphanRemoval = true)
-	@JsonManagedReference
+	@Column(name = "vocab_score")
+	private Integer vocabScore;
+
+	@Column(name = "logic_score")
+	private Integer logicScore;
+
+	@Column(name = "fluency_score")
+	private Integer fluencyScore;
+
+	@Column(name = "relevance_score")
+	private Integer relevanceScore;
+
+	@CollectionTable(
+			name = "exam_sentence_feedback",
+			joinColumns = {
+					@JoinColumn(name = "exam_answer_exam_id", referencedColumnName = "exam_id"),
+					@JoinColumn(name = "exam_answer_question_order", referencedColumnName = "question_order")
+			}
+	)
+	@ElementCollection
+	@OrderBy("sentenceOrder ASC")
 	private List<ExamSentenceFeedback> sentenceFeedbacks;
 
 	/**
-	 * 응시 시작 시간
+	 * 생성시간
 	 */
 	@Column(nullable = false, updatable = false)
 	private Instant createdAt;
@@ -111,34 +139,6 @@ public class ExamAnswer {
 		this.status = AnswerStatus.UPLOADED;
 	}
 
-	/**
-	 * 2. STT 변환 시작 (UPLOADED -> STT_ONGOING)
-	 */
-	public void startStt() {
-		this.status = AnswerStatus.STT_ONGOING;
-	}
-
-	/**
-	 * 3. STT 완료 및 AI 분석 진입 (STT_ONGOING -> ANALYZING)
-	 */
-	public void completeSttAndStartAnalysis(String sttScript) {
-		this.sttScript = sttScript;
-		this.status = AnswerStatus.ANALYZING;
-	}
-
-	/**
-	 * 4. AI 피드백 저장 완료 (ANALYZING -> COMPLETED)
-	 */
-	public void finalizeAnalysis() {
-		this.status = AnswerStatus.COMPLETED;
-	}
-
-	/**
-	 * 5. 오류 발생 시 (어느 단계에서든 호출)
-	 */
-	public void markAsFailed() {
-		this.status = AnswerStatus.FAILED;
-	}
 
 	@Embeddable
 	@NoArgsConstructor
@@ -151,5 +151,29 @@ public class ExamAnswer {
 
 		@Column(name = "question_order")
 		private Integer questionOrder;
+	}
+
+	public void updateFromAi(
+			Integer grammarScore,
+			Integer vocabScore,
+			Integer logicScore,
+			Integer fluencyScore,
+			Integer relevanceScore,
+			String improvedAnswer,
+			String logicFeedback,
+			String fluencyFeedback,
+			String relevanceFeedback,
+			List<ExamSentenceFeedback> sentenceFeedbacks
+	) {
+		this.grammarScore = grammarScore;
+		this.vocabScore = vocabScore;
+		this.logicScore = logicScore;
+		this.fluencyScore = fluencyScore;
+		this.relevanceScore = relevanceScore;
+		this.improvedAnswer = improvedAnswer;
+		this.logicFeedback = logicFeedback;
+		this.fluencyFeedback = fluencyFeedback;
+		this.relevanceFeedback = relevanceFeedback;
+		this.sentenceFeedbacks = sentenceFeedbacks;
 	}
 }

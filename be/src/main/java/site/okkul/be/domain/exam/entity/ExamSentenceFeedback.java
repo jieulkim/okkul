@@ -1,57 +1,53 @@
 package site.okkul.be.domain.exam.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.Embeddable;
 import java.time.Instant;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-@Entity
-@Table(name = "exam_sentence_feedback")
+@Embeddable
 @Getter
 @Builder
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@NoArgsConstructor
 @AllArgsConstructor
 public class ExamSentenceFeedback {
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "feedback_id")
-	private Long id;
-
+	/**
+	 * 대상 문장
+	 */
 	private String targetSentence;
 
+	/**
+	 * 대상 위치 (숙어 단어등)
+	 */
 	private String targetSegment;
 
+	/**
+	 * 개선된 문장
+	 */
 	private String correctedSegment;
 
+	/**
+	 * 코멘트
+	 */
 	private String comment;
 
+	/**
+	 * 문장 순서
+	 * 1번 문장에 여러개의 피드백이 올 수 있는데, 하나의 문장을 선택하는 기능
+	 */
+	@Column(name = "sentence_order")
 	private Integer sentenceOrder;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JsonBackReference
-	private ExamAnswer examAnswer;
-
-	/**
-	 * 응시 시작 시간
-	 */
-	@Column(nullable = false, updatable = false)
+	// 생성 및 수정 시점
+	@CreationTimestamp
+	@JdbcTypeCode(SqlTypes.TIMESTAMP)
+	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
-
-	/**
-	 * 마지막 업데이트 시간
-	 */
-	@Column(nullable = false)
-	private Instant updatedAt;
 }

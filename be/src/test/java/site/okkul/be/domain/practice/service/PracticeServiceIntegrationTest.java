@@ -181,7 +181,7 @@ class PracticeServiceIntegrationTest {
             given(mockAiClient.requestFeedback(any())).willReturn(aiResponse);
 
             // when
-            Long practiceAnswerId = practiceService.createAnswerAndRequestFeedbackAsync(practice.getPracticeId(), request, audioFile, user.getId());
+            Long practiceAnswerId = practiceService.createAnswerAndRequestFeedbackAsync(practice.getPracticeId(), request, audioFile, user.getId(), false);
             log.info("practiceAnswerId: {}", practiceAnswerId);
             // then
             await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {
@@ -205,7 +205,7 @@ class PracticeServiceIntegrationTest {
             given(mockAiClient.requestFeedback(any())).willThrow(new RuntimeException("AI Server Error"));
 
             // when
-            Long practiceAnswerId = practiceService.createAnswerAndRequestFeedbackAsync(practice.getPracticeId(), request, audioFile, user.getId());
+            Long practiceAnswerId = practiceService.createAnswerAndRequestFeedbackAsync(practice.getPracticeId(), request, audioFile, user.getId(),  false);
 
             // then
             await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> {

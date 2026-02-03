@@ -35,4 +35,17 @@ public class MattermostAlarmService implements AlarmService {
 			log.error("Mattermost 알림 전송 실패", ex);
 		}
 	}
+
+	@Override
+	public void sendMessage(String title, String message) {
+		try {
+			Map<String, Object> payload = new HashMap<>();
+			String formattedMessage = String.format("### %s\n%s", title, message);
+
+			payload.put("text", formattedMessage);
+			restTemplate.postForEntity(webhookUrl, payload, String.class);
+		} catch (Exception ex) {
+			log.error("Mattermost 알림 전송 실패", ex);
+		}
+	}
 }

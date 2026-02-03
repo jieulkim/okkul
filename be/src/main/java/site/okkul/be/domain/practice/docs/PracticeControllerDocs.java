@@ -54,7 +54,8 @@ public interface PracticeControllerDocs {
             @Parameter(description = "유형연습 ID", required = true, example = "1") @PathVariable Long practiceId,
             @Parameter(description = "스크립트 정보 (JSON)") @RequestPart("request") PracticeFeedbackRequest request,
             @Parameter(description = "사용자 영어 녹음 파일") @RequestPart("audio") MultipartFile audioFile,
-            @Parameter(hidden = true) UserDetails userDetails
+            @Parameter(hidden = true) UserDetails userDetails,
+            @Parameter(description = "실제 AI 쓸지말지", example = "false") boolean useRealAi
     );
 
 

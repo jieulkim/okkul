@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,6 +23,7 @@ import site.okkul.be.domain.exam.dto.request.ExamCreateRequest;
 import site.okkul.be.domain.exam.dto.request.ExamQuestionAnswerRequest;
 import site.okkul.be.domain.exam.dto.response.ExamDetailResponse;
 import site.okkul.be.domain.exam.service.ExamService;
+import site.okkul.be.global.config.SwaggerConfig;
 import site.okkul.be.domain.question.entity.QuestionSet;
 
 @RestController
@@ -109,9 +111,11 @@ public class ExamController implements ExamControllerDocs {
 			@PathVariable Long examId,
 			@PathVariable Integer questionOrder,
 			@ModelAttribute ExamQuestionAnswerRequest examQuestionAnswerRequest,
-			@AuthenticationPrincipal UserDetails user
+			@AuthenticationPrincipal UserDetails user,
+			@RequestHeader(value = SwaggerConfig.REAL_AI_USE, defaultValue = "false") boolean useRealAi
 	) {
 		examService.submitAnswer(examId, questionOrder, examQuestionAnswerRequest, Long.parseLong(user.getUsername()));
+		examService.feedbackAnswer(examId, questionOrder, useRealAi);
 		return ResponseEntity.accepted().build();
 	}
 
@@ -122,9 +126,11 @@ public class ExamController implements ExamControllerDocs {
 	@PostMapping("/{examId}/complete")
 	public ResponseEntity<Void> completeExam(
 			@PathVariable Long examId,
-			@AuthenticationPrincipal UserDetails user
+			@AuthenticationPrincipal UserDetails user,
+			@RequestHeader(value = SwaggerConfig.REAL_AI_USE, defaultValue = "false") boolean useRealAi
 	) {
 		examService.completeExam(examId);
+		examService.examCreateReport(examId, useRealAi);
 		return ResponseEntity.ok().build();
 	}
 }

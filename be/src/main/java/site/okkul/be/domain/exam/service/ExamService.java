@@ -1,5 +1,6 @@
 package site.okkul.be.domain.exam.service;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,9 +15,12 @@ import site.okkul.be.domain.exam.dto.request.ExamQuestionAnswerRequest;
 import site.okkul.be.domain.exam.dto.response.ExamDetailResponse;
 import site.okkul.be.domain.exam.entity.Exam;
 import site.okkul.be.domain.exam.entity.ExamAnswer;
+import site.okkul.be.domain.exam.entity.ExamReport;
+import site.okkul.be.domain.exam.entity.ExamSentenceFeedback;
 import site.okkul.be.domain.exam.exception.ExamErrorCode;
 import site.okkul.be.domain.exam.repository.ExamAnswerJpaRepository;
 import site.okkul.be.domain.exam.repository.ExamJpaRepository;
+import site.okkul.be.domain.exam.repository.ExamReportJpaRepository;
 import site.okkul.be.domain.question.entity.QuestionSet;
 import site.okkul.be.domain.question.entity.QuestionType;
 import site.okkul.be.domain.question.repository.QuestionSetRepository;
@@ -25,6 +29,11 @@ import site.okkul.be.domain.survey.repository.SurveyJpaRepository;
 import site.okkul.be.domain.topic.entity.Topic;
 import site.okkul.be.domain.topic.repository.TopicRepository;
 import site.okkul.be.global.exception.BusinessException;
+import site.okkul.be.infra.ai.AiClientProvider;
+import site.okkul.be.infra.ai.dto.exam.AnswerSummaryDto;
+import site.okkul.be.infra.ai.dto.exam.ExamTotalAnalysisResponse;
+import site.okkul.be.infra.ai.dto.exam.QuestionAnalysisRequest;
+import site.okkul.be.infra.ai.dto.exam.QuestionAnalysisResponse;
 import site.okkul.be.infra.alarm.AlarmService;
 import site.okkul.be.infra.storage.FileStorageService;
 
@@ -73,6 +82,13 @@ public class ExamService {
 	private final FileStorageService fileStorageService;
 
 	private final AlarmService alarmService;
+
+	/**
+	 * AI 서버용 기능
+	 */
+	private final AiClientProvider aiClientProvider;
+
+	private final ExamReportJpaRepository examReportJpaRepository;
 
 
 	/**
@@ -166,12 +182,16 @@ public class ExamService {
 		// 문제 가져오기 및 할당
 		for (QuestionType questionType : questionTypes) {
 			Optional<QuestionSet> questionSet = Optional.empty();
+			List<Topic> triedTopics = new ArrayList<>(); // 시도한 토픽 기록용
+			Topic lastTopic = null;
 
 			if (questionType.equals(QuestionType.INTRODUCE)) {
 				questionSet = questionSetRepository.findIntroQuestion(QuestionType.INTRODUCE.getId());
 			} else {
 				Collections.shuffle(topics);
 				for (Topic topic : topics) {
+					lastTopic = topic;
+					triedTopics.add(topic);
 					questionSet = questionSetRepository.findRandomByLevelAndTopic(
 							level,
 							topic.getId(),
@@ -184,15 +204,17 @@ public class ExamService {
 			}
 
 			if (questionSet.isPresent()) {
-				QuestionSet qs = questionSet.get();
-
 				// 1. DB 저장을 위해 Exam 엔티티에 추가 (기존 7개 뒤에 8번부터 예쁘게 붙음)
+				QuestionSet qs = questionSet.get();
 				exam.getQuestionSets().add(qs);
+				exam.getQuestions().addAll(qs.getQuestions());
 
 				// 2. 응답을 위해 반환용 리스트에 추가 (이번에 만든 것만 담김)
 				newlyAddedQuestions.add(qs);
 			} else {
 				log.error("문제 할당 실패 - 레벨: {}, 타입: {}", level, questionType);
+				String errorMessage = createErrorMessage(exam.getId(), level, questionType, topics, triedTopics, lastTopic, survey);
+				alarmService.sendMessage("님들아 큰일남 문제가 없음!!!", errorMessage);
 				throw new BusinessException(ExamErrorCode.QUESTION_ALLOCATION_FAILED);
 			}
 		}
@@ -239,30 +261,190 @@ public class ExamService {
 	 */
 	@Transactional
 	public void submitAnswer(Long examId, Integer questionOrder, ExamQuestionAnswerRequest examQuestionAnswerRequest, Long userId) {
-
+		// 1. 시험 존재 여부 체크
 		Exam exam = examRepository.findByIdAndUserId(examId, userId).orElseThrow(
 				() -> new BusinessException(ExamErrorCode.EXAM_NOT_FOUND)
 		);
 
-		String url = fileStorageService.upload(examQuestionAnswerRequest.file(), "exam/" + examId + "/answer/");
+		// 2. 시험 종료 여부 확인
+		if (exam.getEndAt() != null) {
+			throw new BusinessException(ExamErrorCode.EXAM_ALREADY_ENDED);
+		}
+		// 3. 문제 존재 여부 확인
+		if (exam.getQuestions().size() < questionOrder) {
+			throw new BusinessException(ExamErrorCode.QUESTION_NOT_FOUND);
+		}
 
+		// 4. 답변 중복 체크
+		ExamAnswer.ExamAnswerId examAnswerId = new ExamAnswer.ExamAnswerId(examId, questionOrder);
+		if (examAnswerRepository.existsById(examAnswerId)) {
+			throw new BusinessException(ExamErrorCode.EXAM_ANSWER_ALREADY_SUBMITTED);
+		}
 
-		ExamAnswer examAnswer = ExamAnswer.builder()
-				.id(new ExamAnswer.ExamAnswerId(examId, questionOrder))
+		// 5. 음성 파일 저장
+		String url = fileStorageService.upload(examQuestionAnswerRequest.file(), "exam/" + examId + "/answer");
+
+		// 6. 답변 저장
+		examAnswerRepository.save(ExamAnswer.builder()
+				.id(examAnswerId)
 				.audioUrl(url)
 				.exam(exam)
-				.sttScript(examQuestionAnswerRequest.sttText())
+				.userAnswer(examQuestionAnswerRequest.sttText())
 				.createdAt(Instant.now())
 				.updatedAt(Instant.now())
-				.build();
+				.build());
+	}
 
-		examAnswerRepository.save(examAnswer);
+	@Async
+	@Transactional
+	public void feedbackAnswer(Long examId, Integer questionOrder, boolean useRealAi) {
+		// 1. 시험 답변 가져오기
+		ExamAnswer examAnswer = examAnswerRepository.findById(
+				new ExamAnswer.ExamAnswerId(examId, questionOrder)
+		).orElseThrow(
+				() -> new BusinessException(ExamErrorCode.EXAM_NOT_FOUND)
+		);
+
+		// 2. AI서버에서 답변 분석 진행하기
+		QuestionAnalysisResponse questionAnalysisResponse = aiClientProvider.getClient(useRealAi).analyzeQuestion(
+				QuestionAnalysisRequest.from(
+						examAnswer.getExam().getQuestions().get(questionOrder-1),
+						examAnswer
+				)
+		);
+
+		// 3. 분석결과 DB에 적용하기
+		examAnswer.updateFromAi(
+				questionAnalysisResponse.grammarScore(),
+				questionAnalysisResponse.vocabScore(),
+				questionAnalysisResponse.logicScore(),
+				questionAnalysisResponse.fluencyScore(),
+				questionAnalysisResponse.relevanceScore(),
+				questionAnalysisResponse.improvedAnswer(),
+				questionAnalysisResponse.logicFeedback(),
+				questionAnalysisResponse.fluencyFeedback(),
+				questionAnalysisResponse.relevanceFeedback(),
+				questionAnalysisResponse.sentenceFeedbacks() == null || questionAnalysisResponse.sentenceFeedbacks().isEmpty()
+						? new ArrayList<>()
+						: questionAnalysisResponse.sentenceFeedbacks().stream().map(
+						dto -> new ExamSentenceFeedback(
+								dto.targetSentence(),
+								dto.targetSegment(),
+								dto.correctedSegment(),
+								dto.comment(),
+								dto.sentenceOrder(),
+								Instant.now()
+						)).toList()
+		);
 	}
 
 	@Transactional
 	public void completeExam(Long examId) {
-		Exam exam = examRepository.findById(examId)
-				.orElseThrow(() -> new BusinessException(ExamErrorCode.EXAM_NOT_FOUND));
+		// 1. 시험 검색
+		Exam exam = examRepository.findById(examId).orElseThrow(
+				() -> new BusinessException(ExamErrorCode.EXAM_NOT_FOUND)
+		);
+		// 2. 이미 완료된 시험이라면 예외 발생 (이후에 AI 분석을 막기 위함)
+		if (exam.getEndAt() != null) {
+			throw new BusinessException(ExamErrorCode.EXAM_ALREADY_ENDED);
+		}
+		// 3. 시험 완료 처리
 		exam.completeExam();
+	}
+
+
+	@Transactional
+	@Async
+	public void examCreateReport(Long examId, boolean useRealAi) {
+		// 1. 시험 검색
+		Exam exam = examRepository.findById(examId).orElseThrow(
+				() -> new BusinessException(ExamErrorCode.EXAM_NOT_FOUND)
+		);
+
+		// 2. 이미 리포트가 생성되어 있다면 예외 발생
+		if (examReportJpaRepository.existsById(examId)) {
+			throw new BusinessException(ExamErrorCode.EXAM_REPORT_ALREADY_CREATED);
+		}
+
+		// 3. Ai 클라이언트를 가져와서 분석 진행하기
+		ExamTotalAnalysisResponse response = aiClientProvider
+				.getClient(useRealAi)
+				.analyzeTotalExam(
+						exam.getExamAnswers().stream().map(AnswerSummaryDto::from).toList()
+				);
+
+		// 4. 리포트 저장하기
+		examReportJpaRepository.save(ExamReport.createReport(
+				exam,
+				BigDecimal.valueOf(response.averageGrammarScore()),
+				BigDecimal.valueOf(response.averageVocabScore()),
+				BigDecimal.valueOf(response.averageLogicScore()),
+				BigDecimal.valueOf(response.averageFluencyScore()),
+				BigDecimal.valueOf(response.averageRelevanceScore()),
+				BigDecimal.valueOf(response.totalScore()),
+				response.predictedLevel(),
+				response.strengths().toString(),
+				response.improvements().toString(),
+				""
+		));
+	}
+
+	/**
+	 * MatterMost, discord등 마크다운 기반 웹훅 전송 시 사용되는 메시지 템플릿
+	 *
+	 * @param examId          시험 ID
+	 * @param level           시험 레벨
+	 * @param questionType    문항 유형
+	 * @param availableTopics 사용 가능한 토픽
+	 * @param triedTopics     시도한 토픽
+	 * @param lastTopic       마지막으로 시도한 토픽
+	 * @param survey          설문조사 엔티티
+	 * @return 메시지
+	 */
+	private String createErrorMessage(Long examId, Integer level, QuestionType questionType, List<Topic> availableTopics, List<Topic> triedTopics, Topic lastTopic, Survey survey) {
+		String lastTopicStr = (lastTopic == null) ? "None (Intro or Logic Error)" : String.format("`%s` (ID: %d)", lastTopic.getTopicName(), lastTopic.getId());
+
+		String availableTopicsStr = (availableTopics == null || availableTopics.isEmpty())
+				? "None (Empty List)"
+				: availableTopics.stream().map(Topic::getTopicName).toList().toString();
+
+		String triedTopicsStr = (triedTopics == null || triedTopics.isEmpty())
+				? "None (Intro or Logic Error)"
+				: triedTopics.stream().map(t -> String.format("%s(ID:%d)", t.getTopicName(), t.getId())).toList().toString();
+
+		String surveyTopicIdsStr = (survey == null) ? "Unknown" : survey.getTopicIds().toString();
+		String lastTopicName = (lastTopic != null) ? lastTopic.getTopicName() : "None";
+
+		return """
+				### 🚨 문제 할당 실패 상세 리포트
+				
+				| 항목 | 내용 |
+				| --- | --- |
+				| **Exam ID** | `%d` |
+				| **Target Level** | `%d` |
+				| **Target Question Type** | `%s` (%s) |
+				| **Last Tried Topic** | %s |
+				| **Available Topics (Pool)** | %s |
+				| **Actually Tried Topics** | %s |
+				| **Survey Selected Topic IDs** | `%s` |
+				
+				**Reason**
+				> 위 조건(Level + Type + Tried Topics)에 매칭되는 QuestionSet을 DB에서 찾을 수 없습니다.
+				> 특히 마지막으로 시도한 토픽 **%s**에 해당하는 문제가 부족할 가능성이 높습니다.
+				
+				**Action**
+				> DB에 해당 조건의 문제 세트가 존재하는지 확인해주세요.
+				""".formatted(
+				examId,
+				level,
+				questionType.getTypeCode(), questionType.getDescription(),
+				lastTopicStr,
+				availableTopicsStr,
+				triedTopicsStr,
+				surveyTopicIdsStr,
+				lastTopicName
+		);
+
+
 	}
 }

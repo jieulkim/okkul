@@ -107,7 +107,7 @@ onMounted(async () => {
         <h1 class="page-title">실전 모의고사</h1>
         <p class="subtitle">
           실제 OPIc 시험과 동일한 환경에서<br>
-          <span class="highlight">15개 문항</span>을 풀어보세요.
+          <span class="highlight">난이도별 모의고사</span>를 풀어보세요.
         </p>
 
         <div class="features-grid">
@@ -116,28 +116,28 @@ onMounted(async () => {
               <span class="material-icons">edit_document</span>
             </div>
             <h3>실전 시뮬레이션</h3>
-            <p>실제 시험과 동일한 15문항 구성</p>
+            <p><span class="highlight">실제 시험</span>과 동일한 <span class="highlight">문제 세트</span> 구성</p>
           </div>
-          <div class="feature-card delay-2">
+          <!-- <div class="feature-card delay-2">
             <div class="feature-icon">
               <span class="material-icons">track_changes</span>
             </div>
             <h3>난이도 자동 조정</h3>
             <p>7번 문제 후 난이도 재설정</p>
-          </div>
+          </div> -->
           <div class="feature-card delay-3">
             <div class="feature-icon">
               <span class="material-icons">auto_awesome</span>
             </div>
             <h3>AI 분석</h3>
-            <p>문법, 어휘, 유창성 등 종합 평가</p>
+            <p><span class="highlight">문법, 어휘, 유창성</span> 등 종합 평가</p>
           </div>
           <div class="feature-card delay-4">
             <div class="feature-icon">
               <span class="material-icons">insights</span>
             </div>
             <h3>상세 피드백</h3>
-            <p>문항별 강점과 약점 분석</p>
+            <p>문항별 <span class="highlight">강점</span>과 <span class="highlight">약점</span> 분석</p>
           </div>
         </div>
 
@@ -251,18 +251,20 @@ onMounted(async () => {
   color: #F9A825;
   font-weight: 700;
   position: relative;
+  display: inline-block;
+  z-index: 1;
 }
 
 .highlight::after {
   content: "";
   position: absolute;
-  bottom: 0px;
+  bottom: 2px;
   left: 0;
   width: 100%;
   height: 8px;
   background: var(--honey-200);
   z-index: -1;
-  opacity: 0.6;
+  opacity: 0.8;
 }
 
 .start-exam-btn {

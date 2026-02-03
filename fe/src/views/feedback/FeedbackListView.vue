@@ -97,7 +97,7 @@ const filteredHistory = computed(() => feedbackHistory.value);
             <span class="material-icons">school</span>
           </div>
           <h2>실전 모의고사</h2>
-          <p>전체 시험에 대한 종합적인 피드백을 확인하세요.</p>
+          <p><span class="highlight">회차별 시험</span>에 대한 <span class="highlight">종합적인 피드백</span>을 확인하세요.</p>
           <div class="category-footer">
             <span>내역 보기</span>
             <span class="material-icons">chevron_right</span>
@@ -108,7 +108,7 @@ const filteredHistory = computed(() => feedbackHistory.value);
             <span class="material-icons">track_changes</span>
           </div>
           <h2>유형별 연습</h2>
-          <p>각 주제별 집중 연습에 대한 피드백을 확인하세요.</p>
+          <p><span class="highlight">각 주제별 집중 연습</span>에 대한 <span class="highlight">피드백</span>을 확인하세요.</p>
           <div class="category-footer">
             <span>내역 보기</span>
             <span class="material-icons">chevron_right</span>
@@ -230,18 +230,20 @@ const filteredHistory = computed(() => feedbackHistory.value);
   color: #F9A825;
   font-weight: 700;
   position: relative;
+  display: inline-block;
+  z-index: 1;
 }
 
 .highlight::after {
   content: "";
   position: absolute;
-  bottom: 0px;
+  bottom: 2px;
   left: 0;
   width: 100%;
   height: 8px;
   background: var(--honey-200);
   z-index: -1;
-  opacity: 0.6;
+  opacity: 0.8;
 }
 
 @keyframes slideUpFade {
@@ -316,6 +318,7 @@ const filteredHistory = computed(() => feedbackHistory.value);
   color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: 32px;
+  word-break: keep-all;
 }
 
 

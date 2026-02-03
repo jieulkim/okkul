@@ -25,41 +25,41 @@ const practiceTypes = [
     id: 'INTRO',
     name: '자기소개',
     icon: 'person',
-    description: '자신을 소개하는 문제입니다. 편하게 시작해보세요.',
+    description: '<span class="highlight">자신을 소개</span>하는 문제입니다.<br>편하게 시작해보세요.',
     details: {
-      info: '기본적인 자기소개로 시작하며, 모든 난이도에서 첫 번째 문제로 출제됩니다. 평가에는 큰 영향을 주지 않습니다.'
+      info: '기본적인 자기소개로 시작하며, 모든 난이도에서 <span class="highlight">첫 번째 문제</span>로 출제됩니다. 평가에는 큰 영향을 주지 않습니다.'
     }
   },
   {
     id: 'COMBO',
     name: '콤보',
     icon: 'track_changes',
-    description: '묘사, 루틴, 과거경험 등이 결합된 연속 문제입니다.',
+    description: '<span class="highlight">묘사, 루틴, 과거경험</span> 등이 결합된 연속 문제입니다.',
     details: {
-      info: '선택한 주제에 대해 묘사(현재), 루틴/비교, 과거경험 등을 답변합니다. 묘사 → 루틴/비교 → 과거경험 순서로 난이도가 상승합니다.'
+      info: '선택한 주제에 대해 <span class="highlight">묘사(현재), 루틴/비교, 과거경험</span> 등을 답변합니다.<br>묘사 → 루틴/비교 → 과거경험 순서로 난이도가 상승합니다.'
     }
   },
   {
     id: 'ROLEPLAY',
     name: '롤플레잉',
     icon: 'theater_comedy',
-    description: '실제 상황을 가정한 문제 해결 유형입니다.',
+    description: '<span class="highlight">실제 상황</span>을 가정한 문제 해결 유형입니다.',
     details: {
-      info: '정보요청 → 대안제시 → 관련 과거경험 위주로 출제됩니다. 실제 상황에서의 문제해결 능력을 평가합니다.'
+      info: '<span class="highlight">정보요청 → 대안제시 → 관련 과거경험</span> 위주로 출제됩니다.<br>실제 상황에서의 <span class="highlight">문제해결 능력</span>을 평가합니다.'
     }
   },
   {
     id: 'ADVANCED',
     name: '어드밴스',
     icon: 'rocket_launch',
-    description: 'AL 등급을 위한 고난이도 문제입니다.',
+    description: '<span class="highlight">AL 등급</span>을 위한 고난이도 문제입니다.',
     details: {
-      info: '난이도 5-6에서만 출제됩니다. 마지막 문제로 출제되며 주제 관련 이슈, 뉴스, 의견 등을 구체적인 예시와 함께 설명해야 하는 고난이도 문제입니다.'
+      info: '<span class="highlight">난이도 5-6</span>에서만 출제됩니다.<br><span class="highlight">마지막 문제</span>로 출제되며 주제 관련 이슈, 뉴스, 의견 등을 <span class="highlight">구체적인 예시</span>와 함께 설명해야 하는 <span class="highlight">고난이도 문제</span>입니다.'
     }
   }
 ]
 
-// 설문 데이터 (API 응답 구조 반영)
+// 설문 데이터
 const surveyData = ref({
   topics: [],     // selected_topic -> topic (12개 이상)
   occupation: '', // 직업 (Part 1)
@@ -278,10 +278,10 @@ onMounted(async () => {
             <span class="material-icons">{{ type.icon }}</span>
           </div>
           <h2 class="type-name">{{ type.name }}</h2>
-          <p class="type-desc">{{ type.description }}</p>
+          <p class="type-desc" v-html="type.description"></p>
           
           <div class="hover-details">
-             <p class="info-text">{{ type.details.info }}</p>
+             <p class="info-text" v-html="type.details.info"></p>
           </div>
         </div>
       </div>
@@ -389,22 +389,24 @@ onMounted(async () => {
   text-align: center;
 }
 
-.highlight {
+:deep(.highlight) {
   color: #F9A825;
   font-weight: 700;
   position: relative;
+  display: inline-block;
+  z-index: 1;
 }
 
-.highlight::after {
+:deep(.highlight::after) {
   content: "";
   position: absolute;
-  bottom: 0px;
+  bottom: 2px;
   left: 0;
   width: 100%;
   height: 8px;
-  background: var(--honey-200);
+  background: #FFF59D; /* Soft yellow highlight */
   z-index: -1;
-  opacity: 0.6;
+  opacity: 0.8;
 }
 
 .types-grid { 
@@ -467,9 +469,10 @@ onMounted(async () => {
 .type-desc { 
   font-size: 0.95rem; 
   color: var(--text-secondary); 
-  line-height: 1.5;
+  line-height: 1.6;
   margin-bottom: 10px;
   flex-shrink: 0;
+  word-break: keep-all;
 }
 
 .hover-details { 
@@ -519,8 +522,9 @@ onMounted(async () => {
   font-size: 0.85rem; 
   color: #333333; /* 글씨 진하게 */
   font-weight: 600; /* 글씨 두껍게 */
-  line-height: 1.6; 
+  line-height: 1.7; 
   text-align: left; 
+  word-break: keep-all;
 }
 
 /* Topic Selection Styles */

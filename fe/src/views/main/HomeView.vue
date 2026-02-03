@@ -128,18 +128,12 @@ const handleCardClick = (path) => {
               @click="handleCardClick(item.path)"
             >
               <div class="card-left">
-                <span v-if="item.badge" class="item-badge">{{ item.badge }}</span>
                 <h3 class="item-title">{{ item.title }}</h3>
+                <span v-if="item.badge" class="item-badge">{{ item.badge }}</span>
               </div>
               <span class="material-icons arrow-icon">chevron_right</span>
             </div>
           </nav>
-
-          <footer class="home-footer">
-            <p class="footer-contact">
-              학습 중 문의사항: support@okkul.ai
-            </p>
-          </footer>
         </div>
       </div>
     </div>
@@ -333,6 +327,12 @@ const handleCardClick = (path) => {
   transform: translateX(4px);
 }
 
+.card-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .item-badge {
   display: inline-block;
   font-size: 0.75rem;
@@ -341,7 +341,6 @@ const handleCardClick = (path) => {
   background: var(--honey-100);
   padding: 2px 8px;
   border-radius: 4px;
-  margin-bottom: 4px;
 }
 
 .item-title {
@@ -390,7 +389,7 @@ const handleCardClick = (path) => {
 }
 
 .user-name {
-  color: var(--honey-600); /* Slightly darker yellow for text readability */
+  color: var(--honey-600);
 }
 
 .welcome-desc {

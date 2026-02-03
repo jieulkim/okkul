@@ -126,17 +126,22 @@ const goBack = () => {
             <div class="okkul-feedback">
               <img :src="okkulSvg" alt="Okkul" class="okkul-img" />
               <div class="feedback-texts">
-                <div v-if="detailData.categoryFeedback?.relevanceFeedback" class="feedback-item">
-                  <span class="label">주제 적합성</span>
-                  <p>{{ detailData.categoryFeedback?.relevanceFeedback }}</p>
-                </div>
-                <div v-if="detailData.categoryFeedback?.logicFeedback" class="feedback-item">
-                  <span class="label">논리성</span>
-                  <p>{{ detailData.categoryFeedback?.logicFeedback }}</p>
-                </div>
-                <div v-if="detailData.categoryFeedback?.fluencyFeedback" class="feedback-item">
-                  <span class="label">유창성</span>
-                  <p>{{ detailData.categoryFeedback?.fluencyFeedback }}</p>
+                <template v-if="detailData.categoryFeedback">
+                  <div v-if="detailData.categoryFeedback.relevanceFeedback" class="feedback-item">
+                    <span class="label">주제 적합성</span>
+                    <p>{{ detailData.categoryFeedback.relevanceFeedback }}</p>
+                  </div>
+                  <div v-if="detailData.categoryFeedback.logicFeedback" class="feedback-item">
+                    <span class="label">논리성</span>
+                    <p>{{ detailData.categoryFeedback.logicFeedback }}</p>
+                  </div>
+                  <div v-if="detailData.categoryFeedback.fluencyFeedback" class="feedback-item">
+                    <span class="label">유창성</span>
+                    <p>{{ detailData.categoryFeedback.fluencyFeedback }}</p>
+                  </div>
+                </template>
+                <div v-else class="no-feedback">
+                    <p>상세 피드백 데이터가 없습니다.</p>
                 </div>
               </div>
             </div>

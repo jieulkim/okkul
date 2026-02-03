@@ -93,6 +93,12 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/exam/feedback/detail',
+      name: 'exam-question-feedback',
+      component: () => import('../views/feedback/ExamQuestionFeedbackView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/feedback',
       name: 'feedback-list',
       component: FeedbackListView,

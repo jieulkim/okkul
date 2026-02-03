@@ -1,11 +1,10 @@
 <script setup>
 import { ref, computed, onMounted, inject } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { historyApi } from '@/api'; // Import historyApi
+import { historyApi } from '@/api';
 
 const router = useRouter();
 const route = useRoute();
-// Removed isDarkMode injection
 
 // 피드백 데이터 (API에서 받은 데이터 - localStorage 또는 props로 전달받음)
 const errorMessage = ref(''); // 에러 메시지 상태 추가
@@ -35,7 +34,6 @@ const loadFeedback = async () => {
 
     // Mock Mode Support
     if (import.meta.env.MODE === 'mock') {
-         // ... (existing mock logic) ...
          console.warn('Mock Mode: Using dummy practice feedback data');
          await new Promise(resolve => setTimeout(resolve, 500));
          feedbackData.value = {
@@ -93,10 +91,9 @@ const loadFeedback = async () => {
       throw new Error('아직 피드백이 생성되지 않았거나, 데이터를 불러올 수 없습니다.');
     }
 
-    // status 체크 (선택 사항)
+    // status 체크
     if (lastAttempt.feedback.status && lastAttempt.feedback.status !== 'COMPLETED') {
          console.warn('Feedback status is:', lastAttempt.feedback.status);
-         // status가 PROCESSING이면 안내 가능
     }
 
     // 4. 데이터 매핑
@@ -124,7 +121,6 @@ const loadFeedback = async () => {
       isLoading.value = false;
   }
 };
-// ... (enhancedScript ref etc.) ...
 </script>
 
 <template>
@@ -136,8 +132,6 @@ const loadFeedback = async () => {
     </div>
 
     <div v-else-if="feedbackData" class="feedback-container">
-       <!-- ... (existing content) ... -->
-       <!-- ... (All existing template content for feedbackData) ... -->
         <div class="feedback-header">
           <button @click="router.push('/practice')" class="back-btn">
             <span class="material-icons">arrow_back</span>

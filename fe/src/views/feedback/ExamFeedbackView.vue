@@ -7,9 +7,7 @@ const router = useRouter();
 const route = useRoute();
 
 const examResult = ref(null);
-const selectedQuestionIndex = ref(null);
 const isLoading = ref(true);
-const showDetailModal = ref(false);
 
 // 시험 결과 로드 (API 연동 버전)
 const loadExamResult = async () => {
@@ -123,88 +121,21 @@ const getLabelPosition = (index) => {
 };
 
 // 문항 클릭
-const selectQuestion = async (index) => {
+const selectQuestion = (index) => {
   const question = examResult.value.questionResults[index];
   if (!question) return;
 
-  selectedQuestionIndex.value = index;
-  showDetailModal.value = true;
-  
-  // 이미 상세 데이터가 있다면 재요청 방지 (sttScript 유무로 판단)
-  if (question.sttScript) return;
-  
-  try {
-     // 개별 질문 상세 조회
-     // API: getExamAnswerDetail(examId, questionOrder)
-     // questionOrder는 1부터 시작한다고 가정 (response.order 확인)
-     const examId = parseInt(route.query.examId);
-     const response = await historyApi.getExamAnswerDetail(examId, question.questionOrder);
-     const detail = response.data;
-     
-     // 받아온 상세 정보를 해당 질문 객체에 업데이트
-     // API 응답 구조: sttScript, improvedAnswer, categoryFeedback(relevance, logic, fluency), sentenceFeedbacks
-     
-     // 점수 데이터가 API 응답에 없으므로, 상세 보기에서는 점수 대신 피드백 텍스트를 보여주거나
-     // 텍스트 피드백이 있는 경우 점수를 임의로(또는 매핑된 값으로) 표시해야 함.
-     // 현재 API에는 'score' 필드가 없으므로 0으로 두거나, 텍스트만 표시하도록 UI 수정이 필요할 수 있음.
-     // 일단 데이터 매핑
-     
-     question.sttScript = detail.sttScript || '답변 없음';
-     question.enhancedScript = detail.improvedAnswer || '';
-     
-     // 카테고리별 피드백 매핑
-     if (detail.categoryFeedback) {
-        question.relevance.feedback = detail.categoryFeedback.relevanceFeedback || '';
-        question.logic.feedback = detail.categoryFeedback.logicFeedback || '';
-        question.fluency.feedback = detail.categoryFeedback.fluencyFeedback || '';
-     }
-     
-     // 문법/어휘는 sentenceFeedbacks에서 유추하거나 별도 필드가 없으면 공란
-     // 여기서는 sentenceFeedbacks를 문법 피드백으로 간주
-     if (detail.sentenceFeedbacks && detail.sentenceFeedbacks.length > 0) {
-         question.grammar.feedback = "문장 교정 내용이 있습니다.";
-     } else {
-         question.grammar.feedback = "지적된 문법 오류가 없습니다.";
-     }
-     
-  } catch (err) {
-      console.error('문항 상세 조회 실패:', err);
-      alert('상세 정보를 불러오지 못했습니다.');
-  }
-};
-
-// 선택된 문항
-const selectedQuestion = computed(() => {
-  if (selectedQuestionIndex.value === null) return null;
-  return examResult.value?.questionResults?.[selectedQuestionIndex.value];
-});
-
-// 하이라이트 처리 로직
-const buildHighlightedText = (stt, enhanced) => {
-  if (!stt || !enhanced) return enhanced || stt || '';
-  
-  const sttWords = stt.toLowerCase().split(/\s+/);
-  const enhancedWords = enhanced.split(/\s+/);
-  
-  return enhancedWords.map((word, idx) => {
-    const cleanWord = word.replace(/[.,!?;:]/g, '');
-    const cleanSTT = sttWords[idx]?.replace(/[.,!?;:]/g, '') || '';
-    const isDifferent = cleanWord.toLowerCase() !== cleanSTT;
-    
-    return {
-      text: word,
-      highlighted: isDifferent
-    };
+  router.push({
+    path: '/exam/feedback/detail',
+    query: {
+      examId: route.query.examId,
+      questionOrder: question.questionOrder,
+      num: route.query.num
+    }
   });
 };
 
-const highlightedScript = computed(() => {
-  if (!selectedQuestion.value) return [];
-  return buildHighlightedText(
-    selectedQuestion.value.sttScript,
-    selectedQuestion.value.enhancedScript
-  );
-});
+// 선택된 문항 관련 로직 제거 (상세 페이지로 이동하므로)
 
 onMounted(() => {
   loadExamResult();
@@ -346,7 +277,7 @@ onMounted(() => {
         <div class="questions-section">
           <h2 class="section-title">문항별 세부 피드백</h2>
           
-          <div class="questions-grid">
+          <div v-if="examResult.questionResults.length > 0" class="questions-grid">
             <div 
               v-for="(question, index) in examResult.questionResults"
               :key="index"
@@ -365,96 +296,13 @@ onMounted(() => {
               <span class="material-icons">chevron_right</span>
             </div>
           </div>
+          <div v-else class="empty-state">
+            <span class="material-icons">feedback</span>
+            <p>문항별 피드백 정보가 없습니다.</p>
+          </div>
         </div>
       </div>
 
-      <!-- 문항 상세 모달 -->
-      <transition name="modal">
-        <div v-if="showDetailModal && selectedQuestion" class="modal-overlay" @click="showDetailModal = false">
-          <div class="modal-card" @click.stop>
-            <div class="modal-header">
-              <h3>Question {{ selectedQuestion.questionOrder }}</h3>
-              <button @click="showDetailModal = false" class="close-btn">
-                <span class="material-icons">close</span>
-              </button>
-            </div>
-
-            <div class="modal-body">
-              <!-- 질문 -->
-              <div class="detail-section">
-                <h4>질문</h4>
-                <p class="detail-text">{{ selectedQuestion.questionText }}</p>
-              </div>
-
-              <!-- 내 답변 -->
-              <div class="detail-section">
-                <h4>내 답변 (STT)</h4>
-                <div class="script-box">
-                  <p class="detail-text">{{ selectedQuestion.sttScript }}</p>
-                </div>
-              </div>
-
-              <!-- 개선된 답변 (하이라이트) -->
-              <div class="detail-section">
-                <h4>오꿀쌤의 교정 스크립트</h4>
-                <div class="highlighted-script">
-                  <span 
-                    v-for="(word, idx) in highlightedScript" 
-                    :key="idx"
-                    :class="{ 'highlighted-word': word.highlighted }"
-                    class="script-word"
-                  >
-                    {{ word.text }}
-                  </span>
-                </div>
-                <p class="highlight-guide">노란색 표시는 개선된 부분입니다</p>
-              </div>
-
-              <!-- 영역별 피드백 -->
-              <div class="detail-section">
-                <h4>영역별 피드백</h4>
-                <div class="feedback-areas">
-                  <div class="feedback-item">
-                    <div class="feedback-header">
-                      <span class="feedback-label">문법</span>
-                      <span class="feedback-score">{{ selectedQuestion.grammar?.score || 0 }}점</span>
-                    </div>
-                    <p class="feedback-text">{{ selectedQuestion.grammar?.feedback || '피드백 없음' }}</p>
-                  </div>
-                  <div class="feedback-item">
-                    <div class="feedback-header">
-                      <span class="feedback-label">어휘</span>
-                      <span class="feedback-score">{{ selectedQuestion.vocabulary?.score || 0 }}점</span>
-                    </div>
-                    <p class="feedback-text">{{ selectedQuestion.vocabulary?.feedback || '피드백 없음' }}</p>
-                  </div>
-                  <div class="feedback-item">
-                    <div class="feedback-header">
-                      <span class="feedback-label">논리</span>
-                      <span class="feedback-score">{{ selectedQuestion.logic?.score || 0 }}점</span>
-                    </div>
-                    <p class="feedback-text">{{ selectedQuestion.logic?.feedback || '피드백 없음' }}</p>
-                  </div>
-                  <div class="feedback-item">
-                    <div class="feedback-header">
-                      <span class="feedback-label">유창성</span>
-                      <span class="feedback-score">{{ selectedQuestion.fluency?.score || 0 }}점</span>
-                    </div>
-                    <p class="feedback-text">{{ selectedQuestion.fluency?.feedback || '피드백 없음' }}</p>
-                  </div>
-                  <div class="feedback-item">
-                    <div class="feedback-header">
-                      <span class="feedback-label">주제 적합성</span>
-                      <span class="feedback-score">{{ selectedQuestion.relevance?.score || 0 }}점</span>
-                    </div>
-                    <p class="feedback-text">{{ selectedQuestion.relevance?.feedback || '피드백 없음' }}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </transition>
     </template>
   </div>
 </template>
@@ -533,12 +381,14 @@ onMounted(() => {
 
 .header-content {
   flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
 }
 
 .result-title {
   font-size: 2.25rem;
   font-weight: 800;
-  margin-bottom: 8px;
   color: var(--text-primary);
 }
 
@@ -1057,6 +907,29 @@ onMounted(() => {
 .modal-enter-from .modal-card,
 .modal-leave-to .modal-card {
   transform: scale(0.9);
+}
+
+/* 빈 상태 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 40px;
+  background: var(--bg-secondary);
+  border-radius: 20px;
+  border: 1px dashed var(--border-primary);
+  color: var(--text-tertiary);
+  gap: 16px;
+}
+
+.empty-state .material-icons {
+  font-size: 48px;
+}
+
+.empty-state p {
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
 /* 반응형 */

@@ -24,10 +24,10 @@ const loadFilteredHistory = async () => {
     try {
         if (currentCategory.value === 'EXAM') {
             const { data } = await historyApi.getExamHistories({ size: 20, sort: ['createdAt,desc'] });
-            feedbackHistory.value = data.content?.map(item => ({
+            feedbackHistory.value = data.content?.map((item, index) => ({
                 id: item.examId,
                 type: 'EXAM',
-                title: 'OPIc 모의고사', 
+                title: `제 ${data.totalElements - index}회 모의고사`, 
                 date: formatDate(item.createdAt),
                 grade: item.grade || '등급 없음',
                 score: null // API 미제공
@@ -62,7 +62,6 @@ const goToDetail = (item) => {
   if (item.type === 'EXAM') {
     router.push({ path: '/exam/feedback', query: { examId: item.id } });
   } else {
-    // API 연결 버전: questionId 없이 practiceId만 보냄 (PracticeFeedbackView 수정 필요)
     router.push({ path: '/practice/feedback', query: { practiceId: item.id } });
   }
 };
@@ -167,20 +166,19 @@ const filteredHistory = computed(() => feedbackHistory.value);
 <style scoped>
 .feedback-list-page {
   height: calc(100vh - var(--header-height));
-  overflow-y: auto; /* Allow scrolling */
+  overflow-y: auto;
   background: var(--bg-color);
   display: flex;
-  flex-direction: column; /* Changed to column to handle scroll properly */
+  flex-direction: column;
   align-items: center;
-  /* justify-content: center; Remove to allow top alignment when scrolling */
   padding: 40px 0;
 }
 
 .container {
   max-width: 1200px;
-  width: 100%; /* Ensure width is taken */
+  width: 100%;
   margin: 0 auto;
-  padding: 0 24px; /* Add padding for small screens */
+  padding: 0 24px;
 }
 
 .page-header {
@@ -326,7 +324,7 @@ const filteredHistory = computed(() => feedbackHistory.value);
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #FBC02D; /* 옆 아이콘과 동일한 색상 */
+  color: #FBC02D;
   font-weight: 700;
   font-size: 1rem;
 }
@@ -341,7 +339,7 @@ const filteredHistory = computed(() => feedbackHistory.value);
   justify-content: space-between;
   font-weight: 700;
   font-size: 0.9rem;
-  color: #FBC02D; /* 옆 아이콘과 동일한 색상 */
+  color: #FBC02D;
 }
 
 /* 피드백 리스트 스타일 */

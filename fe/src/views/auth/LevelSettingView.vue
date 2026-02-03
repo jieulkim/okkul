@@ -124,29 +124,29 @@ const saveLevel = async () => {
   background: white;
   border: 1px solid var(--border-primary, #f1f5f9);
   border-radius: 32px;
-  padding: 50px 60px;
+  padding: 32px 48px;
   width: 100%;
   max-width: 860px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.05);
   text-align: center;
-  margin-top: -5vh;
+  margin-top: -2vh;
 }
 
 .level-header {
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .welcome-text {
-  font-size: 2.2rem;
+  font-size: 1.8rem;
   font-weight: 800;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   color: var(--text-primary);
 }
 
 .subtitle {
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: var(--text-secondary);
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .highlight {
@@ -173,8 +173,8 @@ const saveLevel = async () => {
 .onboarding-form {
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  margin-bottom: 40px;
+  gap: 20px;
+  margin-bottom: 24px;
   text-align: left;
 }
 
@@ -202,7 +202,7 @@ const saveLevel = async () => {
 
 .nickname-input {
   width: 100%;
-  padding: 16px 16px 16px 48px;
+  padding: 12px 16px 12px 44px;
   background: #F8FAFC;
   border: 2px solid #F1F5F9;
   border-radius: 16px;
@@ -226,7 +226,7 @@ const saveLevel = async () => {
 }
 
 .level-option {
-  padding: 20px 12px;
+  padding: 14px 10px;
   background: #fff;
   border: 1px solid #F1F5F9;
   border-radius: 16px;
@@ -236,7 +236,7 @@ const saveLevel = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
 
 .level-option:hover {
@@ -275,7 +275,7 @@ const saveLevel = async () => {
   width: 100%;
   max-width: 320px;
   margin: 0 auto;
-  padding: 16px;
+  padding: 14px;
   background: var(--primary-color);
   border: none;
   border-radius: 16px;

@@ -10,4 +10,9 @@ public class MockAlarmService implements AlarmService {
 	public void sendErrorAlarm(Exception exception, String requestUrl) {
 		// Mock implementation: do nothing or log locally
 	}
+
+	@Override
+	public void sendMessage(String title, String message) {
+		// Mock implementation: do nothing or log locally
+	}
 }

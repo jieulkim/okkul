@@ -55,7 +55,7 @@ public class QuestionSet {
 	private QuestionType questionType;
 
 	@Builder.Default
-	@OneToMany(mappedBy = "questionSet", cascade = CascadeType.ALL)
+	@OneToMany(mappedBy = "questionSet", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
 	@OrderBy("order ASC")
 	private List<Question> questions = new ArrayList<>();
 

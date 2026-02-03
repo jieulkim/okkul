@@ -78,7 +78,8 @@ public interface ExamControllerDocs {
 			@Parameter(description = "시험 ID") Long examId,
 			@Parameter(description = "답변 번호 (1번, 2번...)") Integer questionOrder,
 			@Parameter(description = "답변 저장요청 객체") ExamQuestionAnswerRequest examQuestionAnswerRequest,
-			@Parameter(hidden = true) UserDetails user
+			@Parameter(hidden = true) UserDetails user,
+			@Parameter(description = "실제 AI 쓸지말지", example = "false") boolean useRealAi
 	);
 
 	/**
@@ -90,12 +91,13 @@ public interface ExamControllerDocs {
 	 */
 	@Operation(
 			summary = "시험 최종 종료",
-			description = "모든 답변 제출을 마치고 시험을 종료합니다. 이때 AI 분석이 시작됩니다."
+			description = "모든 답변 제출을 마치고 시험을 종료합니다. 이때 AI 분석이 시작됩니다.<br>" +
+					"이미 종료된 시험이라면 400 예외를 터트립니다 (AI 중복 리포팅 생성 방지)"
 	)
 	@SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
 	ResponseEntity<Void> completeExam(
 			@Parameter(description = "시험 ID") Long examId,
-			@Parameter(hidden = true) UserDetails user
+			@Parameter(hidden = true) UserDetails user,
+			@Parameter(description = "실제 AI 쓸지말지", example = "false") boolean useRealAi
 	);
-
 }

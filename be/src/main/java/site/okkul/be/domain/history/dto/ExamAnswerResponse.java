@@ -85,7 +85,7 @@ public class ExamAnswerResponse {
 
         public static SentenceFeedback from(site.okkul.be.domain.exam.entity.ExamSentenceFeedback f) {
             return SentenceFeedback.builder()
-                    .feedbackId(f.getId())
+//                    .feedbackId(f.getId())
                     .targetSentence(f.getTargetSentence())
                     .targetSegment(f.getTargetSegment())
                     .correctedSegment(f.getCorrectedSegment())
@@ -99,9 +99,9 @@ public class ExamAnswerResponse {
         return ExamAnswerResponse.builder()
                 .examId(answer.getId().getExamId())
                 .questionOrder(answer.getId().getQuestionOrder())
-                .sttScript(answer.getSttScript())
+//                .sttScript(answer.getSttScript())
                 .improvedAnswer(answer.getImprovedAnswer())
-                .categoryFeedback(toCategoryFeedback(answer.getAnswerFeedbacks()))
+//                .categoryFeedback(toCategoryFeedback(answer.getAnswerFeedbacks()))
                 .sentenceFeedbacks(
                         answer.getSentenceFeedbacks() == null
                                 ? List.of()
@@ -113,13 +113,13 @@ public class ExamAnswerResponse {
                 .build();
     }
 
-    private static CategoryFeedback toCategoryFeedback(site.okkul.be.domain.exam.entity.ExamAnswerFeedback f) {
-        if (f == null) return null;
-
-        return CategoryFeedback.builder()
-                .relevanceFeedback(f.getRelevanceFeedback())
-                .logicFeedback(f.getLogicFeedback())
-                .fluencyFeedback(f.getFluencyFeedback())
-                .build();
-    }
+//    private static CategoryFeedback toCategoryFeedback(site.okkul.be.domain.exam.entity.ExamAnswerFeedback f) {
+//        if (f == null) return null;
+//
+//        return CategoryFeedback.builder()
+////                .relevanceFeedback(f.getRelevanceFeedback())
+////                .logicFeedback(f.getLogicFeedback())
+////                .fluencyFeedback(f.getFluencyFeedback())
+//                .build();
+//    }
 }

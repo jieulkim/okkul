@@ -46,6 +46,7 @@ public interface QuestionSetRepository extends JpaRepository<QuestionSet, Long> 
 
 	@Query("""
 			SELECT q from QuestionSet q
+			LEFT JOIN FETCH q.questions
 			WHERE q.level = ?1 and
 					q.topic.id = ?2 and
 					q.questionType = ?3

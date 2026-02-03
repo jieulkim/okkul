@@ -34,6 +34,7 @@ import site.okkul.be.domain.topic.entity.Topic;
 import site.okkul.be.domain.topic.repository.TopicJpaRepository;
 import site.okkul.be.domain.user.entity.User;
 import site.okkul.be.domain.user.repository.UserJpaRepository;
+import site.okkul.be.global.config.SwaggerConfig;
 import site.okkul.be.global.exception.BusinessException;
 
 import java.util.ArrayList;
@@ -103,15 +104,8 @@ public class PracticeService {
                 .build();
     }
 
-    public Long createAnswerAndRequestFeedbackAsync(Long practiceId, PracticeFeedbackRequest request, MultipartFile audioFile, Long userId) {
+    public Long createAnswerAndRequestFeedbackAsync(Long practiceId, PracticeFeedbackRequest request, MultipartFile audioFile, Long userId, boolean useRealAi) {
         Long practiceAnswerId = practiceAnswerCreator.createAndSaveAnswer(practiceId, request, audioFile);
-
-        boolean useRealAi = java.util.Optional.ofNullable(RequestContextHolder.getRequestAttributes())
-                .filter(ServletRequestAttributes.class::isInstance)
-                .map(ServletRequestAttributes.class::cast)
-                .map(ServletRequestAttributes::getRequest)
-                .map(httpRequest -> "true".equalsIgnoreCase(httpRequest.getHeader("X-Use-Real-AI")))
-                .orElse(false);
 
         aiFeedbackTrigger.triggerAiFeedback(practiceAnswerId, useRealAi);
 

@@ -15,6 +15,11 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
+import org.springframework.data.domain.Persistable;
 
 /**
  * 모의고사 전체 결과에 대한 종합 분석 리포트 엔티티
@@ -25,7 +30,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-public class ExamReport {
+public class ExamReport implements Persistable<Long> {
 
 	// 왜래키를 의존중입니다
 	@Id
@@ -86,19 +91,24 @@ public class ExamReport {
 	/**
 	 * 응시 시작 시간
 	 */
-	@Column(nullable = false, updatable = false)
+	@CreationTimestamp
+	@JdbcTypeCode(SqlTypes.TIMESTAMP)
+	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
 
 	/**
 	 * 마지막 업데이트 시간
 	 */
-	@Column(nullable = false)
+	@UpdateTimestamp
+	@JdbcTypeCode(SqlTypes.TIMESTAMP)
+	@Column(name = "updated_at", nullable = false)
 	private Instant updatedAt;
 
 
-	public static ExamReport createReport(Long examId, BigDecimal avgG, BigDecimal avgV, BigDecimal avgL, BigDecimal avgF, BigDecimal avgR, BigDecimal total, String grade, String sType, String wType, String comment) {
+	public static ExamReport createReport(Exam exam, BigDecimal avgG, BigDecimal avgV, BigDecimal avgL, BigDecimal avgF, BigDecimal avgR, BigDecimal total, String grade, String sType, String wType, String comment) {
 		return ExamReport.builder()
-				.id(examId)
+				.id(exam.getId())
+				.exam(exam)
 				.avgGrammar(avgG)
 				.avgVocab(avgV)
 				.avgLogic(avgL)
@@ -109,7 +119,11 @@ public class ExamReport {
 				.strengthType(sType)
 				.weaknessType(wType)
 				.comment(comment)
-				.createdAt(Instant.now())
 				.build();
+	}
+
+	@Override
+	public boolean isNew() {
+		return createdAt == null;
 	}
 }

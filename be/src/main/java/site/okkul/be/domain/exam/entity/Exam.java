@@ -23,6 +23,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import site.okkul.be.domain.exam.exception.ExamErrorCode;
+import site.okkul.be.domain.question.entity.Question;
 import site.okkul.be.domain.question.entity.QuestionSet;
 import site.okkul.be.global.exception.BusinessException;
 
@@ -75,8 +76,14 @@ public class Exam {
 	// 단방향 매핑
 	@ManyToMany
 	@JoinTable(name = "exam_question_set", joinColumns = @JoinColumn(name = "exam_id"), inverseJoinColumns = @JoinColumn(name = "question_set_id"))
-	@OrderColumn(name = "question_order")
+	@OrderColumn(name = "question_set_order")
 	private List<QuestionSet> questionSets;
+
+	// 단방향 매핑
+	@ManyToMany
+	@JoinTable(name = "exam_question", joinColumns = @JoinColumn(name = "exam_id"), inverseJoinColumns = @JoinColumn(name = "question_id"))
+	@OrderColumn(name = "question_order")
+	private List<Question> questions;
 
 	// 양방향 매핑
 	@JsonManagedReference
@@ -123,6 +130,7 @@ public class Exam {
 				.endAt(null)
 				.adjustedDifficulty(null)
 				.questionSets(new ArrayList<>())
+				.questions(new ArrayList<>())
 				.examAnswers(new ArrayList<>())
 				.surveyId(surveyId)
 				.userId(userId)

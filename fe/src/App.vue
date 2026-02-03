@@ -31,9 +31,14 @@ onMounted(async () => {
     // 토큰 저장 후 유저 정보 갱신
     await authStore.fetchUser();
 
-    // ✅ 로그인 성공 시 항상 홈으로 (설문 강제 진입 방지)
-    console.log('[App] Successful login from URL. Redirecting to Home...');
-    router.push('/');
+    // ✅ 신규 유저 체크 (Target Level이 없으면 설정 페이지로)
+    if (authStore.user && !authStore.user.targetLevel) {
+      console.log('[App] New user detected. Redirecting to Goal Setting...');
+      router.push('/auth/goal');
+    } else {
+      console.log('[App] Successful login from URL. Redirecting to Home...');
+      router.push('/');
+    }
   }
 
 })

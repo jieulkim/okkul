@@ -27,7 +27,7 @@ const handleDevLogin = () => {
           <img :src="okkulSvg" alt="Okkul" class="okkul-img" />
         </div>
         <h1>오꿀</h1>
-        <p>꿀처럼 달콤한 오픽 점수,<br>AI와 함께 만들어보세요!</p>
+        <p>꿀처럼 달콤한 <span class="highlight">오픽</span>점수,<br><span class="highlight">오꿀쌤</span>과 함께 만들어보세요!</p>
       </div>
 
       <div class="login-actions">
@@ -180,6 +180,26 @@ const handleDevLogin = () => {
 
 .text-sm {
   font-size: 18px;
+}
+
+.highlight {
+  color: #F9A825;
+  font-weight: 700;
+  position: relative;
+  display: inline-block;
+  z-index: 1;
+}
+
+.highlight::after {
+  content: "";
+  position: absolute;
+  bottom: 2px;
+  left: 0;
+  width: 100%;
+  height: 8px;
+  background: var(--honey-100);
+  z-index: -1;
+  opacity: 0.8;
 }
 
 /* Fade In Animation */

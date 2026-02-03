@@ -44,14 +44,14 @@ public class ExamLevelDesign {
 			);
 		} else if (level >= 3) {
 			return List.of(
-					QuestionType.COMBO2,
+					QuestionType.COMBO3,
 					QuestionType.ROLE_PLAYING3,
-					QuestionType.ADVANCED2);
+					QuestionType.ROLE_PLAYING2);
 		} else {
 			return List.of(
 					QuestionType.COMBO2,
 					QuestionType.ROLE_PLAYING1,
-					QuestionType.ADVANCED2
+					QuestionType.ROLE_PLAYING1
 			);
 		}
 	}

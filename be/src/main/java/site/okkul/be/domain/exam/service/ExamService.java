@@ -132,10 +132,10 @@ public class ExamService {
 	 *
 	 * @param examId 시험 ID
 	 */
-	@Async
 	@Transactional
-	public void allocateQuestion(Long examId) {
-		log.info("비동기처리: 문제를 할당합니다");
+	public List<QuestionSet> allocateQuestion(Long examId) {
+		log.info("문제 할당 프로세스 시작 - ExamId: {}", examId);
+
 		Exam exam = examRepository.findById(examId).orElseThrow(
 				() -> new BusinessException(ExamErrorCode.EXAM_NOT_FOUND)
 		);
@@ -144,53 +144,63 @@ public class ExamService {
 				() -> new BusinessException(ExamErrorCode.SURVEY_NOT_FOUND)
 		);
 
-		// 설문조사에 맞게 불러온 문제 유형들
 		List<QuestionType> questionTypes;
-
 		Integer level;
 
+		// 이번 요청으로 새로 생성된 문제들만 담을 리스트 (Controller 반환용)
+		List<QuestionSet> newlyAddedQuestions = new ArrayList<>();
+
 		if (exam.getQuestionSets().isEmpty()) {
-			// 첫 시험 문제 생성 시
+			log.info("최초 문제 할당: 1번~7번 레이아웃 적용 (초기 난이도: {})", exam.getInitialDifficulty());
 			questionTypes = ExamLevelDesign.getFirstLayoutByLevel(exam.getInitialDifficulty());
 			level = exam.getInitialDifficulty();
 		} else {
-			// 난이도 조정 된 이후 시험 문제 생성 시
+			log.info("추가 문제 할당: 8번 이후 레이아웃 적용 (조정 난이도: {})", exam.getAdjustedDifficulty());
 			questionTypes = ExamLevelDesign.getRemainingLayoutByLevel(exam.getAdjustedDifficulty());
 			level = exam.getAdjustedDifficulty();
 		}
-		// 사용 가능한 토픽
+
+		// 사용 가능한 토픽 가져오기
 		List<Topic> topics = getRandomTopics(exam, survey);
 
-
-		// 문제 가져오기
+		// 문제 가져오기 및 할당
 		for (QuestionType questionType : questionTypes) {
 			Optional<QuestionSet> questionSet = Optional.empty();
-            if (questionType.equals(QuestionType.INTRODUCE))
-                questionSet = questionSetRepository.findIntroQuestion(QuestionType.INTRODUCE.getId());
-            else {
-                Collections.shuffle(topics);
-                for (Topic topic : topics) {
-                    questionSet = questionSetRepository.findRandomByLevelAndTopic(
-                            level,
-                            topic.getId(),
-                            questionType
-                    );
-                    if (questionSet.isPresent()) {
-                        break;
-                    }
-                }
-            }
+
+			if (questionType.equals(QuestionType.INTRODUCE)) {
+				questionSet = questionSetRepository.findIntroQuestion(QuestionType.INTRODUCE.getId());
+			} else {
+				Collections.shuffle(topics);
+				for (Topic topic : topics) {
+					questionSet = questionSetRepository.findRandomByLevelAndTopic(
+							level,
+							topic.getId(),
+							questionType
+					);
+					if (questionSet.isPresent()) {
+						break;
+					}
+				}
+			}
 
 			if (questionSet.isPresent()) {
-				exam.getQuestionSets().add(questionSet.get());
+				QuestionSet qs = questionSet.get();
+
+				// 1. DB 저장을 위해 Exam 엔티티에 추가 (기존 7개 뒤에 8번부터 예쁘게 붙음)
+				exam.getQuestionSets().add(qs);
+
+				// 2. 응답을 위해 반환용 리스트에 추가 (이번에 만든 것만 담김)
+				newlyAddedQuestions.add(qs);
 			} else {
-				log.error("님들아 큰일남 문제가 없음!!!");
+				log.error("문제 할당 실패 - 레벨: {}, 타입: {}", level, questionType);
 				throw new BusinessException(ExamErrorCode.QUESTION_ALLOCATION_FAILED);
 			}
 		}
-		log.info("비동기처리: 문제 할당이 완료 되었습니다.");
-		log.info("비동기처리: :{}", exam.getQuestionSets().size());
+
+		log.info("문제 할당 완료. 신규 추가 문항 수: {}", newlyAddedQuestions.size());
 		examRepository.save(exam);
+
+		return newlyAddedQuestions;
 	}
 
 	/**

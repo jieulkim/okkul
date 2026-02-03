@@ -458,7 +458,7 @@ const completeExam = async () => {
     localStorage.removeItem('incompleteExam');
     
     alert('시험이 종료되었습니다. AI 분석이 시작됩니다.');
-    router.push('/exam');
+    router.push({ path: '/exam/feedback', query: { examId: examId.value } });
     
   } catch (error) {
     console.error('[ExamQuestionView] 시험 종료 실패:', error);

@@ -33,8 +33,8 @@ onMounted(async () => {
 
     // ✅ 신규 유저 체크 (Target Level이 없으면 설정 페이지로)
     if (authStore.user && !authStore.user.targetLevel) {
-      console.log('[App] New user detected. Redirecting to Goal Setting...');
-      router.push('/auth/goal');
+      console.log('[App] New user detected. Redirecting to Level Setting...');
+      router.push('/auth/level');
     } else {
       console.log('[App] Successful login from URL. Redirecting to Home...');
       router.push('/');

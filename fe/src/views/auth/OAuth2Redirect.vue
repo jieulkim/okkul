@@ -34,7 +34,7 @@ onMounted(async () => {
     // 4. 신규 유저 여부 판단 (Target Level이 없으면 설정 페이지로)
     if (authStore.user && !authStore.user.targetLevel) {
       console.log('[OAuth2Redirect] New user detected. Redirecting to Goal Setting...')
-      router.push('/auth/goal')
+      router.push('/auth/level')
     } else {
       // 5. 기존 유저인 경우 홈으로
       console.log('[OAuth2Redirect] Exiting user. Redirecting to Home...')

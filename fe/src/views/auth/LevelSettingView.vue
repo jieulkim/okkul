@@ -20,7 +20,7 @@ const levelOptions = [
   { value: 'INTERMEDIATE_LOW', label: 'IL', desc: 'Intermediate Low' }
 ]
 
-const saveGoal = async () => {
+const saveLevel = async () => {
   if (!nickname.value.trim()) {
     alert('닉네임을 입력해 주세요.')
     return
@@ -50,9 +50,9 @@ const saveGoal = async () => {
 </script>
 
 <template>
-  <div class="page-container goal-setting-page">
-    <div class="goal-card fade-in">
-      <header class="goal-header">
+  <div class="page-container level-setting-page">
+    <div class="level-card fade-in">
+      <header class="level-header">
         <h2 class="welcome-text">환영합니다!</h2>
         <p class="subtitle">오꿀쌤과 함께할 <span class="highlight">닉네임</span>과<br><span class="highlight">목표 등급</span>을 설정해 주세요.</p>
       </header>
@@ -93,9 +93,9 @@ const saveGoal = async () => {
         </div>
       </div>
 
-      <footer class="goal-footer">
+      <footer class="level-footer">
         <button 
-          @click="saveGoal" 
+          @click="saveLevel" 
           class="start-btn"
           :disabled="isSubmitting"
         >
@@ -120,7 +120,7 @@ const saveGoal = async () => {
   padding: 0;
 }
 
-.goal-card {
+.level-card {
   background: white;
   border: 1px solid var(--border-primary, #f1f5f9);
   border-radius: 32px;
@@ -132,7 +132,7 @@ const saveGoal = async () => {
   margin-top: -5vh;
 }
 
-.goal-header {
+.level-header {
   margin-bottom: 32px;
 }
 
@@ -335,7 +335,7 @@ const saveGoal = async () => {
   .level-selection {
     grid-template-columns: repeat(2, 1fr);
   }
-  .goal-card {
+  .level-card {
     padding: 40px 30px;
   }
 }

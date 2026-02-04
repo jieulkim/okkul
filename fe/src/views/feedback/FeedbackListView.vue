@@ -1,10 +1,11 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { historyApi } from '@/api';
 
 // 라우터
 const router = useRouter();
+const route = useRoute();
 
 // 상태 관리
 const isLoading = ref(false);
@@ -70,6 +71,13 @@ const formatDate = (dateString) => {
     if (!dateString) return '';
     return new Date(dateString).toLocaleDateString('ko-KR');
 };
+
+onMounted(() => {
+  const category = route.query.category;
+  if (category === 'EXAM' || category === 'PRACTICE') {
+    selectCategory(category);
+  }
+});
 
 const filteredHistory = computed(() => feedbackHistory.value);
 </script>

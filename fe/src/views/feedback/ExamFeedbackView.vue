@@ -155,9 +155,9 @@ onMounted(() => {
       <div class="result-container">
         <!-- 헤더 -->
         <div class="result-header">
-          <button @click="router.push('/')" class="back-btn">
+          <button @click="router.push('/feedback?category=EXAM')" class="back-btn">
             <span class="material-icons">arrow_back</span>
-            홈으로
+            목록으로
           </button>
           <div class="header-content">
             <h1 class="result-title">모의고사 결과</h1>

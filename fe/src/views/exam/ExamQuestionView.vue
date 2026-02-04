@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, inject } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router';
 import { examApi } from '@/api';
 import okkulPng from '@/assets/images/okkul.png';
 
@@ -23,6 +23,12 @@ const isLoading = ref(true);
 const errorMessage = ref(null);
 const initialDifficulty = ref(1); // 초기 난이도 상태 추가
 const isSaving = ref(false); // 저장 중 상태 추가
+const sttResult = ref(""); // STT 결과를 저장할 ref 추가
+let finalTranscriptAccumulated = ref(""); // 최종 확정된 STT 결과를 누적
+let recognition = null; // Web Speech API SpeechRecognition 객체
+const showConfirmNextModal = ref(false); // 답변 없이 다음으로 넘어갈지 묻는 모달
+const forceNextQuestion = ref(false); // 모달 확인 후 다음 문제로 넘어갈지 결정
+const isNavigatingAwayIntentionally = ref(false); // 의도적인 페이지 이동인지 확인하는 플래그
 
 // 제약 조건 관련 상태
 const playCount = ref(0); // 재생 횟수 (0: 초기, 1: 1회 재생, 2: 2회 재생/완료)
@@ -109,40 +115,30 @@ const initializeExam = async () => {
     if (queryExamId) {
       examId.value = parseInt(queryExamId);
     } else {
-      // 쿼리에 없으면 로컬스토리지나 setupData 등에서 추론해야 할 수도 있으나,
-      // 현재 흐름상 query로 setupView가 넘겨줌.
-      // 없을 경우 에러 처리
       console.error('[ExamQuestionView] examId가 없습니다.');
     }
 
-    // 2. 로컬 스토리지에서 진행 상황 확인
-    // examId.value가 있어야 키를 만들 수 있음
     let savedData = null;
     if (examId.value) {
       savedData = localStorage.getItem(`exam_${examId.value}`);
     }
     
-    // 설문 데이터 확인 (이어하기가 아닐 때 필요)
     const setupData = localStorage.getItem('setupData');
     
     if (savedData) {
-      // 이어하기
       const data = JSON.parse(savedData);
       questions.value = data.questions;
       currentQuestionIndex.value = data.currentIndex;
       adjustedDifficulty.value = data.adjustedDifficulty || null;
       initialDifficulty.value = data.initialDifficulty || 1;
-      // localStorage 데이터가 있더라도 난이도에 따라 다시 계산 (stale data 방어)
       totalQuestions.value = getTotalQuestionsByLevel(adjustedDifficulty.value || initialDifficulty.value);
       
       console.log('[ExamQuestionView] 저장된 진행 상황 로드:', data);
     } else {
-      // 처음 시작
       if (!examId.value) {
          throw new Error("Exam ID not found");
       }
       
-      // 설문에서 설정한 기본 난이도 가져오기
       if (setupData) {
         const parsedSetup = JSON.parse(setupData);
         if (parsedSetup.initialDifficulty) {
@@ -152,10 +148,8 @@ const initializeExam = async () => {
       
       console.log('[ExamQuestionView] 새 시험 시작. 난이도:', initialDifficulty.value);
       
-      // 초기 난이도에 맞춰 총 문항 수 설정
       totalQuestions.value = getTotalQuestionsByLevel(initialDifficulty.value);
       
-      // 첫 7문제 로드 (백엔드 레이스 컨디션 대응 폴링)
       await pollForQuestions(examId.value);
     }
     
@@ -173,51 +167,43 @@ const initializeExam = async () => {
 const togglePlay = () => {
   if (!currentQuestion.value?.audioUrl) return;
   
-  // 이미 재생 중이면 정지 (수동 정지)
   if (isPlaying.value && currentAudio.value) {
     currentAudio.value.pause();
     isPlaying.value = false;
     return;
   }
 
-  // 재생 시작 조건 체크
-  // 1. 이미 2번 들었으면 불가
   if (playCount.value >= 2) {
     return;
   }
   
-  // 2. 1번 들었는데 5초가 지났으면 불가
   if (playCount.value === 1 && !canReplay.value) {
     return;
   }
 
-  // 재생 시작
   if (currentAudio.value) {
     currentAudio.value.pause();
   }
   
   currentAudio.value = new Audio(currentQuestion.value.audioUrl);
   
-  // onended 설정 - 질문이 끝난 후 5초 타이머 시작
   currentAudio.value.onended = () => {
     isPlaying.value = false;
     
-    // 첫 재생이 끝났을 때만 5초 타이머 시작
     if (playCount.value === 1) {
       canReplay.value = true;
       if (replayTimer) clearTimeout(replayTimer);
       
       replayTimer = setTimeout(() => {
         canReplay.value = false;
-      }, 5000); // 질문 종료 후 5초간만 다시 듣기 허용
+      }, 5000);
     }
   };
 
-  // 재생 시작 (Promise 에러 핸들링 추가)
   currentAudio.value.play()
     .then(() => {
       isPlaying.value = true;
-      playCount.value++; // 카운트 증가
+      playCount.value++;
     })
     .catch(err => {
       console.warn('[ExamQuestionView] 오디오 재생 실패 (유효하지 않은 URL 등):', err);
@@ -225,11 +211,13 @@ const togglePlay = () => {
     });
 };
 
-// 문제 변경 시 상태 초기화 (제약 조건 리셋)
+// 문제 변경 시 상태 초기화
 const resetQuestionState = () => {
   playCount.value = 0;
   canReplay.value = false;
   isSubmitted.value = false;
+  sttResult.value = "";
+  finalTranscriptAccumulated.value = "";
   
   if (replayTimer) clearTimeout(replayTimer);
   
@@ -242,6 +230,37 @@ const startRecording = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     mediaRecorder = new MediaRecorder(stream);
     audioChunks = [];
+    sttResult.value = "";
+
+    if (!recognition) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert('STT를 지원하지 않는 브라우저입니다.');
+        return;
+      }
+      recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+    }
+
+    recognition.onresult = (event) => {
+      let interimTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscriptAccumulated.value += event.results[i][0].transcript + ' ';
+        } else {
+          interimTranscript += event.results[i][0].transcript;
+        }
+      }
+      sttResult.value = finalTranscriptAccumulated.value + interimTranscript;
+    };
+
+    recognition.onend = () => {
+      if (isRecording.value) {
+        recognition.start();
+      }
+    };
     
     mediaRecorder.ondataavailable = (event) => {
       audioChunks.push(event.data);
@@ -252,7 +271,6 @@ const startRecording = async () => {
       await submitAnswer(audioBlob);
     };
     
-    // 볼륨 모니터링
     const audioContext = new AudioContext();
     const analyser = audioContext.createAnalyser();
     const microphone = audioContext.createMediaStreamSource(stream);
@@ -267,6 +285,7 @@ const startRecording = async () => {
     }, 100);
     
     mediaRecorder.start();
+    recognition.start();
     isRecording.value = true;
     recordingTime.value = 0;
     
@@ -292,6 +311,9 @@ const stopRecording = () => {
     clearInterval(recordingTimer);
     clearInterval(volumeMonitor);
     mediaRecorder.stream.getTracks().forEach(track => track.stop());
+    if (recognition) {
+      recognition.stop();
+    }
   }
 };
 
@@ -303,111 +325,85 @@ const submitAnswer = async (audioBlob) => {
       return;
     }
     
-    isSaving.value = true; // 저장 시작 표시
-
-    console.log('[ExamQuestionView] 답변 제출:', {
-      examId: examId.value,
-      questionOrder: currentQuestion.value.order,
-      audioBlobSize: audioBlob.size
-    });
+    isSaving.value = true;
 
     const formData = new FormData();
-    formData.append('file', audioBlob, 'answer.webm'); // 필드명: audioFile -> file 수정
-    formData.append('sttText', ''); // 필수 필드 추가
-    formData.append('duration', String(recordingTime.value)); // 실제 녹음 시간 전송
+    formData.append('file', audioBlob, 'answer.webm');
+    formData.append('sttText', sttResult.value);
+    formData.append('duration', String(recordingTime.value));
     
-    // API 호출: examApi.submitAnswer(examId, questionOrder, formData)
     await examApi.submitAnswer(
       examId.value,
-      currentQuestion.value.order, // questionOrder 파라미터
+      currentQuestion.value.order,
       formData
     );
     
-    console.log('[ExamQuestionView] 답변 제출 성공');
-    
-    isSubmitted.value = true; // 제출 완료 상태 설정 (재녹음 방지)
-    
-    // 진행 상황 저장
+    isSubmitted.value = true;
     saveProgress();
     
   } catch (error) {
     console.error('[ExamQuestionView] 답변 제출 실패:', error);
-    if (error.response) {
-      console.error('[ExamQuestionView] 에러 응답:', error.response.data);
-    }
     alert('답변 제출에 실패했습니다.');
   } finally {
-    isSaving.value = false; // 저장 종료
+    isSaving.value = false;
   }
 };
 
-// 다음 문제
-const goNext = () => {
+// 실제 다음 문제로 진행하는 내부 함수
+const _proceedToNextQuestion = (isForced = false) => {
   if (currentQuestionIndex.value === 6) {
-    // 7번 문제 종료 - 난이도 재조정
     showRelevelModal.value = true;
   } else if (currentQuestionIndex.value < questions.value.length - 1) {
     currentQuestionIndex.value++;
-    resetQuestionState(); // 문제 상태 초기화 (제약 조건 포함)
-    saveProgress(); // 진행상황 저장
+    resetQuestionState();
+    saveProgress();
   } else {
-    // 시험 종료
-    completeExam();
+    completeExam(isForced);
   }
+};
+
+// 다음 문제 버튼 핸들러
+const goNext = () => {
+  if (isSubmitted.value) {
+    _proceedToNextQuestion(false);
+  } else {
+    showConfirmNextModal.value = true;
+  }
+};
+
+// 답변 없이 다음 문제로 넘어가는 것을 확정
+const confirmGoNext = () => {
+  showConfirmNextModal.value = false;
+  _proceedToNextQuestion(true);
+};
+
+// 답변 없이 다음 문제로 넘어가는 것을 취소
+const cancelGoNext = () => {
+  showConfirmNextModal.value = false;
 };
 
 // 난이도 재조정
 const setRelevel = async (choice) => {
-  const difficultyMap = {
-    easy: -1,
-    same: 0,
-    hard: 1
-  };
-  
-  // 저장된 초기 난이도 사용 (state variable)
+  const difficultyMap = { easy: -1, same: 0, hard: 1 };
   const baseLevel = initialDifficulty.value;
-
-  // 절대 레벨 계산 (기본 레벨 + 변화량)
   const targetLevel = baseLevel + difficultyMap[choice];
-  
-  // 유효성 검사 (1~6 범위 - 비즈니스 로직상 +/- 1만 허용되므로 이미 map으로 제한됨)
-  // 단, 결과가 1 미만이나 6 초과가 되지 않도록 방어
   const finalLevel = Math.max(1, Math.min(6, targetLevel));
 
   adjustedDifficulty.value = finalLevel;
   showRelevelModal.value = false;
   
   try {
-    console.log('[ExamQuestionView] 난이도 재조정 요청:', {
-      examId: examId.value,
-      initialDifficulty: baseLevel,
-      choice,
-      adjustedDifficulty: adjustedDifficulty.value
-    });
-    
-    // API 호출: examApi.updateAdjustedDifficulty(examId, { adjustedDifficulty })
     const response = await examApi.updateAdjustedDifficulty(
       examId.value,
       { adjustedDifficulty: adjustedDifficulty.value },
     );
     
-    console.log('[ExamQuestionView] 난이도 재조정 응답:', response.data);
-    
-    // 나머지 문제 추가
-    // 현재 문제까지 유지하고, 이후 문제(난이도 조절 전 생성된 더미/이전 문제들)는 제거
     const currentQuestions = questions.value.slice(0, currentQuestionIndex.value + 1);
     const newQuestions = response.data.questions || [];
     
-    // 전체 문제 수가 15개를 넘지 않도록 조정 (기존 문제 + 새 문제 합쳐서 15개까지만)
-    // 단, 난이도에 따라 12개 혹은 15개로 제한
     const combinedQuestions = [...currentQuestions, ...newQuestions];
     totalQuestions.value = getTotalQuestionsByLevel(adjustedDifficulty.value);
     questions.value = combinedQuestions.slice(0, totalQuestions.value);
-    
-    console.log('[ExamQuestionView] 문제 추가 완료:', {
-      totalQuestions: questions.value.length,
-      newQuestions: newQuestions.length
-    });
     
     currentQuestionIndex.value++;
     resetQuestionState();
@@ -415,9 +411,6 @@ const setRelevel = async (choice) => {
     
   } catch (error) {
     console.error('[ExamQuestionView] 난이도 재조정 실패:', error);
-    if (error.response) {
-      console.error('[ExamQuestionView] 에러 응답:', error.response.data);
-    }
     alert('난이도 재조정에 실패했습니다.');
   }
 };
@@ -440,64 +433,71 @@ const saveProgress = () => {
     questions: questions.value,
     totalQuestions: totalQuestions.value,
     initialDifficulty: initialDifficulty.value,
-    adjustedDifficulty: adjustedDifficulty.value, // adjustedDifficulty 추가 저장
+    adjustedDifficulty: adjustedDifficulty.value,
     timestamp: new Date().toISOString()
   };
   
   localStorage.setItem(`exam_${examId.value}`, JSON.stringify(data));
-  localStorage.setItem('incompleteExam', JSON.stringify({
-    examId: examId.value,
-    currentQuestion: currentQuestionIndex.value + 1,
-    remainingTime: formattedTotalTime.value
-  }));
-  
-  console.log('[ExamQuestionView] 진행상황 저장:', data);
 };
 
 // 시험 종료
-const completeExam = async () => {
-  if (!confirm('시험을 종료하시겠습니까?')) {
+const completeExam = async (bypassConfirmation = false) => {
+  if (!bypassConfirmation && !confirm('시험을 종료하시겠습니까?')) {
     return;
   }
   
   try {
-    console.log('[ExamQuestionView] 시험 종료 요청:', examId.value);
-    
-    // API 호출: examApi.completeExam(examId)
     await examApi.completeExam(examId.value);
     
-    console.log('[ExamQuestionView] 시험 종료 성공');
-    
-    // 로컬스토리지 정리
     localStorage.removeItem(`exam_${examId.value}`);
-    localStorage.removeItem('incompleteExam');
     
+    isNavigatingAwayIntentionally.value = true; // 플래그 설정
     alert('시험이 종료되었습니다. AI 분석이 시작됩니다.');
     router.push({ path: '/exam/feedback', query: { examId: examId.value } });
     
   } catch (error) {
     console.error('[ExamQuestionView] 시험 종료 실패:', error);
-    if (error.response) {
-      console.error('[ExamQuestionView] 에러 응답:', error.response.data);
-    }
     alert('시험 종료에 실패했습니다.');
   }
 };
 
-// 시험 나가기
+// 시험 나가기 버튼 핸들러
 const exitExam = () => {
   if (confirm('시험을 종료하고 나가시겠습니까? 진행 상황이 저장됩니다.')) {
     saveProgress();
+    isNavigatingAwayIntentionally.value = true; // 플래그 설정
     router.push('/exam');
   }
 };
 
+// 페이지를 떠나기 전에 확인 (Vue Router 가드)
+onBeforeRouteLeave((to, from, next) => {
+  if (isNavigatingAwayIntentionally.value) {
+    isNavigatingAwayIntentionally.value = false; // 플래그 초기화
+    next();
+    return;
+  }
+
+  // 사용자가 시험을 완료하고 피드백 페이지로 이동하는 경우는 예외 처리
+  if (to.path.includes('/exam/feedback')) {
+    next();
+    return;
+  }
+
+  const answer = window.confirm('시험을 종료하시겠습니까? 답변 내용은 저장됩니다.');
+  if (answer) {
+    saveProgress();
+    isNavigatingAwayIntentionally.value = true; // 플래그 설정
+    next({ path: '/exam' }); // 메인 페이지로 리디렉션
+  } else {
+    next(false); // 내비게이션 취소
+  }
+});
+
 onMounted(() => {
   initializeExam().then(() => {
-    // 첫 문제에 대한 타이머 시작
     resetQuestionState();
     
-    // 전체 시험 타이머 시작
     totalTimer = setInterval(() => {
       totalExamTime.value++;
     }, 1000);
@@ -513,8 +513,13 @@ onUnmounted(() => {
   }
   clearInterval(recordingTimer);
   clearInterval(volumeMonitor);
-  clearInterval(totalTimer); // 전체 타이머 정리
+  clearInterval(totalTimer);
   if (replayTimer) clearTimeout(replayTimer);
+
+  if (recognition) {
+    recognition.stop();
+    recognition = null;
+  }
 });
 </script>
 
@@ -540,9 +545,6 @@ onUnmounted(() => {
           <span class="material-icons">close</span>
           나가기
         </button>
-        <!-- <div class="question-number">
-          Question {{ currentQuestionIndex + 1 }} / {{ totalQuestions }}
-        </div> -->
         <div class="time-display">
           <span class="material-icons">timer</span>
           {{ formattedTotalTime }}
@@ -555,7 +557,7 @@ onUnmounted(() => {
         <section class="question-section">
           <div class="question-card">
               <div class="question-header">
-                <h2>Question {{ currentQuestionIndex + 1 }}</h2> <!-- of {{ totalQuestions }} -->
+                <h2>Question {{ currentQuestionIndex + 1 }}</h2>
               </div>
               <div class="audio-controls" v-if="currentQuestion?.audioUrl">
                 <img :src="okkulPng" alt="OKKUL" class="okkul-img">
@@ -573,12 +575,10 @@ onUnmounted(() => {
         <section class="recording-section">
           <div class="recording-card">
             <div class="recording-header">
-              <!-- 저장 중 표시 -->
               <div v-if="isSaving" class="status-indicator saving">
                 <span class="material-icons spin">sync</span>
                 SAVING...
               </div>
-              <!-- 녹음 중/대기 표시 -->
               <div v-else class="status-indicator" :class="{ recording: isRecording, submitted: isSubmitted }">
                 <span class="status-dot"></span>
                 {{ isSubmitted ? 'SUBMITTED' : (isRecording ? 'RECORDING' : 'READY') }}
@@ -589,7 +589,6 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <!-- 볼륨 미터 -->
             <div class="volume-meter">
               <div v-for="i in 10" :key="i" 
                    class="volume-bar" 
@@ -601,7 +600,6 @@ onUnmounted(() => {
                    }">
               </div>
             </div>
-            <!-- 녹음 컨트롤 -->
             <div class="recording-controls">
               <button v-if="!isRecording" @click="startRecording" class="record-btn" :disabled="isSubmitted">
                 <span class="material-icons">{{ isSubmitted ? 'check' : 'mic' }}</span>
@@ -616,7 +614,7 @@ onUnmounted(() => {
         </section>
       </main>
 
-      <!-- 다음 버튼 (카드 외부로 이동하여 중앙 정렬) -->
+      <!-- 다음 버튼 -->
       <div class="navigation-controls">
         <button @click="goNext" class="next-btn">
           Next Question
@@ -648,6 +646,26 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- 다음 문제 확인 모달 -->
+    <div v-if="showConfirmNextModal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>답변 미제출</h3>
+          <p class="subtitle">답변을 제출하지 않고 다음 문제로 넘어가시겠습니까?</p>
+        </div>
+        <div class="difficulty-options">
+          <button @click="cancelGoNext" class="difficulty-btn">
+            <span class="material-icons">cancel</span>
+            <span class="label">아니오</span>
+          </button>
+          <button @click="confirmGoNext" class="difficulty-btn">
+            <span class="material-icons">check_circle</span>
+            <span class="label">네</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -663,7 +681,6 @@ onUnmounted(() => {
   flex-direction: column;
 }
 
-/* 로딩 & 에러 */
 .loading-overlay, .error-container {
   display: flex;
   flex-direction: column;
@@ -696,7 +713,6 @@ onUnmounted(() => {
   cursor: pointer;
 }
 
-/* 메인 콘텐츠 */
 .exam-content {
   flex: 1;
   display: flex;
@@ -710,7 +726,6 @@ onUnmounted(() => {
   overflow-y: auto;
 }
 
-/* 헤더 */
 .exam-header {
   width: 100%;
   max-width: 1280px;
@@ -744,12 +759,6 @@ onUnmounted(() => {
   color: var(--text-primary);
 }
 
-.question-number {
-  font-size: 1.125rem;
-  font-weight: 800;
-  color: var(--text-primary);
-}
-
 .time-display {
   display: flex;
   align-items: center;
@@ -761,7 +770,6 @@ onUnmounted(() => {
   color: #212529;
 }
 
-/* 메인 콘텐츠 */
 .content-wrapper {
   width: 100%;
   max-width: 1100px;
@@ -781,7 +789,6 @@ onUnmounted(() => {
   }
 }
 
-/* 질문 섹션 */
 .question-section {
   display: flex;
   flex-direction: column;
@@ -869,7 +876,6 @@ onUnmounted(() => {
   color: white;
 }
 
-/* 녹음 섹션 */
 .recording-card {
   background: var(--bg-secondary);
   border: 1px solid var(--border-primary);
@@ -928,7 +934,6 @@ onUnmounted(() => {
   50% { opacity: 0.4; transform: scale(1.2); }
 }
 
-/* 볼륨 미터 */
 .volume-meter {
   display: flex;
   justify-content: center;
@@ -940,7 +945,7 @@ onUnmounted(() => {
   border-radius: 12px;
   margin-bottom: 16px;
   flex-shrink: 0;
-  margin-top: 60px; /* Play Audio 버튼과 높이 맞추기 - 조정 */
+  margin-top: 60px;
 }
 
 .volume-bar {
@@ -959,7 +964,6 @@ onUnmounted(() => {
 .volume-bar.active.mid { background: #fbbf24; }
 .volume-bar.active.high { background: #ef4444; }
 
-/* 녹음 컨트롤 */
 .recording-controls {
   flex: 1;
   display: flex;
@@ -981,7 +985,7 @@ onUnmounted(() => {
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: var(--shadow-md);
-  width: 180px; /* Match Play Audio button width */
+  width: 180px;
   flex-shrink: 0;
 }
 
@@ -1037,7 +1041,6 @@ onUnmounted(() => {
   background: #2563eb;
 }
 
-/* 네비게이션 */
 .navigation-controls {
   display: flex;
   justify-content: center;
@@ -1070,11 +1073,10 @@ onUnmounted(() => {
   box-shadow: var(--shadow-lg);
 }
 
-/* 모달 */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1122,12 +1124,12 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
   padding: 24px;
-  background: #ffffff; /* 흰색 배경으로 버튼감 살리기 */
-  border: 2px solid #e2e8f0; /* 테두리 추가 */
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
   border-radius: 20px;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* 그림자 강화 */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .difficulty-btn:hover {
@@ -1153,7 +1155,6 @@ onUnmounted(() => {
   font-size: 0.95rem;
 }
 
-/* 저장 중 스타일 */
 .status-indicator.saving {
   background: #dbeafe;
   color: #2563eb;

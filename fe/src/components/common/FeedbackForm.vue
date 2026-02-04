@@ -101,8 +101,8 @@ const submitFeedback = async () => {
   try {
     const user = authStore.user;
     const currentPath = router.currentRoute.value.fullPath; // 현재 페이지 경로 가져오기
-
-    const docRef = await addDoc(collection(db, "feedback"), {
+    const env = import.meta.env.MODE;
+    const docRef = await addDoc(collection(db, "feedback_"+env), {
       message: feedbackText.value.trim(),
       rating: rating.value, // 별점 추가
       userName: userName.value.trim(),

@@ -38,17 +38,10 @@ onMounted(async () => {
     const newUrl = window.location.pathname + window.location.hash;
     window.history.replaceState({}, document.title, newUrl);
     
-    // 토큰 저장 후 유저 정보 갱신
-    await authStore.fetchUser();
-
-    // ✅ 신규 유저 체크 (Target Level이 없으면 설정 페이지로)
-    if (authStore.user && !authStore.user.targetLevel) {
-      console.log('[App] New user detected. Redirecting to Level Setting...');
-      router.push('/auth/level');
-    } else {
-      console.log('[App] Successful login from URL. Redirecting to Home...');
-      router.push('/');
-    }
+    // ✅ 토큰을 저장하면 router/index.js의 전역 가드에서 자동으로 유저 정보를 가져오고
+    // 필요시 레벨 설정 페이지로 리다이렉트합니다.
+    console.log('[App] Successful login from URL. Redirecting to Home...');
+    router.push('/');
   }
 })
 </script>

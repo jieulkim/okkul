@@ -27,19 +27,9 @@ onMounted(async () => {
       localStorage.removeItem('deletedSurveyIds')
     }
 
-    // 3. 유저 정보 가져오기
-    console.log('[OAuth2Redirect] Fetching user info...')
-    await authStore.fetchUser()
-
-    // 4. 신규 유저 여부 판단 (Target Level이 없으면 설정 페이지로)
-    if (authStore.user && !authStore.user.targetLevel) {
-      console.log('[OAuth2Redirect] New user detected. Redirecting to Goal Setting...')
-      router.push('/auth/level')
-    } else {
-      // 5. 기존 유저인 경우 홈으로
-      console.log('[OAuth2Redirect] Exiting user. Redirecting to Home...')
-      router.push('/')
-    }
+    // 3. 홈으로 이동 (리다이렉트와 정보 로딩은 router/index.js 전역 가드에서 처리)
+    console.log('[OAuth2Redirect] Redirecting to Home...')
+    router.push('/')
   } else {
     // 토큰이 없는 경우 로그인 페이지로
     console.error('[OAuth2Redirect] Authentication failed: No access token received')

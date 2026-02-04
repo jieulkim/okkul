@@ -63,39 +63,50 @@ export const useAuthStore = defineStore('auth', () => {
         window.location.href = '/'
     }
 
+    let fetchPromise = null
+
     const fetchUser = async () => {
-        if (!localStorage.getItem('accessToken')) return
+        if (!localStorage.getItem('accessToken')) return null
+        if (fetchPromise) return fetchPromise
 
-        // Mock Mode: 실제 API 호출 건너뛰기
-        if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
-            const mockToken = localStorage.getItem('accessToken')
-            if (mockToken && mockToken.startsWith('mock_dev_token')) {
-                user.value = {
-                    id: 999,
-                    email: 'dev@example.com',
-                    name: 'Dev User',
-                    role: 'USER',
-                    profileImage: 'https://via.placeholder.com/150'
+        fetchPromise = (async () => {
+            // Mock Mode: 실제 API 호출 건너뛰기
+            if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
+                const mockToken = localStorage.getItem('accessToken')
+                if (mockToken && mockToken.startsWith('mock_dev_token')) {
+                    user.value = {
+                        id: 999,
+                        email: 'dev@example.com',
+                        name: 'Dev User',
+                        role: 'USER',
+                        profileImage: 'https://via.placeholder.com/150'
+                    }
+                    token.value = mockToken
+                    return user.value
                 }
-                token.value = mockToken
-                return
             }
-        }
 
-        loading.value = true
-        try {
-            const response = await usersApi.getMyInfo()
-            if (response.data) {
-                user.value = response.data
-                token.value = localStorage.getItem('accessToken') // 토큰 상태도 동기화
-            } else {
+            loading.value = true
+            try {
+                const response = await usersApi.getMyInfo()
+                if (response.data) {
+                    user.value = response.data
+                    token.value = localStorage.getItem('accessToken') // 토큰 상태도 동기화
+                    return user.value
+                } else {
+                    user.value = null
+                    return null
+                }
+            } catch (err) {
                 user.value = null
+                throw err
+            } finally {
+                loading.value = false
+                fetchPromise = null
             }
-        } catch (err) {
-            user.value = null
-        } finally {
-            loading.value = false
-        }
+        })()
+
+        return fetchPromise
     }
 
     const updateUser = (userData) => {

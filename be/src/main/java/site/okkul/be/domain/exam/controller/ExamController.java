@@ -20,6 +20,7 @@ import site.okkul.be.domain.exam.docs.ExamControllerDocs;
 import site.okkul.be.domain.exam.dto.request.ExamCreateRequest;
 import site.okkul.be.domain.exam.dto.request.ExamQuestionAnswerRequest;
 import site.okkul.be.domain.exam.dto.response.ExamDetailResponse;
+import site.okkul.be.domain.exam.service.ExamAnswerService;
 import site.okkul.be.domain.exam.service.ExamService;
 import site.okkul.be.global.config.SwaggerConfig;
 
@@ -32,6 +33,8 @@ public class ExamController implements ExamControllerDocs {
 	 * 시험 서비스
 	 */
 	private final ExamService examService;
+
+	private final ExamAnswerService examAnswerService;
 
 	/**
 	 * {@inheritDoc}
@@ -49,7 +52,7 @@ public class ExamController implements ExamControllerDocs {
 		);
 
 		// 문제 할당
-		examService.allocateQuestion(exam.id());
+		examAnswerService.allocateQuestion(exam.id());
 
 		// 문제 반환
 		return ResponseEntity.created(
@@ -96,7 +99,7 @@ public class ExamController implements ExamControllerDocs {
 				adjustedDifficulty
 		);
 		// 문제 할당
-		examService.allocateQuestion(examId);
+		examAnswerService.allocateQuestion(examId);
 
 		// 문제 반환
 		return ResponseEntity.ok(
@@ -123,8 +126,8 @@ public class ExamController implements ExamControllerDocs {
 			@AuthenticationPrincipal UserDetails user,
 			@RequestHeader(value = SwaggerConfig.REAL_AI_USE, defaultValue = "false") boolean useRealAi
 	) {
-		examService.submitAnswer(examId, questionOrder, examQuestionAnswerRequest, Long.parseLong(user.getUsername()));
-		examService.feedbackAnswer(examId, questionOrder, useRealAi);
+		examAnswerService.submitAnswer(examId, questionOrder, examQuestionAnswerRequest, Long.parseLong(user.getUsername()));
+		examAnswerService.feedbackAnswer(examId, questionOrder, useRealAi);
 		return ResponseEntity.accepted().build();
 	}
 

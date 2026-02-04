@@ -17,7 +17,12 @@ OPIC_STRUCTURE_RULES = {
             "Routine / Current Activity", 
             "Simple Past Experience"
         ],
-        "RP1": ["Asking for Information (Simple)"]
+        "RP1": ["Asking for Information (Simple)"
+        ],
+        "RP2": [
+        "Acting out a situation (Call or Visit and Ask questions)", 
+        "Asking Eva a simple question about the topic" 
+        ],
     },
     "LV3-4": {
         "INTRO": ["Self-introduction"],
@@ -61,18 +66,36 @@ OPIC_STRUCTURE_RULES = {
 # (이전에 제공해주신 RAW_FEW_SHOT_DATA 딕셔너리를 여기에 그대로 두시면 됩니다.)
 # 디버깅을 위해 일부만 예시로 적어두겠습니다. 실제 사용 시엔 님 파일의 데이터를 유지하세요.
 RAW_FEW_SHOT_DATA = {
-    "COMBO2_1": [
-        "What kinds of things do people do in their free time?  What are some popular activities?"
-        "Who do you spend your free time with?  Your parents?  Your friends?  Who else?"
+"COMBO2_1": [
+        "What kinds of things do people do in their free time? What are some popular activities?",
+        "Who do you spend your free time with? Your parents? Your friends? Who else?",
 
-        "I would like to now talk about where you live.  Can you describe your home to me?  give me a good description of your home."
-        "What things do you have in your living room?  A sofa? A chair? What else?"
+        "I would like to now talk about where you live. Can you describe your home to me? Give me a good description of your home.",
+        "What things do you have in your living room? A sofa? A chair? What else?",
 
-        "Tell me about some of the holidays in your country."
-        "When are some holidays in your country?  June? July? What other months?"
+        "Tell me about some of the holidays in your country.",
+        "When are some holidays in your country? June? July? What other months?",
 
-        "You indicated in the survey that you go to parks with adults.  Describe one of your favorite parks.  Tell me where it is and what it looks like. Describe the park for me."
-        "What do you do at the park?  Do you inline skate in the park?  Do you play baseball in the park?  What do you do in the park?"
+        "You indicated in the survey that you go to parks with adults. Describe one of your favorite parks. Tell me where it is and what it looks like. Describe the park for me.",
+        "What do you do at the park? Do you inline skate in the park? Do you play baseball in the park? What do you do in the park?",
+
+        "You indicated in the survey that you like listening to music. What kind of music do you like? Pop music? Jazz? Classical music?",
+        "When do you usually listen to music? In the morning? In the evening? When?",
+
+        "I would like to know about your family. Tell me about your family members.",
+        "Do you live with your parents? Do you live alone? Who do you live with?",
+
+        "You indicated in the survey that you like shopping. Where do you usually go shopping? A department store? A market?",
+        "What do you like to buy? Clothes? Shoes? Food? What do you buy?",
+
+        "What is your favorite food? Do you like Korean food? Do you like pizza? What food do you like?",
+        "When do you usually eat dinner? At 6 o'clock? At 8 o'clock? When?",
+
+        "Tell me about your school or your office. Where is it located?",
+        "How do you go there? By bus? By subway? By taxi? How do you get there?",
+
+        "What is the weather like today? Is it sunny? Is it raining? Tell me about the weather.",
+        "What season do you like? Spring? Summer? Winter? Which season?"
     ],
     "COMBO2_2": [
         "You indicated in the survey that you listen to music. What kinds of music do you listen to? Who are some of your favorite musicians or composers?",
@@ -270,36 +293,128 @@ RAW_FEW_SHOT_DATA = {
         
     ,
     "RP1_1": [
-        "I’d like to give you a situation and ask you to act it out.  You are visiting New York on vacation.  You go to a car rental agency to rent a car.  Imagine that you are speaking to the rental car agent and ask three or four questions about renting a car for a week."
+        "I’d like to give you a situation and ask you to act it out. You are visiting New York on vacation. You go to a car rental agency to rent a car. Imagine that you are speaking to the rental car agent and ask three or four questions about renting a car for a week.",
+
+        "I would like to give you a situation and ask you to act it out. You are at a clothing store to buy a new jacket. Ask the clerk three or four questions about the jacket you want to buy.",
+
+        "I’d like to give you a situation and ask you to act it out. You want to see a movie with your friend. Go to the ticket booth and ask the staff three or four questions to buy tickets.",
+
+        "I’m going to give you a situation. You want to book a hotel room for your holiday. Call the hotel and ask three or four questions about the rooms and the price.",
+
+        "I would like to give you a situation and ask you to act it out. You are at a furniture store to buy a new sofa. Ask the clerk three or four questions about the sofa.",
+
+        "I’d like to give you a situation and ask you to act it out. You want to join a gym to exercise. Call the gym and ask three or four questions about the membership and opening hours.",
+
+        "I am going to give you a situation. You are at a restaurant to have dinner. Ask the waiter three or four questions about the menu and today's special food.",
+
+        "I would like to give you a situation and ask you to act it out. You want to buy a new mobile phone. Go to a phone store and ask the clerk three or four questions about the new phone.",
+
+        "I’d like to give you a situation and ask you to act it out. You need to buy a pair of shoes. Ask the salesperson three or four questions about the shoes and the size.",
+
+        "I am going to give you a situation. You want to take a trip to another country. Call a travel agency and ask three or four questions about the tour package and the cost."
     ],
     "RP1_2": [
-        "I would like to give you a situation and ask you to act it out you need to make an appointment with your doctor call the office and describe what you need then ask three or four questions to find out when the doctor is available",
-        
-        "I'm going to give you a situation and ask you to act it out you want to buy a new cell phone call a store and ask three to four questions about a new cell phone you want to buy"
+        "I would like to give you a situation and ask you to act it out. You need to make an appointment with your doctor. Call the office and describe what you need then ask three or four questions to find out when the doctor is available.",
+
+        "I'm going to give you a situation and ask you to act it out. You want to buy a new cell phone. Call a store and ask three to four questions about a new cell phone you want to buy.",
+
+        "I would like to give you a situation and ask you to act it out. You want to book a hotel room for your vacation. Call the hotel and ask three or four questions about the rooms and the price.",
+
+        "I'm going to give you a situation. You want to have a birthday party at a restaurant. Call the restaurant and ask three or four questions about the menu and a table reservation.",
+
+        "I would like to give you a situation and ask you to act it out. You want to see a movie with your friend. Call the movie theater and ask three or four questions about the movie times and tickets.",
+
+        "I'm going to give you a situation. You want to buy a new jacket. Call a clothing store and ask three or four questions about the jackets they have.",
+
+        "I would like to give you a situation and ask you to act it out. You want to join a gym to exercise. Call the fitness center and ask three or four questions about the monthly price and opening hours.",
+
+        "I'm going to give you a situation. You want to rent a car for your trip. Call a car rental shop and ask three or four questions about the cars and the cost.",
+
+        "I would like to give you a situation and ask you to act it out. You need to buy a new computer. Call a computer store and ask three or four questions about the computers they sell.",
+
+        "I'm going to give you a situation. You want to buy some flowers for a gift. Call a flower shop and ask three or four questions about the flowers and delivery."
     ],
     "RP2_1": [
-        "I would like to give you a situation and ask you to act it out you need to make an appointment with your doctor call the office and describe what you need then ask three or four questions to find out when the doctor is available",
-        
-        "I'm going to give you a situation and ask you to act it out you want to buy a new cell phone call a store and ask three to four questions about a new cell phone you want to buy"
+        "I would like to give you a situation and ask you to act it out. You need to make an appointment with your doctor. Call the office and describe what you need, then ask three or four questions to find out when the doctor is available.",
+        "I also go to the doctor sometimes. Ask me three or four questions about my doctor.",
+
+        "I'm going to give you a situation and ask you to act it out. You want to buy a new cell phone. Call a store and ask three or four questions about a new cell phone you want to buy.",
+        "I just bought a new cell phone. Ask me three or four questions about my new phone.",
+
+        "I would like to give you a situation. You want to see a movie. Call the theater and ask three or four questions about the movie schedule and tickets.",
+        "I like watching movies, too. Ask me three or four questions about the movies I like.",
+
+        "I'm going to give you a situation. You want to buy a new jacket at a clothing store. Ask the clerk three or four questions about the jacket and the price.",
+        "I bought a new jacket yesterday. Ask me three or four questions about my jacket.",
+
+        "I would like to give you a situation and ask you to act it out. You want to book a hotel room for your trip. Call the hotel and ask three or four questions about the room.",
+        "I am staying at a hotel now. Ask me three or four questions about my hotel.",
+
+        "I'm going to give you a situation. You want to have dinner at a restaurant. Call the restaurant and ask three or four questions about the menu and a table.",
+        "I am hungry and I want to go to a restaurant. Ask me three or four questions about the food I like.",
+
+        "I would like to give you a situation. You want to learn how to swim. Call a swimming pool and ask three or four questions about the classes.",
+        "I go swimming every morning. Ask me three or four questions about my swimming class.",
+
+        "I'm going to give you a situation and ask you to act it out. You want to buy a birthday gift for your friend. Ask the shop clerk three or four questions about the gifts.",
+        "It is my friend's birthday today. Ask me three or four questions about the gift I will buy.",
+
+        "I would like to give you a situation. You want to rent a car for your vacation. Call the rental shop and ask three or four questions about the car.",
+        "I have a car. Ask me three or four questions about my car.",
+
+        "I'm going to give you a situation. You want to buy some furniture, like a sofa or a desk. Ask the clerk three or four questions about the furniture.",
+        "I bought a new desk for my room. Ask me three or four questions about my new desk."
     ],
     "RP2_2": [
-        "I would like to give you a situation and ask you to act it out you need to make an appointment with your doctor call the office and describe what you need then ask three or four questions to find out when the doctor is available",
-        
-        "I'm going to give you a situation and ask you to act it out you want to buy a new cell phone call a store and ask three to four questions about a new cell phone you want to buy"
+        "I would like to give you a situation and ask you to act it out. You need to make an appointment with your doctor. Call the office and describe what you need then ask three or four questions to find out when the doctor is available.",
+        "I also go to the doctor sometimes. Ask me three or four questions about my doctor.",
+
+        "I'm going to give you a situation and ask you to act it out. You want to buy a new cell phone. Call a store and ask three or four questions about a new cell phone you want to buy.",
+        "I have a new cell phone. Ask me three or four questions about my new phone.",
+
+        "I would like to give you a situation. You want to see a movie with your friend. Call the theater and ask three or four questions about the tickets and the time.",
+        "I like watching movies, too. Ask me three or four questions about the movies I like.",
+
+        "I'm going to give you a situation. You want to have dinner at a restaurant. Call the restaurant and ask three or four questions about the menu and a table reservation.",
+        "I go to restaurants often. Ask me three or four questions about my favorite restaurant.",
+
+        "I would like to give you a situation. You want to buy a new coat. Call a clothing store and ask three or four questions about the coats and the price.",
+        "I bought a new coat yesterday. Ask me three or four questions about my new coat.",
+
+        "I'm going to give you a situation. You want to buy a new desk for your room. Call a furniture store and ask three or four questions about the desk.",
+        "I just bought a new desk. Ask me three or four questions about it.",
+
+        "I would like to give you a situation. You want to join a gym to exercise. Call the gym and ask three or four questions about the price and the opening hours.",
+        "I exercise at a gym every day. Ask me three or four questions about my gym.",
+
+        "I'm going to give you a situation. You want to go on a trip and stay at a hotel. Call the hotel and ask three or four questions about the rooms.",
+        "I am planning a trip, too. Ask me three or four questions about the hotel I want to stay at.",
+
+        "I would like to give you a situation. You need to buy new shoes. Call a shoe store and ask three or four questions about the shoes and sizes.",
+        "I need to buy new shoes. Ask me three or four questions about the shoes I like.",
+
+        "I'm going to give you a situation. You want to order a pizza. Call a pizza place and ask three or four questions about the pizza and delivery.",
+        "I want to eat pizza for lunch. Ask me three or four questions about the pizza I want."
     ],
     "RP2_3": [
-        "What kinds of Technology do people typically use in your country? Do people use computers, cell phones, handheld devices? What are some common forms of technology that people have?",
-        "I just bought a new laptop computer. Ask me three or four questions about my new computer.",
-    
-        "You indicated in the survey that you stay at home for vacation. Who are the people you like to see and spend time with on your vacation?",
-        "Now ask me three or four questions about the kinds of things that I like to do while on vacation.",
-    
-        "You indicated in the survey that you go to parks with adults. Tell me about the parks you like to visit. What do the Parks look like?",
-        "I enjoy going to parks in my free time. Ask me three or four questions about the park that I like to find out as much information about it as you can.",
-    
-        "You indicated in the survey that you go to cafes. What cafes or coffee shops are in your neighborhood? Which Cafe do you like to go to and why? Please tell me in detail.",
-        "I work at a cafe. Ask me three or four questions about the cafe and what I do there."
-  ]
+        "What do people use in your country? Do they use cell phones or computers? Tell me about the things people use every day.",
+        "I just bought a new laptop. Ask me three or four questions about my new computer.",
+
+        "You said in the survey that you stay at home for vacation. Who do you meet and spend time with on your vacation?",
+        "Now ask me three or four questions about what I like to do on my vacation.",
+
+        "You said in the survey that you go to parks. Tell me about the parks you like. What do they look like?",
+        "I like going to parks, too. Ask me three or four questions about the park I like.",
+
+        "You said in the survey that you go to cafes. What cafes are near your house? Which one do you like and why?",
+        "I work at a cafe. Ask me three or four questions about my cafe and what I do there.",
+
+        "You said in the survey that you like to watch movies. What kind of movies do you like? Who is your favorite actor?",
+        "I also like movies. Ask me three or four questions about my favorite movies.",
+
+        "You said in the survey that you like to go to the beach. Which beach do you usually go to? What do you do there?",
+        "I am going to the beach this weekend. Ask me three or four questions about my trip.",
+    ]
     ,
     "RP2_4": [
         "You indicated in the survey that you like to take a walk. Where do you normally take a walk? What does the place look like and where is it located? Please describe the place you normally take a walk.",
@@ -315,22 +430,46 @@ RAW_FEW_SHOT_DATA = {
         "I've asked many questions about you now. I'd like you to ask me three or four questions about my home."
   ],
     "RP3_3": [
-        "I'd like to give you a situation and ask you to act it out. You are looking for a new home. Call the real estate agent, introduce yourself and then ask three or four questions about the homes and services they offer.",
-        "I'm sorry but there's the problem which I'll need you to resolve. When you get to your new home you discovered that a window is broken. Call the repair shop and leave a message. Describe in detail the condition of the window, explain how you think the window got broken, give two or three reasons why it is important that the window be fixed today.",
-        "That's the end of the situation. Have you ever been surprised to discover something broken at home? Tell me the story of what you found, how it was broken and what you did to solve the problem.",
-    
-        "I want to visit your country. You want to help me but you need more information. Ask me three or four questions to learn more about me and my trip.",
-        "I am arriving for a visit in your country today. You are going to meet me at the airport but you have a sudden emergency and cannot make it. Call my voicemail and leave a message. Explain the problem and give me two to three options so I can get from the airport to your home.",
-        "Tell me in detail about a time when you learned or realized something interesting about your country. Maybe you watched a sporting event, witnessed a major storm or observed the actions of your country's government and citizens. Tell me about that experience from beginning to end.",
-    
-        "I would like to give you a situation and ask you to act it out. Your friend tells you about a great new app on her phone. Ask your friend three or four questions about this app on her phone.",
-        "I'm sorry but there is a problem which I'll need you to resolve. After downloading the app your friend recommended you notice that you have a problem with it. Call the customer service number to explain the problem and make some suggestions on how you can resolve it.",
-        "That's the end of the situation. Have you ever had a problem using a new piece of technology? Maybe there was something wrong with it or it was just not as easy to use. Tell me in detail about a problem you encountered with some new technology or a device. What did you do to solve the problem?",
-    
-        "I'm going to give you a situation and ask you to act it out. You would like to book a hotel for your trip. Call a hotel and ask three or four questions about that hotel.",
-        "I'm sorry but there is a problem that needs to be resolved. You have checked in but the room is not cleaned up properly. Call the front desk, explain the situation and offer two to three options to resolve this matter.",
-        "Think about a memorable hotel you stayed at. Where was it located? Who did you go there with? What made you visit to that hotel? Was there something interesting happened? Please tell me about that story from the beginning to the end."
-  ],
+        "I'd like to give you a situation and ask you to act it out. You are looking for a new house. Call a house office, say hello, and ask three or four questions about the house.",
+        "I'm sorry, but there is a problem. You moved in, but a window is broken. Call a repair shop. Tell them about the window and ask them to fix it today.",
+        "That's the end of the situation. Have you ever found something broken at your home? What was it? How did you fix it? Tell me the story.",
+
+        "I want to visit your country. Call me and ask three or four questions about me and my trip.",
+        "I am at the airport now, but you cannot come because of a sudden problem. Call me and tell me the problem. Give me two or three ways to get to your house.",
+        "Tell me about an interesting story in your country. Did you see a big game or a festival? What happened from the beginning to the end?",
+
+        "I would like to give you a situation. Your friend has a new phone app. Call your friend and ask three or four questions about the app.",
+        "I'm sorry, but there is a problem. You downloaded the app, but it does not work. Call the service center. Explain the problem and ask them how to fix it.",
+        "Have you ever had a problem with a phone or a computer? What was the problem and what did you do to solve it?",
+
+        "I'm going to give you a situation. You want to stay at a hotel for your trip. Call a hotel and ask three or four questions about the rooms.",
+        "I'm sorry, but there is a problem. You are in the hotel room, but it is very dirty. Call the front desk and tell them the problem. Ask for a new room or a cleaning.",
+        "Think about a hotel you remember. Where was it? Who did you go there with? Tell me the story of what happened there.",
+
+        "You want to buy a new bicycle. Call a bike shop and ask three or four questions about the bikes.",
+        "I'm sorry, but there is a problem. You bought a bike, but the wheel is broken. Call the shop. Explain the problem and ask for a fix or a new one.",
+        "Have you ever had a problem with something you bought? What was the problem? What did you do to solve the problem?",
+
+        "You want to go to a new restaurant. Call the restaurant and ask three or four questions about their food and opening time.",
+        "I'm sorry, but there is a problem. You are at the restaurant, but there is no table for you. Speak to the staff. Explain your reservation and ask for help.",
+        "Have you ever had a problem at a restaurant? Maybe the food was bad or the service was slow. Tell me what happened from the beginning to the end.",
+
+        "You want to join a gym. Call the gym and ask three or four questions about their programs and the price.",
+        "I'm sorry, but there is a problem. You are at the gym, but you lost your locker key. Talk to the staff. Explain how you lost it and ask for help.",
+        "Tell me about a time you lost something in a public place. What was it? How did you solve the problem?",
+
+        "You want to go to a movie theater with a friend. Call the theater and ask three or four questions about the movies and tickets.",
+        "I'm sorry, but there is a problem. You are at the theater, but you lost your tickets. Talk to the ticket office. Explain the situation and ask how you can watch the movie.",
+        "Have you ever had a problem at a movie theater or a concert? Tell me the story of what happened.",
+
+        "You want to borrow a book from a library. Call the library and ask three or four questions about their books and hours.",
+        "I'm sorry, but there is a problem. You borrowed a book, but you lost it. Call the library. Tell them what happened and ask what you should do.",
+        "Tell me about a time you made a mistake at school or work. What was the mistake? How did you solve the problem?",
+
+        "You want to go on a trip by train. Call the train station and ask three or four questions about the tickets and the time.",
+        "I'm sorry, but there is a problem. You missed your train. Talk to the staff at the station. Explain why you were late and ask for a new ticket.",
+        "Have you ever missed a bus, a train, or a plane? Tell me about that experience. What did you do?"
+    ],
     "RP3_4": [
         "I'm going to give you a situation and ask you to act it out. You have a job interview tomorrow at a company but you don't have enough information about the company. Call the company and ask some questions about that company.",
         "Unfortunately you are not able to make it to the interview since something urgent has happened to you. Call the company, explain the situation and offer two to three alternatives to handle this problem.",

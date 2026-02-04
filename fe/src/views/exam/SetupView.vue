@@ -91,6 +91,11 @@ const handleNext = async () => {
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+// 난이도별 총 문항 수 계산 (Lv1-2: 12문항, Lv3-6: 15문항)
+const getTotalQuestionsByLevel = (level) => {
+  return level >= 3 ? 15 : 12;
+};
+
 const startExam = async () => {
   try {
     isLoading.value = true
@@ -119,7 +124,7 @@ const startExam = async () => {
             data: {
                 id: 999,
                 questions: mockQuestions,
-                totalQuestions: 15
+                totalQuestions: 12 // Mock mode defaults to 12 since initialDifficulty is 1 by default
             }
         };
     } else {
@@ -177,7 +182,7 @@ const startExam = async () => {
     const examData = {
       examId: createdExamId,
       questions: finalQuestions,
-      totalQuestions: 15, // 전체 문제 수
+      totalQuestions: getTotalQuestionsByLevel(initialDifficulty), // 난이도에 따라 전체 문제 수 설정
       currentIndex: 0,
       surveyId,
       initialDifficulty, // 난이도 저장

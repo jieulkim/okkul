@@ -11,7 +11,7 @@ const route = useRoute();
 const examId = ref(null);
 const currentQuestionIndex = ref(0);
 const questions = ref([]);
-const totalQuestions = ref(15);
+const totalQuestions = ref(0);
 const isRecording = ref(false);
 const recordingTime = ref(0);
 const audioLevel = ref(0);
@@ -62,6 +62,11 @@ const currentQuestion = computed(() => {
   return questions.value[currentQuestionIndex.value];
 });
 
+// 난이도별 총 문항 수 계산 (Lv1-2: 12문항, Lv3-6: 15문항)
+const getTotalQuestionsByLevel = (level) => {
+  return level >= 3 ? 15 : 12;
+};
+
 // 백엔드 레이스 컨디션 대응: 문제 생성 폴링
 const pollForQuestions = async (targetExamId, retries = 5, delay = 1000) => {
   for (let i = 0; i < retries; i++) {
@@ -74,7 +79,9 @@ const pollForQuestions = async (targetExamId, retries = 5, delay = 1000) => {
         console.log(`[ExamQuestionView] 질문 생성 완료! (${examData.questions.length}개)`);
         
         questions.value = examData.questions;
-        totalQuestions.value = examData.totalQuestions || 15;
+        // 난이도에 따라 총 문항 수 결정
+        const currentLevel = examData.adjustedDifficulty || examData.initialDifficulty || initialDifficulty.value;
+        totalQuestions.value = getTotalQuestionsByLevel(currentLevel);
         currentQuestionIndex.value = 0;
         
         // 문제 로드 후 저장
@@ -123,8 +130,10 @@ const initializeExam = async () => {
       const data = JSON.parse(savedData);
       questions.value = data.questions;
       currentQuestionIndex.value = data.currentIndex;
-      totalQuestions.value = data.totalQuestions;
+      adjustedDifficulty.value = data.adjustedDifficulty || null;
       initialDifficulty.value = data.initialDifficulty || 1;
+      // localStorage 데이터가 있더라도 난이도에 따라 다시 계산 (stale data 방어)
+      totalQuestions.value = getTotalQuestionsByLevel(adjustedDifficulty.value || initialDifficulty.value);
       
       console.log('[ExamQuestionView] 저장된 진행 상황 로드:', data);
     } else {
@@ -142,6 +151,9 @@ const initializeExam = async () => {
       }
       
       console.log('[ExamQuestionView] 새 시험 시작. 난이도:', initialDifficulty.value);
+      
+      // 초기 난이도에 맞춰 총 문항 수 설정
+      totalQuestions.value = getTotalQuestionsByLevel(initialDifficulty.value);
       
       // 첫 7문제 로드 (백엔드 레이스 컨디션 대응 폴링)
       await pollForQuestions(examId.value);
@@ -387,8 +399,10 @@ const setRelevel = async (choice) => {
     const newQuestions = response.data.questions || [];
     
     // 전체 문제 수가 15개를 넘지 않도록 조정 (기존 문제 + 새 문제 합쳐서 15개까지만)
+    // 단, 난이도에 따라 12개 혹은 15개로 제한
     const combinedQuestions = [...currentQuestions, ...newQuestions];
-    questions.value = combinedQuestions.slice(0, 15);
+    totalQuestions.value = getTotalQuestionsByLevel(adjustedDifficulty.value);
+    questions.value = combinedQuestions.slice(0, totalQuestions.value);
     
     console.log('[ExamQuestionView] 문제 추가 완료:', {
       totalQuestions: questions.value.length,
@@ -426,6 +440,7 @@ const saveProgress = () => {
     questions: questions.value,
     totalQuestions: totalQuestions.value,
     initialDifficulty: initialDifficulty.value,
+    adjustedDifficulty: adjustedDifficulty.value, // adjustedDifficulty 추가 저장
     timestamp: new Date().toISOString()
   };
   
@@ -540,7 +555,7 @@ onUnmounted(() => {
         <section class="question-section">
           <div class="question-card">
               <div class="question-header">
-                <h2>Question {{ currentQuestionIndex + 1 }} of {{ totalQuestions }}</h2>
+                <h2>Question {{ currentQuestionIndex + 1 }}</h2> <!-- of {{ totalQuestions }} -->
               </div>
               <div class="audio-controls" v-if="currentQuestion?.audioUrl">
                 <img :src="okkulPng" alt="OKKUL" class="okkul-img">

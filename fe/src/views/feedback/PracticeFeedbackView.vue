@@ -53,7 +53,7 @@ const highlightedWords = computed(() => {
   const script = feedbackData.value?.feedbackResult?.overallComment || ''; // 실제론 improved script가 필요할 수 있음
   
   // 현재 구조에 맞게 교정된 텍스트 위주로 간단히 구성 (실제 개선 스크립트 필드 필요 시 보완)
-  const improvedScript = currentAttempt.value?.feedback?.improvedScript || ''; 
+  const improvedScript = currentAttempt.value?.feedback?.improvedAnswer || ''; 
   if (!improvedScript) return [];
 
   // 교정 항목들을 하이라이트 처리하기 위한 로직
@@ -186,8 +186,7 @@ const selectCorrection = (index) => {
             목록으로
           </button>
         <div class="header-text-group">
-            <h1 class="feedback-title">유형별 연습 피드백</h1>
-            <p class="practice-topic">{{ allQuestions[0]?.topicTitle || '연습 결과' }}</p>
+            <h1 class="feedback-title">{{ allQuestions[0]?.topicTitle || '연습 결과' }} 연습</h1>
           </div>
         </div>
 

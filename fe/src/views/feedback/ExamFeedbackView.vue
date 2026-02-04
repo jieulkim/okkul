@@ -30,7 +30,16 @@ const loadExamResult = async () => {
     console.log("Info Response questions:", infoResponse.data.questions);
 
     // 3. 데이터 매핑
+    const difficulty = historyResponse.data.initialDifficulty || historyResponse.data.adjustedDifficulty || 1;
+    const date = new Date(historyResponse.data.createdAt).toLocaleDateString('ko-KR', { 
+      year: 'numeric', 
+      month: '2-digit', 
+      day: '2-digit' 
+    }).replace(/\. /g, '.').replace(/\.$/, '');
+    
     examResult.value = {
+      difficulty,
+      formattedDate: date,
       createdAt: historyResponse.data.createdAt || new Date().toISOString(),
       summary: {
         grade: report?.grade || '정보없음',
@@ -160,8 +169,7 @@ onMounted(() => {
             목록으로
           </button>
           <div class="header-content">
-            <h1 class="result-title">모의고사 결과</h1>
-            <p class="exam-date">{{ new Date(examResult.createdAt).toLocaleDateString('ko-KR') }}</p>
+            <h1 class="result-title">난이도 {{ examResult.difficulty }} 모의고사 ({{ examResult.formattedDate }})</h1>
           </div>
         </div>
 

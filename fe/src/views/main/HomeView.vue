@@ -369,11 +369,16 @@ const handleCardClick = (path) => {
   min-height: calc(95vh - var(--header-height));
   padding: 20px;
   background: var(--bg-color);
+  position: relative; /* Make dashboard-container the positioning context */
 }
 
 .dashboard-inner {
   max-width: 1000px;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center content horizontally */
+  position: relative; /* Make dashboard-inner the positioning context for absolute children */
 }
 
 .welcome-section {
@@ -401,6 +406,7 @@ const handleCardClick = (path) => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 24px;
+  width: 100%; /* Ensure it takes full width within its parent */
 }
 
 .dashboard-card {

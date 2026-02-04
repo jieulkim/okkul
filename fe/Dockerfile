@@ -18,6 +18,15 @@ COPY . .
 # 빌드 인자(Argument) 설정 (기본값: production)
 ARG PROFILE=production
 
+# GitLab CI/CD 등 외부에서 주입받을 환경 변수 ARG로 선언
+ARG VITE_FIREBASE_API_KEY
+ARG VITE_FIREBASE_AUTH_DOMAIN
+ARG VITE_FIREBASE_PROJECT_ID
+ARG VITE_FIREBASE_STORAGE_BUCKET
+ARG VITE_FIREBASE_MESSAGING_SENDER_ID
+ARG VITE_FIREBASE_APP_ID
+ARG VITE_FIREBASE_MEASUREMENT_ID
+
 # 빌드 실행 (브랜치명을 mode로 전달: cicd, develop, master)
 RUN npm run build -- --mode ${PROFILE}
 

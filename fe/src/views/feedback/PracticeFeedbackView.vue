@@ -227,7 +227,7 @@ const loadFeedback = async () => {
         <div class="action-buttons">
           <button @click="router.push('/practice')" class="action-btn retry-btn">
             <span class="material-icons">refresh</span>
-            다시 연습하기
+            다른 유형 연습하기
           </button>
           <button @click="router.push('/')" class="action-btn home-btn">
             <span class="material-icons">home</span>
@@ -452,7 +452,6 @@ const loadFeedback = async () => {
 .correction-item:hover {
   background: var(--bg-tertiary);
   border-color: var(--primary-color);
-  transform: translateX(8px);
   box-shadow: var(--shadow-md);
 }
 

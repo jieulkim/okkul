@@ -325,7 +325,6 @@ export interface ExamCreateRequest {
    * DB에 저장된 사용자의 설문조사 완료 데이터 ID
    * @format int64
    * @min 1
-   * @max 6
    * @example 5001
    */
   surveyId: number;

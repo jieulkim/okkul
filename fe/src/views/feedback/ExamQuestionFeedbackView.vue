@@ -152,15 +152,14 @@ const goBack = () => {
         <div v-else class="individual-tab">
           <div class="card highlight-card">
             <h3 class="card-title">문장별 교정 내용</h3>
-            <p class="guide-text">문장을 클릭하면 상세 피드백을 확인할 수 있습니다.</p>
+            <p class="guide-text">아래 교정 항목을 클릭하면 지문에서 해당 위치가 하이라이트됩니다.</p>
             <div class="highlighted-script">
               <template v-if="sentenceFeedbacks.length > 0">
                 <span 
                   v-for="(fb, idx) in sentenceFeedbacks" 
                   :key="idx"
                   class="sentence-span"
-                  :class="{ 'is-highlighted': true, 'is-selected': selectedSentenceIndex === idx }"
-                  @click="selectSentence(idx)"
+                  :class="{ 'is-highlighted': selectedSentenceIndex === idx }"
                 >
                   {{ fb.correctedSegment }}
                 </span>
@@ -169,19 +168,38 @@ const goBack = () => {
             </div>
           </div>
 
-          <div class="detail-feedback-section" v-if="selectedSentenceIndex !== null">
-            <div class="card detail-item-card">
-              <h4 class="detail-label">하이라이트 된 문장 (수정 전)</h4>
-              <p class="original-text">{{ sentenceFeedbacks[selectedSentenceIndex].targetSegment }}</p>
+          <div class="feedback-list-section">
+            <div 
+              v-for="(fb, idx) in sentenceFeedbacks"
+              :key="idx"
+              class="card detail-item-card clickable-item"
+              :class="{ 'selected': selectedSentenceIndex === idx }"
+              @click="selectSentence(idx)"
+            >
+              <div class="item-header">
+                <span class="number-badge">{{ idx + 1 }}</span>
+                <span class="item-title">교정 상세 #{{ idx + 1 }}</span>
+              </div>
+              
+              <div class="comparison-box">
+                <div class="comp-row">
+                  <span class="comp-label original-label">수정 전</span>
+                  <p class="original-text">{{ fb.targetSegment }}</p>
+                </div>
+                <div class="comp-arrow">
+                  <span class="material-icons">arrow_downward</span>
+                </div>
+                <div class="comp-row">
+                  <span class="comp-label corrected-label">수정 후</span>
+                  <p class="corrected-text">{{ fb.correctedSegment }}</p>
+                </div>
+              </div>
+
+              <div class="feedback-reason-box">
+                <span class="material-icons info-icon">info</span>
+                <p class="feedback-reason">{{ fb.comment || '상세 피드백이 없습니다.' }}</p>
+              </div>
             </div>
-            <div class="card detail-item-card">
-              <h4 class="detail-label">교정 사유 및 피드백</h4>
-              <p class="feedback-reason">{{ sentenceFeedbacks[selectedSentenceIndex].comment || '상세 피드백이 없습니다.' }}</p>
-            </div>
-          </div>
-          <div v-else class="empty-detail">
-            <span class="material-icons">touch_app</span>
-            <p>문장을 클릭하여 상세 피드백을 확인하세요.</p>
           </div>
         </div>
       </main>
@@ -398,48 +416,144 @@ const goBack = () => {
   color: #000;
 }
 
-.detail-feedback-section {
+/* Feedback List Section */
+.feedback-list-section {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  margin-top: 32px;
+  margin-top: 24px;
 }
 
-.detail-item-card {
-  padding: 24px;
+.clickable-item {
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+  background: white;
 }
 
-.detail-label {
+.clickable-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary-color);
+}
+
+.clickable-item.selected {
+  border: 2px solid var(--primary-color);
+  background: var(--bg-secondary);
+}
+
+.item-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.number-badge {
+  background: var(--primary-color);
+  color: #212529;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 700;
-  color: var(--text-secondary);
-  margin-bottom: 12px;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
+
+.item-title {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+
+.comparison-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--bg-tertiary);
+  border-radius: 12px;
+}
+
+.comp-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.comp-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-tertiary);
+}
+
+.original-label { color: #ef4444; }
+.corrected-label { color: #16a34a; }
 
 .original-text {
-  font-size: 1.1rem;
-  color: #ef4444;
+  font-size: 1rem;
+  color: var(--text-primary);
   text-decoration: line-through;
+  opacity: 0.7;
+  margin: 0;
+}
+
+.corrected-text {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.comp-arrow {
+  display: flex;
+  justify-content: center;
+  color: var(--text-tertiary);
+}
+
+.feedback-reason-box {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+  background: rgba(255, 215, 0, 0.1);
+  border-radius: 8px;
+}
+
+.info-icon {
+  color: var(--primary-color);
+  font-size: 20px;
+  margin-top: 2px;
 }
 
 .feedback-reason {
-  font-size: 1.1rem;
-  line-height: 1.6;
-  color: var(--text-primary);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin: 0;
 }
 
-.empty-detail {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px;
-  color: var(--text-tertiary);
-  gap: 12px;
+/* Updated Sentence Span Styles */
+.sentence-span {
+  display: inline;
+  padding: 2px 4px;
+  margin: 0 2px;
+  border-radius: 4px;
+  transition: all 0.3s;
 }
 
-.empty-detail .material-icons {
-  font-size: 48px;
+.is-highlighted {
+  background: var(--primary-color); /* Gold background */
+  color: #000;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transform: scale(1.05); /* Slightly enlarge to pop */
+  display: inline-block; /* Required for transform */
 }
 
 /* 로딩 */

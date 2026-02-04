@@ -25,23 +25,30 @@ const loadFilteredHistory = async () => {
     try {
         if (currentCategory.value === 'EXAM') {
             const { data } = await historyApi.getExamHistories({ size: 20, sort: ['createdAt,desc'] });
-            feedbackHistory.value = data.content?.map((item, index) => ({
-                id: item.examId,
-                type: 'EXAM',
-                title: `제 ${data.totalElements - index}회 모의고사`, 
-                date: formatDate(item.createdAt),
-                grade: item.grade || '등급 없음',
-                score: null // API 미제공
-            })) || [];
+            feedbackHistory.value = data.content?.map((item, index) => {
+                const difficulty = item.initialDifficulty || item.adjustedDifficulty || 1;
+                const date = new Date(item.createdAt).toLocaleDateString('ko-KR', { 
+                    year: 'numeric', 
+                    month: '2-digit', 
+                    day: '2-digit' 
+                }).replace(/\. /g, '.').replace(/\.$/, '');
+                
+                return {
+                    id: item.examId,
+                    type: 'EXAM',
+                    title: `난이도 ${difficulty} 모의고사`, 
+                    date: formatDate(item.createdAt),
+                    grade: item.grade || '등급 없음',
+                    score: null // API 미제공
+                };
+            }) || [];
         } else {
             const { data } = await historyApi.getPracticeHistories({ size: 20, sort: ['startedAt,desc'] });
             feedbackHistory.value = data.content?.map(item => ({
                 id: item.practiceId,
                 type: 'PRACTICE',
-                title: `유형별 연습`,
-                typeName: item.typeName,
+                title: `${item.typeName || ''} ${item.topic || '토픽 정보 없음'}`.trim(),
                 date: formatDate(item.startedAt),
-                topic: item.topic || '토픽 정보 없음',
                 score: null,
                 grade: null
             })) || [];
@@ -150,8 +157,6 @@ const filteredHistory = computed(() => feedbackHistory.value);
                 <div v-if="item.score" class="score-text">점수: {{ item.score }}점</div>
               </div>
               <div v-else class="practice-info">
-                <span class="topic-tag">#{{ item.topic }}</span>
-                <span v-if="item.typeName" class="topic-tag" style="margin-left: 8px;">{{ item.typeName }}</span>
               </div>
             </div>
             <div class="card-footer">

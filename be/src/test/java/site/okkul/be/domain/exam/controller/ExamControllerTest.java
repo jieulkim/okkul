@@ -23,6 +23,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import site.okkul.be.domain.exam.dto.request.ExamCreateRequest;
 import site.okkul.be.domain.exam.dto.response.ExamDetailResponse;
+import site.okkul.be.domain.exam.service.ExamAnswerService;
 import site.okkul.be.domain.exam.service.ExamService;
 import site.okkul.be.domain.question.entity.Question;
 import site.okkul.be.domain.question.entity.QuestionSet;
@@ -59,6 +60,9 @@ class ExamControllerTest {
 
 	@Autowired
 	private ExamService examService;
+
+	@Autowired
+	private ExamAnswerService examAnswerService;
 
 	@Autowired
 	private SurveyMapper surveyMapper;
@@ -189,7 +193,7 @@ class ExamControllerTest {
 
 			Survey survey = surveyRepository.save(surveyMapper.toEntity(1L, surveyCreateRequest));
 			ExamDetailResponse exam = examService.createExam(1L, survey.getSurveyId());
-			examService.allocateQuestion(exam.id());
+			examAnswerService.allocateQuestion(exam.id());
 
 			Long answerId = 1L;
 			MockMultipartFile file = new MockMultipartFile("file", "audio.mp3", "audio/mpeg", "audio content".getBytes());

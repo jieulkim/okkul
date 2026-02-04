@@ -8,7 +8,6 @@ import { useSurveyStore } from '@/stores/survey'
 const router = useRouter()
 const route = useRoute()
 const surveyStore = useSurveyStore()
-const isDarkMode = inject('isDarkMode', ref(false))
 
 // 상태 관리
 const currentStep = ref('type') 
@@ -333,10 +332,10 @@ onMounted(async () => {
 <style scoped>
 .page-container {
   height: calc(100vh - var(--header-height));
-  min-height: 0 !important; /* Override global min-height */
-  padding: 0 !important;    /* Override global padding */
+  min-height: 0 !important;
+  padding: 0 !important;
   overflow: hidden;
-  background: var(--bg-color);
+  background: #FDFBF5;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -356,7 +355,7 @@ onMounted(async () => {
 .page-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0; /* 패딩 제거 */
+  padding: 0;
   width: 100%;
   animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

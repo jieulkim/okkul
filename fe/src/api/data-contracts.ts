@@ -356,6 +356,13 @@ export interface ExamDetailResponse {
   createdAt?: string;
   /** 현재 할당된 문제들 */
   questions?: QuestionResponse[];
+  /** 시험 상태 */
+  examStatus?:
+    | "BEFORE_START"
+    | "IN_PROGRESS"
+    | "ANALYZING"
+    | "COMPLETED"
+    | "ANALYZING_FAILED";
 }
 
 /** 사용자에게 반환되는 퀘스트(문제) 정보 */
@@ -382,6 +389,13 @@ export interface QuestionResponse {
    * @example 1
    */
   order?: number;
+  answerStatus?:
+    | "READY"
+    | "UPLOADED"
+    | "STT_ONGOING"
+    | "ANALYZING"
+    | "COMPLETED"
+    | "ANALYZING_FAILED";
 }
 
 /** 답변 저장요청 객체 */
@@ -991,12 +1005,6 @@ export interface ExamAnswerResponse {
 
 /** 문장 단위 교정 피드백 */
 export interface SentenceFeedback {
-  /**
-   * 문장 피드백 ID
-   * @format int64
-   * @example 9001
-   */
-  feedbackId?: number;
   /** 원본 문장 */
   targetSentence?: string;
   /** 문제 구간 */

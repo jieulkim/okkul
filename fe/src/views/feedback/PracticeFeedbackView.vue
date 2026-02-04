@@ -53,7 +53,7 @@ const highlightedWords = computed(() => {
   const script = feedbackData.value?.feedbackResult?.overallComment || ''; // 실제론 improved script가 필요할 수 있음
   
   // 현재 구조에 맞게 교정된 텍스트 위주로 간단히 구성 (실제 개선 스크립트 필드 필요 시 보완)
-  const improvedScript = currentAttempt.value?.feedback?.improvedScript || ''; 
+  const improvedScript = currentAttempt.value?.feedback?.improvedAnswer || ''; 
   if (!improvedScript) return [];
 
   // 교정 항목들을 하이라이트 처리하기 위한 로직

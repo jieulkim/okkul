@@ -37,10 +37,10 @@ public class MattermostAlarmService implements AlarmService {
 	}
 
 	@Override
-	public void sendMessage(String title, String message) {
+	public void sendMessage(String title, String message, String requestUrl) {
 		try {
 			Map<String, Object> payload = new HashMap<>();
-			String formattedMessage = String.format("### %s\n%s", title, message);
+			String formattedMessage = String.format("### %s\n%s\n- **URL**: %s", title, message, requestUrl);
 
 			payload.put("text", formattedMessage);
 			restTemplate.postForEntity(webhookUrl, payload, String.class);

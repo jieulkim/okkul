@@ -29,12 +29,12 @@ import site.okkul.be.domain.survey.repository.SurveyJpaRepository;
 import site.okkul.be.domain.topic.entity.Topic;
 import site.okkul.be.domain.topic.repository.TopicRepository;
 import site.okkul.be.global.exception.BusinessException;
+import site.okkul.be.global.exception.SystemException;
 import site.okkul.be.infra.ai.AiClientProvider;
 import site.okkul.be.infra.ai.dto.exam.AnswerSummaryDto;
 import site.okkul.be.infra.ai.dto.exam.ExamTotalAnalysisResponse;
 import site.okkul.be.infra.ai.dto.exam.QuestionAnalysisRequest;
 import site.okkul.be.infra.ai.dto.exam.QuestionAnalysisResponse;
-import site.okkul.be.infra.alarm.AlarmService;
 import site.okkul.be.infra.storage.FileStorageService;
 
 /**
@@ -80,8 +80,6 @@ public class ExamService {
 	 * 파일 스토리지 서비스
 	 */
 	private final FileStorageService fileStorageService;
-
-	private final AlarmService alarmService;
 
 	/**
 	 * AI 서버용 기능
@@ -214,8 +212,7 @@ public class ExamService {
 			} else {
 				log.error("문제 할당 실패 - 레벨: {}, 타입: {}", level, questionType);
 				String errorMessage = createErrorMessage(exam.getId(), level, questionType, topics, triedTopics, lastTopic, survey);
-				alarmService.sendMessage("님들아 큰일남 문제가 없음!!!", errorMessage);
-				throw new BusinessException(ExamErrorCode.QUESTION_ALLOCATION_FAILED);
+				throw new SystemException(ExamErrorCode.QUESTION_ALLOCATION_FAILED, "문제 할당 실패", errorMessage);
 			}
 		}
 
@@ -308,7 +305,7 @@ public class ExamService {
 		// 2. AI서버에서 답변 분석 진행하기
 		QuestionAnalysisResponse questionAnalysisResponse = aiClientProvider.getClient(useRealAi).analyzeQuestion(
 				QuestionAnalysisRequest.from(
-						examAnswer.getExam().getQuestions().get(questionOrder-1),
+						examAnswer.getExam().getQuestions().get(questionOrder - 1),
 						examAnswer
 				)
 		);

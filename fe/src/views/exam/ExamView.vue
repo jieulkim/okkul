@@ -153,7 +153,7 @@ onMounted(async () => {
         <div class="resume-info" v-if="incompleteExam">
           <div class="info-row">
             <span class="label">문항 진행도</span>
-            <span class="value">{{ incompleteExam.currentQuestion }} / 15</span>
+            <span class="value">{{ incompleteExam.currentQuestion }} 번</span>
           </div>
           <div class="info-row">
             <span class="label">남은 시간</span>

@@ -51,7 +51,7 @@ public class ExamLevelDesign {
 			return List.of(
 					QuestionType.COMBO2,
 					QuestionType.ROLE_PLAYING1,
-					QuestionType.ROLE_PLAYING1
+					QuestionType.ROLE_PLAYING2
 			);
 		}
 	}

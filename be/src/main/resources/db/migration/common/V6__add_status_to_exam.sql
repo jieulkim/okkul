@@ -8,3 +8,5 @@ UPDATE exam SET status = 'IN_PROGRESS' WHERE end_at IS NULL;
 
 -- 3. NOT NULL 제약조건 추가
 ALTER TABLE exam ALTER COLUMN status SET NOT NULL;
+
+ALTER TABLE exam_answer DROP COLUMN IF EXISTS question_id;

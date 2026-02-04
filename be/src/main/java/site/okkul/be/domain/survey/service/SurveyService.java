@@ -15,6 +15,7 @@ import site.okkul.be.domain.topic.service.TopicService;
 import site.okkul.be.global.exception.BusinessException;
 
 import java.util.*;
+import java.util.Collections;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,7 +47,8 @@ public class SurveyService {
 
     @Transactional(readOnly = true)
     public SurveyListResponse findAllByUser(Long userId) {
-        List<Survey> surveys = surveyJpaRepository.findAllByUserId(userId);
+        List<Survey> surveys = surveyJpaRepository.findTop3SurveyIdAndUserId(userId);
+        Collections.reverse(surveys);
         List<SurveySummaryResponse> summaryResponses = surveys.stream()
                 .map(surveyMapper::toSummaryDto)
                 .collect(Collectors.toList());

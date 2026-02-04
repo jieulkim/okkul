@@ -21,9 +21,8 @@ const fetchExistingSurveys = async () => {
     const surveyList =
       response.data?.surveySummaryResponses ||
       (Array.isArray(response.data) ? response.data : []);
-    const filteredList = surveyStore.filterSurveys(surveyList);
-
-    existingSurveys.value = filteredList.map(s => ({
+    // 백엔드 데이터 중 최근 3개만 선택하여 표시
+    existingSurveys.value = surveyList.slice(0, 3).map(s => ({
       ...s,
       occupation: s.occupation || 'N/A',
       topics: s.topicList || []
@@ -90,10 +89,7 @@ const useRecommendedSurvey = (surveyData) => {
   });
 };
 
-const handleDeleteSurvey = (surveyId) => {
-  surveyStore.deleteSurvey(surveyId);
-  existingSurveys.value = surveyStore.filterSurveys(existingSurveys.value);
-};
+// Deletion handler removed
 
 onMounted(async () => {
   await fetchExistingSurveys();
@@ -179,7 +175,6 @@ onMounted(async () => {
       @start-new="startNewSurvey"
       @use-selected="useSelectedSurvey"
       @use-recommended="useRecommendedSurvey"
-      @delete-survey="handleDeleteSurvey"
       @close="showSurveySelectModal = false"
     />
   </div>

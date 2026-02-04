@@ -77,8 +77,8 @@ const fetchExistingSurveys = async () => {
     // 백엔드 응답 구조: { surveySummaryResponses: [...] } 또는 직접 배열
     let surveyList = response.data?.surveySummaryResponses || (Array.isArray(response.data) ? response.data : []);
     
-    // 로컬 저장소 및 스토어에서 삭제된 ID 필터링
-    existingSurveys.value = surveyStore.filterSurveys(surveyList).map(s => ({
+    // 백엔드에서 3개 이상을 보낼 수도 있으므로 안전하게 최근 3개만 슬라이스
+    existingSurveys.value = surveyList.slice(0, 3).map(s => ({
       ...s,
       topics: s.topicList || []
     }));
@@ -226,15 +226,7 @@ const goToQuestionPage = () => {
   });
 };
 
-const handleDeleteSurvey = (surveyId) => {
-  // 1. 스토어 및 로컬 저장소에 삭제 반영
-  surveyStore.deleteSurvey(surveyId);
-  
-  // 2. 현재 목록 UI 즉시 업데이트
-  existingSurveys.value = surveyStore.filterSurveys(existingSurveys.value);
-  
-  console.log(`[PracticeView] Survey ${surveyId} deleted (Global FE Sync)`);
-};
+// Deletion handler removed
 
 onMounted(async () => {
   await fetchExistingSurveys();
@@ -322,7 +314,6 @@ onMounted(async () => {
       @start-new="startNewSurvey"
       @use-selected="useSelectedSurvey"
       @use-recommended="useRecommendedSurvey"
-      @delete-survey="handleDeleteSurvey"
       @close="showSurveySelectModal = false"
     />
 

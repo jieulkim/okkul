@@ -1,11 +1,30 @@
 <template>
   <div class="feedback-form-container card">
+    <button class="close-button" @click="$emit('close')" aria-label="닫기">
+      <span class="material-icons">close</span>
+    </button>
     <h3 class="feedback-title">서비스에 대한 의견을 자유롭게 남겨주세요</h3>
     <p class="feedback-description">
-      저희 서비스를 개선하는 데 귀하의 소중한 의견이 큰 도움이 됩니다. 감사합니다!
+      저희 서비스를 개선하는 데 귀하의 소중한 의견이 큰 도움이 됩니다. 감사합니다!<br>
+      <span class="highlight-text">성함과 전화번호를 남겨주시면 추첨을 통해 경품을 드립니다!</span>
     </p>
     
     <form @submit.prevent="submitFeedback" class="feedback-form">
+      <div class="input-group">
+        <input 
+          v-model="userName" 
+          type="text" 
+          placeholder="성함 (선택)" 
+          class="text-input"
+        />
+        <input 
+          v-model="userPhone" 
+          type="tel" 
+          placeholder="전화번호 (선택)" 
+          class="text-input"
+        />
+      </div>
+
       <div class="rating-section">
         <h4 class="rating-title">서비스 만족도</h4>
         <div class="stars-container" @mouseleave="resetHover">
@@ -25,7 +44,7 @@
         v-model="feedbackText"
         class="textarea"
         rows="5"
-        placeholder="여기에 의견을 입력해주세요..."
+        placeholder="모든 의견 받습니다! 소중한 의견 자유롭게 남겨주세요!"
         aria-label="서비스 피드백 입력"
         required
         :disabled="isSubmitting"
@@ -44,7 +63,11 @@ import { collection, addDoc } from 'firebase/firestore';
 import { useAuthStore } from '@/stores/auth';
 import { useRouter } from 'vue-router'; // useRouter 임포트
 
+const emit = defineEmits(['close']);
+
 const feedbackText = ref('');
+const userName = ref('');
+const userPhone = ref('');
 const rating = ref(0);
 const hoverRating = ref(0);
 const isSubmitting = ref(false);
@@ -82,6 +105,8 @@ const submitFeedback = async () => {
     const docRef = await addDoc(collection(db, "feedback"), {
       message: feedbackText.value.trim(),
       rating: rating.value, // 별점 추가
+      userName: userName.value.trim(),
+      userPhone: userPhone.value.trim(),
       userId: user ? user.id : 'anonymous',
       userEmail: user ? user.email : 'anonymous',
       timestamp: new Date(),
@@ -91,8 +116,11 @@ const submitFeedback = async () => {
     console.log("Feedback document written with ID: ", docRef.id);
     
     feedbackText.value = ''; // 입력 필드 초기화
+    userName.value = '';
+    userPhone.value = '';
     rating.value = 0; // 별점 초기화
     alert('소중한 의견 감사합니다!');
+    emit('close'); // 성공 후 폼 닫기
   } catch (e) {
     console.error("Error adding document: ", e);
     alert('의견을 제출하는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
@@ -106,30 +134,87 @@ const submitFeedback = async () => {
 .feedback-form-container {
   max-width: 600px;
   margin: 40px auto;
-  padding: 30px;
+  padding: 40px 30px 30px; /* Top padding increased for close button */
   display: flex;
   flex-direction: column;
   gap: 20px;
   text-align: center;
+  position: relative;
+  background: white; /* Ensure background is set */
+}
+
+/* Force disable transform on hover if inherited from .card */
+.feedback-form-container.card:hover {
+  transform: none !important;
+  box-shadow: var(--shadow-md); /* Keep shadow but static */
+}
+
+.close-button {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  color: var(--text-tertiary);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.close-button:hover {
+  background-color: #f1f5f9;
+  color: var(--text-primary);
+  transform: rotate(90deg);
 }
 
 .feedback-title {
   font-size: 1.8rem;
   color: var(--text-main);
   margin-bottom: 5px;
+  padding-right: 20px; /* Prevent title update */
 }
 
 .feedback-description {
   font-size: 0.95rem;
   color: var(--text-secondary);
-  line-height: 1.5;
+  line-height: 1.6;
   margin-bottom: 15px;
+}
+
+.highlight-text {
+  color: var(--primary-color);
+  font-weight: 700;
 }
 
 .feedback-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.input-group {
+  display: flex;
+  gap: 12px;
+}
+
+.text-input {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  font-size: 1rem;
+  background: var(--bg-subtle);
+}
+
+.text-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background: white;
 }
 
 .rating-section {
@@ -172,10 +257,14 @@ const submitFeedback = async () => {
   background: var(--bg-subtle);
   border-color: var(--card-border);
   transition: background-color 0.2s, border-color 0.2s;
+  padding: 12px;
+  border-radius: 8px;
 }
 
 .textarea:focus {
   background: var(--card-bg);
+  outline: none;
+  border-color: var(--primary-color);
 }
 
 .textarea:disabled {
@@ -194,26 +283,5 @@ const submitFeedback = async () => {
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
-}
-
-/* Dark mode adjustments */
-.dark-mode .feedback-form-container {
-  border-color: var(--card-border);
-}
-
-.dark-mode .rating-section {
-  background: #2C2825; /* Use a dark subtle background */
-}
-
-.dark-mode .textarea {
-  background: var(--bg-subtle);
-  border-color: var(--card-border);
-}
-.dark-mode .textarea:focus {
-  background: var(--card-bg);
-}
-
-.dark-mode .textarea:disabled {
-  background-color: #333;
 }
 </style>

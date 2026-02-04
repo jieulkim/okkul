@@ -67,7 +67,7 @@ onMounted(async () => {
     >
       <Transition name="slide-up">
         <div v-if="isFeedbackFormVisible" class="feedback-form-wrapper">
-          <FeedbackForm />
+          <FeedbackForm @close="toggleFeedbackForm" />
         </div>
       </Transition>
     </div>

@@ -12,10 +12,12 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["close", "start-new", "use-selected", "delete-survey", "use-recommended"]);
+const emit = defineEmits(["close", "start-new", "use-selected", "use-recommended"]);
 
 const selectedSurveyId = ref(null);
-const isPreviewingRecommended = ref(false);
+const isPreviewing = ref(false);
+const previewData = ref(null);
+const isRecommendedPreview = ref(false);
 
 const recommendedSurvey = {
   occupationAnswerId: 4, // 일 경험 없음
@@ -36,6 +38,7 @@ const recommendedSurvey = {
 console.log('[SurveySelectModal] Received existingSurveys:', props.existingSurveys);
 
 const formatDate = (dateString) => {
+  if (!dateString) return "";
   return new Date(dateString).toLocaleDateString();
 };
 
@@ -46,6 +49,8 @@ const handleStartNew = () => {
 const handleUseSelected = () => {
   if (selectedSurveyId.value) {
     emit("use-selected", selectedSurveyId.value);
+  } else if (previewData.value && !isRecommendedPreview.value) {
+    emit("use-selected", previewData.value.surveyId);
   }
 };
 
@@ -54,22 +59,24 @@ const handleUseRecommended = () => {
 };
 
 const handlePreviewRecommended = () => {
-  isPreviewingRecommended.value = true;
+  previewData.value = recommendedSurvey;
+  isRecommendedPreview.value = true;
+  isPreviewing.value = true;
+};
+
+const handlePreviewSurvey = (event, survey) => {
+  event.stopPropagation();
+  previewData.value = survey;
+  isRecommendedPreview.value = false;
+  isPreviewing.value = true;
 };
 
 const closePreview = () => {
-  isPreviewingRecommended.value = false;
+  isPreviewing.value = false;
+  previewData.value = null;
 };
 
-const handleDeleteSurvey = (event, surveyId) => {
-  event.stopPropagation(); // 카드 선택 방지
-  if (confirm("이 설문 데이터를 삭제하시겠습니까?")) {
-    emit("delete-survey", surveyId);
-    if (selectedSurveyId.value === surveyId) {
-      selectedSurveyId.value = null;
-    }
-  }
-};
+// Deletion logic removed as per requirements
 
 const labels = {
   occupation: {
@@ -89,8 +96,7 @@ const labels = {
 };
 
 const getOccupationLabel = (val) => {
-  if (!val) return null;
-  // 백엔드 Enum 명칭 또는 숫자 ID 대응
+  if (!val) return "정보 없음";
   const occMap = {
     1: "직장인", COMPANY: "직장인",
     2: "재택근무", HOME: "재택근무",
@@ -102,8 +108,7 @@ const getOccupationLabel = (val) => {
 };
 
 const getResidenceLabel = (val) => {
-  if (!val) return null;
-  // 백엔드 Enum 명칭 또는 숫자 ID 대응
+  if (!val) return "정보 없음";
   const resMap = {
     1: "1인 가구", ALONE: "1인 가구",
     2: "공동 거주", FRIENDS: "공동 거주",
@@ -132,7 +137,6 @@ const topicMapping = {
 const getTopicsSummary = (topics) => {
   if (!topics || topics.length === 0) return "선택된 주제 없음";
   
-  // 500~799 범위의 ID는 백엔드 내부 배경 정보용 토픽이므로 필터링
   const filteredTopics = topics.filter(t => {
     const id = typeof t === "number" ? t : (t.topicId || t.id);
     return !(id >= 500 && id < 800);
@@ -143,32 +147,61 @@ const getTopicsSummary = (topics) => {
   const names = filteredTopics.map((t) => {
     if (typeof t === "string") return t;
     if (typeof t === "number") return topicMapping[t] || null;
-    return t.topicName || t.name || topicMapping[t.topicId] || topicMapping[t] || null;
+    return t.topicName || t.name || topicMapping[t.topicId] || topicMapping[t] || t;
   });
   
-  // 매핑되지 않았거나 유효하지 않은 이름 제거
   const validNames = names.filter(n => n && !n.includes('난이도'));
   
   if (validNames.length === 0) return "선택된 주제 없음";
   if (validNames.length <= 3) return validNames.join(", ");
   return `${validNames.slice(0, 3).join(", ")} 외 ${validNames.length - 3}개`;
 };
+
+const getCategorizedTopics = (topics) => {
+  if (!topics) return { leisure: [], exercise: [], holiday: [] };
+  
+  const categorized = { leisure: [], exercise: [], holiday: [] };
+  
+  topics.forEach(t => {
+    const id = typeof t === "number" ? t : (t.topicId || t.id);
+    const name = typeof t === "string" ? t : (t.topicName || t.name || topicMapping[id]);
+    
+    if (!id || (id >= 500 && id < 800)) return;
+
+    if ((id >= 100 && id < 300)) categorized.leisure.push(name);
+    else if (id >= 300 && id < 400) categorized.exercise.push(name);
+    else if (id >= 400 && id < 500) categorized.holiday.push(name);
+  });
+  
+  return categorized;
+};
+
+const getCategorizedRecommendedTopics = (data) => {
+  if (!data) return { leisure: [], exercise: [], holiday: [] };
+  
+  const leisureIds = [...(data.leisure || []), ...(data.hobby || [])];
+  const exerciseIds = data.exercise || [];
+  const holidayIds = data.holiday || [];
+
+  return {
+    leisure: leisureIds.map(id => topicMapping[id]).filter(Boolean),
+    exercise: exerciseIds.map(id => topicMapping[id]).filter(Boolean),
+    holiday: holidayIds.map(id => topicMapping[id]).filter(Boolean)
+  };
+};
 </script>
 
 <template>
   <div v-if="isVisible" class="modal-overlay">
     <div class="modal-card">
-      <div v-if="!isPreviewingRecommended" class="list-view">
+      <div v-if="!isPreviewing" class="list-view">
         <div class="modal-header">
           <button class="modal-close-btn" @click="$emit('close')" title="닫기">
             <span class="material-icons">close</span>
           </button>
-          <h3>기존 설문 데이터 선택</h3>
-          <p class="subtitle">
-            이전에 완료한 설문을 사용하여 바로 시작할 수 있습니다.
-          </p>
-          <p v-if="existingSurveys.length >= 3" class="limit-warning">
-            ⚠️ 설문은 최대 3개까지만 저장 가능합니다. (새 설문을 위해 기존 데이터를 삭제해주세요)
+          <h3>최근 설문 선택</h3>
+          <p class="limit-warning">
+            설문 3개 중 선택하세요
           </p>
         </div>
 
@@ -183,7 +216,12 @@ const getTopicsSummary = (topics) => {
             @click="selectedSurveyId = survey.surveyId"
           >
             <div class="survey-info">
-              <span class="date">{{ formatDate(survey.createdAt) }}</span>
+              <div class="card-title-row">
+                <span class="date">{{ formatDate(survey.createdAt) }}</span>
+                <button class="detail-link-btn" @click="handlePreviewSurvey($event, survey)">
+                  상세보기 <span class="material-icons">chevron_right</span>
+                </button>
+              </div>
               <div class="tags">
                 <span class="tag level-tag">난이도 {{ survey.level }}</span>
                 <span class="tag" v-if="survey.occupation && survey.occupation !== 'N/A'">
@@ -207,9 +245,6 @@ const getTopicsSummary = (topics) => {
               </div>
             </div>
             <div class="card-actions">
-              <button class="delete-icon-btn" @click="handleDeleteSurvey($event, survey.surveyId)" title="삭제">
-                <span class="material-icons">delete_outline</span>
-              </button>
               <div
                 class="radio-circle"
                 :class="{ selected: selectedSurveyId === survey.surveyId }"
@@ -222,14 +257,12 @@ const getTopicsSummary = (topics) => {
           <button
             @click="handleStartNew"
             class="secondary-btn"
-            :disabled="existingSurveys.length >= 3"
           >
-            {{ existingSurveys.length >= 3 ? '저장 용량 초과' : '새 설문 작성' }}
+            새 설문 작성
           </button>
           <button
             @click="handlePreviewRecommended"
             class="recommended-btn"
-            :disabled="existingSurveys.length >= 3"
           >
             추천 설문 보기
           </button>
@@ -249,47 +282,64 @@ const getTopicsSummary = (topics) => {
         </div>
       </div>
 
-      <!-- 추천 설문 미리보기 화면 -->
+      <!-- 설문 상세 미리보기 화면 -->
       <div v-else class="preview-view animate-fade-in">
         <div class="modal-header">
           <button class="modal-close-btn" @click="closePreview" title="돌아가기">
             <span class="material-icons">arrow_back</span>
           </button>
-          <h3>추천 설문 상세 내용</h3>
-          <p class="subtitle">오꿀쌤이 제안하는 기본 설문 구성입니다.</p>
+          <h3>{{ isRecommendedPreview ? '추천 설문 상세 내용' : '설문 상세 내용' }}</h3>
+          <p class="subtitle">
+            {{ isRecommendedPreview ? '오꿀쌤이 제안하는 기본 설문 구성입니다.' : formatDate(previewData.createdAt) + '에 진행한 설문입니다.' }}
+          </p>
         </div>
 
         <div class="preview-content">
           <section class="preview-section">
             <h4 class="section-title"><span class="material-icons">person</span> 배경 정보</h4>
             <div class="preview-tags">
-              <span class="preview-tag">무직/경험 없음</span>
-              <span class="preview-tag">비학생</span>
-              <span class="preview-tag">개인 주택/아파트 홀로 거주</span>
+              <span class="preview-tag">💼 {{ getOccupationLabel(previewData.occupation || previewData.occupationAnswerId) }}</span>
+              <span class="preview-tag">🎓 {{ (previewData.student !== undefined && previewData.student !== null) ? (previewData.student ? "학생" : "비학생") : "정보 없음" }}</span>
+              <span class="preview-tag">🏠 {{ getResidenceLabel(previewData.residence || previewData.residenceAnswerId) }}</span>
             </div>
           </section>
 
           <section class="preview-section">
-            <h4 class="section-title"><span class="material-icons">auto_awesome</span> 선택 주제 (12개)</h4>
+            <h4 class="section-title">
+              <span class="material-icons">auto_awesome</span> 
+              선택 주제 
+              <template v-if="isRecommendedPreview">
+                (12개)
+              </template>
+              <template v-else-if="previewData.topics">
+                ({{ previewData.topics.filter(t => {
+                    const id = typeof t === 'number' ? t : (t.topicId || t.id);
+                    return !(id >= 500 && id < 800);
+                  }).length }}개)
+              </template>
+            </h4>
             <div class="preview-topics">
-              <div class="topic-group">
+              <div class="topic-group" v-if="(isRecommendedPreview ? getCategorizedRecommendedTopics(previewData) : getCategorizedTopics(previewData.topics)).leisure.length > 0">
                 <label>여가/취미</label>
-                <p>{{ [101, 106, 103, 104, 202].map(id => topicMapping[id]).join(', ') }}</p>
+                <p>{{ (isRecommendedPreview ? getCategorizedRecommendedTopics(previewData) : getCategorizedTopics(previewData.topics)).leisure.join(', ') }}</p>
               </div>
-              <div class="topic-group">
+              <div class="topic-group" v-if="(isRecommendedPreview ? getCategorizedRecommendedTopics(previewData) : getCategorizedTopics(previewData.topics)).exercise.length > 0">
                 <label>운동</label>
-                <p>{{ [316, 317, 322].map(id => topicMapping[id]).join(', ') }}</p>
+                <p>{{ (isRecommendedPreview ? getCategorizedRecommendedTopics(previewData) : getCategorizedTopics(previewData.topics)).exercise.join(', ') }}</p>
               </div>
-              <div class="topic-group">
+              <div class="topic-group" v-if="(isRecommendedPreview ? getCategorizedRecommendedTopics(previewData) : getCategorizedTopics(previewData.topics)).holiday.length > 0">
                 <label>휴가/여행</label>
-                <p>{{ [403, 404, 405].map(id => topicMapping[id]).join(', ') }}</p>
+                <p>{{ (isRecommendedPreview ? getCategorizedRecommendedTopics(previewData) : getCategorizedTopics(previewData.topics)).holiday.join(', ') }}</p>
               </div>
             </div>
           </section>
         </div>
 
         <div class="modal-footer">
-          <button @click="handleUseRecommended" class="primary-btn action-btn">
+          <button v-if="isRecommendedPreview" @click="handleUseRecommended" class="primary-btn action-btn">
+            이 설문으로 시작하기
+          </button>
+          <button v-else @click="handleUseSelected" class="primary-btn action-btn">
             이 설문으로 시작하기
           </button>
           <button @click="closePreview" class="cancel-btn">
@@ -323,7 +373,6 @@ const getTopicsSummary = (topics) => {
   padding-bottom: 24px;
   position: relative;
   z-index: 1001;
-  /* max-height 제거하여 내용만큼 늘어나게 함 */
   display: block;
 }
 
@@ -383,8 +432,7 @@ const getTopicsSummary = (topics) => {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  /* 스크롤 제거 및 높이 제한 해제 */
-  max-height: 600px; /* 충분한 공간 확보 */
+  max-height: 600px;
   overflow-y: visible;
 }
 
@@ -393,64 +441,89 @@ const getTopicsSummary = (topics) => {
   align-items: center;
   gap: 16px;
   padding: 16px;
-  border-radius: var(--border-radius);
-  border: var(--border-secondary);
-  background: var(--bg-tertiary);
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.05);
+  background: #fffcf0; /* Subtle warm honey background for the "card" itself */
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.02);
 }
 
 .survey-card-item:hover {
-  transform: translate(-0.02em, -0.02em);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.05);
+  background: #fff9e6;
 }
 
 .survey-card-item.active {
-  border-color: #ffd600 !important; /* 진한 노랑 (레이저 느낌) */
-  background: #fffde7 !important;   /* 아주 연한 노랑 */
+  border-color: #ffd600 !important;
+  background: #fffde7 !important;
   color: #000000;
-  box-shadow: 0 0 0 1px #ffd600; /* 테두리 강조 */
+  box-shadow: 0 0 0 1px #ffd600;
 }
 
 .survey-info {
   flex: 1;
-  min-width: 0; /* flex item text truncation fix */
+  min-width: 0;
+}
+
+.card-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.detail-link-btn {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  width: fit-content;
+  flex: 0 0 auto;
+}
+
+.detail-link-btn:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.detail-link-btn .material-icons {
+  font-size: 16px;
 }
 
 .date {
   font-size: 14px;
   font-weight: 600;
   display: block;
-  margin-bottom: 8px;
 }
 
 .tags {
   display: flex;
-  gap: 8px;
-  flex-wrap: nowrap; /* 한 줄 유지 */
-  overflow-x: auto; /* 넘치면 스크롤 */
-  padding-bottom: 4px; /* 스크롤바 공간 확보 */
-  scrollbar-width: none; /* 파이어폭스 스크롤바 숨김 */
-  -ms-overflow-style: none; /* IE 스크롤바 숨김 */
-}
-
-.tags::-webkit-scrollbar {
-  display: none; /* 크롬 스크롤바 숨김 */
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
 }
 
 .tag {
   font-size: 11px;
-  background: rgba(0, 0, 0, 0.04);
-  padding: 4px 10px;
+  background: #FFFFFF;
+  padding: 3px 8px;
   border-radius: 6px;
-  color: #475569;
+  color: #64748b;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 4px;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  white-space: nowrap; /* 태그 내부 텍스트 줄바꿈 방지 */
+  gap: 3px;
+  border: 1px solid #eef2f7;
 }
 
 .level-tag {
@@ -465,7 +538,7 @@ const getTopicsSummary = (topics) => {
   border: 2px solid #cbd5e1;
   border-radius: 50%;
   position: relative;
-  flex-shrink: 0; /* 줄어들지 않도록 설정 */
+  flex-shrink: 0;
 }
 
 .radio-circle.selected {
@@ -489,131 +562,71 @@ const getTopicsSummary = (topics) => {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-shrink: 0; /* 액션 버튼 영역 고정 */
-}
-
-.delete-icon-btn {
-  background: none;
-  border: none;
-  padding: 4px;
-  color: #94a3b8;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  border-radius: 6px;
-}
-
-.delete-icon-btn:hover {
-  background: #fee2e2;
-  color: #ef4444;
-}
-
-.delete-icon-btn .material-icons {
-  font-size: 20px;
+  flex-shrink: 0;
 }
 
 .modal-footer {
   padding: 0 32px 10px;
   display: flex;
   gap: 12px;
-  flex-wrap: wrap; /* 버튼이 여러 줄로 나뉘도록 변경 */
-  justify-content: center; /* 버튼들을 가운데 정렬 */
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 button {
-  flex-grow: 1; /* 공간이 있을 때 늘어나도록 변경 */
+  flex-grow: 1;
   padding: 14px;
   border-radius: 12px;
   border: none;
   font-weight: 700;
   cursor: pointer;
-  min-width: 140px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  transition: all 0.2s ease;
 }
 
 .secondary-btn {
   background: #f1f5f9;
   color: #64748b;
-  font-size: 0.9rem;
+}
+
+.secondary-btn:hover {
+  background: #fff9c4;
+  color: #bf360c;
 }
 
 .recommended-btn {
-  background: #dcfce7; /* 파스텔 연두 */
-  color: #166534; /* 어두운 녹색 텍스트 */
+  background: #dcfce7;
+  color: #166534;
   border: 1px solid #86efac;
-  box-shadow: var(--shadow-sm);
-  font-size: 0.95rem;
 }
 
-.recommended-btn:hover:not(:disabled) {
+.recommended-btn:hover {
   background: #bbf7d0;
-  transform: translate(-0.02em, -0.02em);
-  box-shadow: var(--shadow-md);
-}
-
-.recommended-btn:disabled {
-  background: #cbd5e1;
-  border-color: #cbd5e1;
-  color: #64748b;
-  cursor: not-allowed;
-  box-shadow: none;
+  border-color: #4ade80;
 }
 
 .primary-btn {
-  background: #fff9c4; /* 연한 노랑 */
-  color: #bf360c; /* 진한 주황/갈색 텍스트 */
-  border: 2px solid #ffd54f; /* 진한 노랑 테두리 (레이저 느낌) */
-  box-shadow: var(--shadow-sm);
-  font-size: 0.9rem;
-}
-
-.primary-btn:hover:not(:disabled) {
-  background: #fff59d;
-  border-color: #ffca28;
-  transform: translate(-0.02em, -0.02em);
-  box-shadow: var(--shadow-md);
-}
-
-.primary-btn:disabled {
-  background: #f5f5f5;
-  border-color: #e0e0e0;
-  color: #9e9e9e;
-  opacity: 0.8;
-  cursor: not-allowed;
-  box-shadow: none;
+  background: #fff9c4;
+  color: #bf360c;
+  border: 2px solid #ffd54f;
 }
 
 .cancel-btn {
-  background: var(--bg-tertiary);
-  border: var(--border-secondary);
-  color: var(--text-primary);
-  transition: all 0.2s;
-  box-shadow: var(--shadow-sm);
-  font-size: 0.9rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #475569;
 }
 
 .cancel-btn:hover {
-  transform: translate(-0.02em, -0.02em);
-  box-shadow: var(--shadow-md);
-}
-
-.secondary-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  background: #f1f5f9;
+  border-color: #cbd5e1;
 }
 
 .topic-summary-text {
-  font-size: 13px;
-  color: #64748b;
+  font-size: 12px;
+  color: #94a3b8;
   font-weight: 600;
-  letter-spacing: -0.2px;
 }
 
-/* 미리보기 스타일 */
 .preview-content {
   padding: 0 32px 24px;
 }
@@ -637,7 +650,7 @@ button {
 }
 
 .section-title .material-icons {
-  color: var(--primary-color);
+  color: #64748b;
   font-size: 20px;
 }
 
@@ -661,10 +674,6 @@ button {
   margin-bottom: 12px;
 }
 
-.topic-group:last-child {
-  margin-bottom: 0;
-}
-
 .topic-group label {
   display: block;
   font-size: 12px;
@@ -675,7 +684,7 @@ button {
 
 .topic-group p {
   font-size: 14px;
-  color: #334155;
+  color: #475569;
   line-height: 1.5;
   margin: 0;
 }

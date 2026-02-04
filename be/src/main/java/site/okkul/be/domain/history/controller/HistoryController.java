@@ -85,7 +85,7 @@ public class HistoryController implements HistoryControllerDocs {
     @Override
     @GetMapping("/practices/{practiceId}")
     public ResponseEntity<PracticeHistoryDetailResponse> getPracticeHistoryDetail(
-            Long practiceId,
+            @PathVariable Long practiceId,
             @AuthenticationPrincipal UserDetails user) {
         PracticeHistoryDetailResponse response = historyService.getPracticeHistoryDetail(Long.parseLong(user.getUsername()), practiceId);
 

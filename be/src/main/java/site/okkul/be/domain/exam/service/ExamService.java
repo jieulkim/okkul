@@ -300,6 +300,7 @@ public class ExamService {
 				.audioUrl(url)
 				.exam(exam)
 				.userAnswer(examQuestionAnswerRequest.sttText())
+				.status(AnswerStatus.READY)
 				.createdAt(Instant.now())
 				.updatedAt(Instant.now())
 				.build());

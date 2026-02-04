@@ -447,7 +447,8 @@ const goToPrevPage = () => {
 };
 
 const highlightFromCard = (index) => {
-  selectedSentenceIndex.value = currentPage.value * itemsPerPage + index;
+  const absoluteIndex = currentPage.value * itemsPerPage + index;
+  selectedSentenceIndex.value = selectedSentenceIndex.value === absoluteIndex ? null : absoluteIndex;
 };
 
 // ============================================
@@ -695,6 +696,7 @@ onMounted(() => {
               <h2 class="q-number">Q{{ questionNumber }}</h2>
               <button class="audio-btn" @click="playQuestionAudio">
                 <span class="material-icons">volume_up</span>
+                <span class="audio-label">질문 듣기</span>
               </button>
             </div>
             <button
@@ -789,22 +791,31 @@ onMounted(() => {
         <div class="feedback-card">
           <h3 class="result-title">오꿀쌤 피드백</h3>
 
-          <div class="okkul-left-align">
-            <img :src="okkulSvg" alt="Okkul" style="width: 100px; height: 100px;" />
-          </div>
+
 
           <div v-if="currentTab === 'sentence'">
-            <div class="report-box">
-              <span
-                v-for="(item, idx) in feedbackData"
-                :key="idx"
-                :class="[
-                  'report-span',
-                  { highlighted: selectedSentenceIndex === idx },
-                ]"
-              >
-                {{ item.improved }}
-              </span>
+            <!-- 문장 피드백 탭: 추천 답변 자리에 개선 문장 리스트가 들어간 말풍선 배치 -->
+            <div class="okkul-feedback-container">
+              <div class="okkul-character">
+                <img :src="okkulSvg" alt="오꿀쌤" class="okkul-img" />
+                <span class="okkul-name">오꿀쌤</span>
+              </div>
+              <div class="speech-bubble">
+                <h4 class="bubble-title">개선 문장</h4>
+                <div class="report-box-inner">
+                  <span
+                    v-for="(item, idx) in feedbackData"
+                    :key="idx"
+                    :class="[
+                      'report-span',
+                      { highlighted: selectedSentenceIndex === idx },
+                    ]"
+                    @click="selectedSentenceIndex = selectedSentenceIndex === idx ? null : idx"
+                  >
+                    {{ item.improved }}
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div class="detail-list">
@@ -824,7 +835,10 @@ onMounted(() => {
                 <div class="sentence-row">
                   <span class="badge impr">개선</span> {{ item.improved }}
                 </div>
-                <div class="reason-text">💡 {{ item.reason }}</div>
+                <div class="reason-text">
+                  <span class="material-icons reason-icon">lightbulb</span>
+                  {{ item.reason }}
+                </div>
               </div>
             </div>
 
@@ -851,6 +865,22 @@ onMounted(() => {
           </div>
 
           <div v-if="currentTab === 'overall'" class="overall-section">
+            <!-- 오꿀쌤 추천 답변을 종합 피드백 탭으로 이동 -->
+            <div class="okkul-feedback-container">
+              <div class="okkul-character">
+                <img :src="okkulSvg" alt="오꿀쌤" class="okkul-img" />
+                <span class="okkul-name">오꿀쌤</span>
+              </div>
+              <div class="speech-bubble" v-if="aiImprovedAnswer">
+                <h4 class="bubble-title">추천 답변</h4>
+                <p class="bubble-text">{{ aiImprovedAnswer }}</p>
+              </div>
+              <div class="speech-bubble" v-else>
+                <h4 class="bubble-title">분석 중...</h4>
+                <p class="bubble-text">잠시만 기다려주세요, 답변을 분석하고 있습니다!</p>
+              </div>
+            </div>
+            
             <div
               v-for="(feedback, index) in overallFeedback"
               :key="index"
@@ -860,10 +890,7 @@ onMounted(() => {
               <p class="overall-text">{{ feedback.text }}</p>
             </div>
 
-            <div v-if="aiImprovedAnswer" class="improved-answer-item">
-              <h4 class="improved-answer-label">AI 추천 답변</h4>
-              <p class="improved-answer-text">{{ aiImprovedAnswer }}</p>
-            </div>
+
           </div>
         </div>
 
@@ -893,7 +920,7 @@ onMounted(() => {
 <style scoped>
 .page-container {
   min-height: 100vh;
-  background: var(--bg-primary);
+  background: #FDFBF5; /* Soft beige background fixed for light theme */
   /* Override global styles */
   padding: 24px !important;
   display: block !important;
@@ -955,37 +982,45 @@ onMounted(() => {
 .current-topic-badge {
   background-color: var(--primary-color);
   color: #212529;
-  width: 120px; /* 너비 고정 */
-  height: 36px; /* 높이 고정 */
-  padding: 0;
-  border-radius: 18px; /* 통일 */
+  width: auto;
+  min-width: 120px;
+  height: 36px;
+  padding: 0 20px;
+  border-radius: 18px;
   font-weight: 700;
-  font-size: 0.95rem; /* 통일 */
+  font-size: 0.95rem;
   box-shadow: var(--shadow-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  white-space: nowrap;
+  flex-shrink: 0; /* 압축 방지 */
 }
 
 .current-type-badge {
-  background-color: #D32F2F; /* 진한 빨간색 */
-  color: #FFFFFF;            /* 흰색 글씨 */
-  width: 120px; /* 너비 고정 */
-  height: 36px; /* 높이 고정 */
-  padding: 0;
-  border-radius: 18px; /* 통일 */
+  background-color: #99C13A;
+  color: #FFFFFF;
+  width: auto;
+  min-width: 120px;
+  height: 36px;
+  padding: 0 20px;
+  border-radius: 18px;
   font-weight: 700;
-  font-size: 0.95rem; /* 통일 */
+  font-size: 0.95rem;
   box-shadow: var(--shadow-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  white-space: nowrap;
+  flex-shrink: 0; /* 압축 방지 */
 }
 
 .audio-btn {
-  width: 44px;
+  width: auto;
+  min-width: 44px;
   height: 44px;
-  border-radius: 50%;
+  padding: 0 16px;
+  border-radius: 22px;
   border: none;
   background: var(--primary-color);
   color: #212529;
@@ -993,8 +1028,21 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   box-shadow: var(--shadow-sm);
   transition: all 0.2s;
+  animation: pulse-audio 2s infinite;
+}
+
+@keyframes pulse-audio {
+  0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.6); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+}
+
+.audio-label {
+  font-weight: 700;
+  font-size: 1rem;
 }
 .audio-btn:hover {
   background: var(--primary-hover);
@@ -1376,22 +1424,31 @@ textarea::placeholder {
 }
 
 .badge {
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 6px;
-  margin-right: 8px;
-  font-weight: 700;
-  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  border-radius: 10px;
+  font-weight: 800;
+  font-size: 0.75rem;
+  letter-spacing: -0.01em;
+  border: 1.5px solid transparent;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  text-transform: none; /* 한글이므로 필요 없음 */
 }
 
 .badge.orig { 
-  background: rgba(239, 68, 68, 0.1); 
-  color: #ef4444; 
+  background: #FFF5F5; 
+  color: #E03131; 
+  border: 1px solid #FFA8A8;
+  border-radius: 8px;
 }
 
 .badge.impr { 
-  background: rgba(16, 185, 129, 0.1); 
-  color: #10b981; 
+  background: #EBFBEE; 
+  color: #2F9E44; 
+  border: 1px solid #96F2A7;
+  border-radius: 8px;
 }
 
 .report-span {
@@ -1418,19 +1475,46 @@ textarea::placeholder {
   gap: 16px;
 }
 
+/* Sentence Feedback Card */
 .detail-item {
-  padding: 20px;
-  background: var(--bg-tertiary);
-  border: var(--border-thin);
-  border-radius: 16px;
+  padding: 28px; /* Matched with overall-item */
+  background: #FFFFFF;
+  border: 1px solid #F5EAD8; /* Matched with overall-item */
+  border-radius: 20px; /* Matched with overall-item */
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s var(--ease-smooth);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); /* Matched with overall-item */
 }
 
 .detail-item:hover {
-  background: var(--bg-secondary);
-  border-color: var(--primary-color);
-  transform: translateX(4px);
+  border-color: var(--honey-300); /* Matched with overall-item */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06); /* Matched with overall-item */
+}
+
+/* indent for aligning with speech bubble */
+.detail-item {
+  margin-left: 96px; /* 80px (character) + 16px (gap) to align with speech bubble text start */
+  border: 2px solid var(--border-color); /* 말풍선과 비슷한 느낌을 위해 테두리 조정 */
+  border-radius: 16px;
+}
+
+@media (max-width: 768px) {
+  .detail-item {
+    margin-left: 0;
+  }
+}
+
+.report-box-inner {
+  line-height: 1.8;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+
+.reason-icon {
+  font-size: 1.1rem;
+  color: var(--primary-color);
+  vertical-align: middle;
+  margin-right: 4px;
 }
 
 .sentence-row {
@@ -1461,45 +1545,108 @@ textarea::placeholder {
 }
 
 .overall-item {
-  background: var(--bg-tertiary);
-  padding: 24px;
-  border-radius: 16px;
-  border-left: 6px solid var(--primary-color);
+  background: #FFFFFF;
+  padding: 28px;
+  border-radius: 20px;
+  border: 1px solid #F5EAD8;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  transition: all 0.3s var(--ease-smooth);
+}
+
+.overall-item:hover {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+  border-color: var(--honey-300);
 }
 
 .overall-label {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0 0 12px 0;
+  display: inline-flex;
+  padding: 6px 14px;
+  background: var(--honey-100);
+  color: #8B7300;
+  border: 1px solid var(--honey-200);
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 800;
+  margin: 0 0 16px 0;
+  letter-spacing: -0.01em;
 }
 
 .overall-text {
-  font-size: 1rem;
-  line-height: 1.7;
-  color: var(--text-secondary);
+  font-size: 1.05rem;
+  line-height: 1.75;
+  color: var(--text-primary);
   margin: 0;
   white-space: pre-wrap;
+  font-weight: 500;
 }
 
-.improved-answer-item {
-  background: var(--primary-light);
-  padding: 24px;
-  border-radius: 16px;
-  border: 2px solid var(--primary-color);
+/* 오꿀쌤 추천 답변 (말풍선 스타일) */
+.okkul-feedback-container {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-top: 12px;
 }
 
-.improved-answer-label {
-  font-size: 1.1rem;
+.okkul-character {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 80px;
+}
+
+.okkul-img {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  margin-bottom: 4px;
+}
+
+.okkul-name {
+  font-size: 0.8rem;
   font-weight: 700;
-  color: #8B7300; /* A color that fits with the primary-light background */
-  margin: 0 0 12px 0;
+  color: var(--text-secondary);
 }
 
-.improved-answer-text {
+.speech-bubble {
+  position: relative;
+  background: #FFFFFF;
+  border: 2px solid var(--primary-color);
+  border-radius: 16px;
+  padding: 20px 24px;
+  flex-grow: 1;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  top: 24px;
+  left: -10px;
+  width: 16px;
+  height: 16px;
+  background: #FFFFFF;
+  border-bottom: 2px solid var(--primary-color);
+  border-left: 2px solid var(--primary-color);
+  transform: rotate(45deg);
+  border-radius: 0 0 0 4px;
+}
+
+.bubble-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #8B7300;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bubble-text {
   font-size: 1rem;
   line-height: 1.7;
-  color: #3a3a3a; /* A darker color for readability */
+  color: #333;
   margin: 0;
   white-space: pre-wrap;
 }

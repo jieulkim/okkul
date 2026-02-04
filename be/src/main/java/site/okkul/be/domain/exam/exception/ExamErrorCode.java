@@ -18,6 +18,7 @@ public enum ExamErrorCode implements ErrorCode {
 	EXAM_ALREADY_ENDED(HttpStatus.BAD_REQUEST, "EXAM_007", "이미 종료된 모의고사입니다."),
 	EXAM_ANSWER_ALREADY_SUBMITTED(HttpStatus.BAD_REQUEST, "EXAM_008", "이미 제출된 답변입니다."),
 	EXAM_REPORT_ALREADY_CREATED(HttpStatus.BAD_REQUEST, "EXAM_009", "이미 리포트가 생성된 시험입니다."),
+	AI_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "EXAM_010", "AI 서버 오류입니다"),
 	;
 
 

@@ -6,5 +6,5 @@ public enum AnswerStatus {
     STT_ONGOING, // STT 변환 중 (음성 -> 텍스트)
     ANALYZING,   // STT 완료 후 AI가 피드백 분석 중 (오꿀쌤 분석 중)
     COMPLETED,   // 피드백 저장까지 모든 과정 완료
-    FAILED       // 어느 단계에서든 오류 발생 시
+    ANALYZING_FAILED       // 어느 단계에서든 오류 발생 시
 }

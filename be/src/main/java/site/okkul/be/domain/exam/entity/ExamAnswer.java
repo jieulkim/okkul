@@ -175,5 +175,11 @@ public class ExamAnswer {
 		this.fluencyFeedback = fluencyFeedback;
 		this.relevanceFeedback = relevanceFeedback;
 		this.sentenceFeedbacks = sentenceFeedbacks;
+		this.status = AnswerStatus.COMPLETED; // 상태 업데이트 추가
+		this.updatedAt = Instant.now(); // 업데이트 시간 갱신
+	}
+
+	public void updateStatus(AnswerStatus status) {
+		this.status = status;
 	}
 }

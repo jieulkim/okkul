@@ -12,7 +12,7 @@ public class MockAlarmService implements AlarmService {
 	}
 
 	@Override
-	public void sendMessage(String title, String message) {
+	public void sendMessage(String title, String message, String requestUrl) {
 		// Mock implementation: do nothing or log locally
 	}
 }

@@ -1,8 +1,6 @@
 package site.okkul.be.domain.exam.controller;
 
 import java.net.URI;
-import java.util.List;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -22,9 +20,9 @@ import site.okkul.be.domain.exam.docs.ExamControllerDocs;
 import site.okkul.be.domain.exam.dto.request.ExamCreateRequest;
 import site.okkul.be.domain.exam.dto.request.ExamQuestionAnswerRequest;
 import site.okkul.be.domain.exam.dto.response.ExamDetailResponse;
+import site.okkul.be.domain.exam.service.ExamAnswerService;
 import site.okkul.be.domain.exam.service.ExamService;
 import site.okkul.be.global.config.SwaggerConfig;
-import site.okkul.be.domain.question.entity.QuestionSet;
 
 @RestController
 @RequestMapping("/exam")
@@ -36,6 +34,8 @@ public class ExamController implements ExamControllerDocs {
 	 */
 	private final ExamService examService;
 
+	private final ExamAnswerService examAnswerService;
+
 	/**
 	 * {@inheritDoc}
 	 */
@@ -45,16 +45,24 @@ public class ExamController implements ExamControllerDocs {
 			@AuthenticationPrincipal UserDetails user,
 			@RequestBody ExamCreateRequest request
 	) {
+		// 문제 생성
 		ExamDetailResponse exam = examService.createExam(
 				Long.parseLong(user.getUsername()),
 				request.surveyId()
 		);
 
-		List<QuestionSet> questions = examService.allocateQuestion(exam.id());
+		// 문제 할당
+		examAnswerService.allocateQuestion(exam.id());
 
+		// 문제 반환
 		return ResponseEntity.created(
 				URI.create("/exam/" + exam.id())
-		).body(ExamDetailResponse.of(exam, questions, 1));
+		).body(
+				examService.getExamInfoDetails(
+						Long.parseLong(user.getUsername()),
+						exam.id()
+				).questionSubList(1, 8)
+		);
 	}
 
 	/**
@@ -84,17 +92,21 @@ public class ExamController implements ExamControllerDocs {
 			@RequestParam Integer adjustedDifficulty,
 			@AuthenticationPrincipal UserDetails user
 	) {
-		ExamDetailResponse updatedInfo = examService.updateLevel(
+		// 시험 난이도 조절
+		examService.updateLevel(
 				Long.parseLong(user.getUsername()),
 				examId,
 				adjustedDifficulty
 		);
+		// 문제 할당
+		examAnswerService.allocateQuestion(examId);
 
-		List<QuestionSet> newQuestions = examService.allocateQuestion(examId);
-
-
+		// 문제 반환
 		return ResponseEntity.ok(
-				ExamDetailResponse.of(updatedInfo, newQuestions, 8)
+				examService.getExamInfoDetails(
+						Long.parseLong(user.getUsername()),
+						examId
+				).questionSubList(8, 15)
 		);
 	}
 
@@ -114,8 +126,8 @@ public class ExamController implements ExamControllerDocs {
 			@AuthenticationPrincipal UserDetails user,
 			@RequestHeader(value = SwaggerConfig.REAL_AI_USE, defaultValue = "false") boolean useRealAi
 	) {
-		examService.submitAnswer(examId, questionOrder, examQuestionAnswerRequest, Long.parseLong(user.getUsername()));
-		examService.feedbackAnswer(examId, questionOrder, useRealAi);
+		examAnswerService.submitAnswer(examId, questionOrder, examQuestionAnswerRequest, Long.parseLong(user.getUsername()));
+		examAnswerService.feedbackAnswer(examId, questionOrder, useRealAi);
 		return ResponseEntity.accepted().build();
 	}
 

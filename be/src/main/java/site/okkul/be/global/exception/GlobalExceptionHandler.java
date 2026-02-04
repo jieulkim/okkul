@@ -1,5 +1,6 @@
 package site.okkul.be.global.exception;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,12 @@ public class GlobalExceptionHandler {
 		return ErrorResponse.toResponseEntity(e.getErrorCode());
 	}
 
+	@ExceptionHandler(SystemException.class)
+	protected ResponseEntity<ErrorResponse> handleSystemException(SystemException e, HttpServletRequest request) {
+		alarmService.sendMessage(e.getTitle(), e.getMessage(), getFullPath(request));
+		return ErrorResponse.toResponseEntity(e.getErrorCode());
+	}
+
 	// Validation 실패 시 발생 (400)
 	@ExceptionHandler(ConstraintViolationException.class)
 	public ResponseEntity<String> handleConstraintViolationException(ConstraintViolationException e) {
@@ -40,14 +47,15 @@ public class GlobalExceptionHandler {
 	protected ResponseEntity<ErrorResponse> handleAllException(Exception e, HttpServletRequest request) {
 		log.error("Unexpected Exception: ", e);
 
-		// 1. 요청 URL과 메서드 추출
-		String requestUrl = request.getRequestURL().toString();
-		String method = request.getMethod();
-		String fullPath = String.format("[%s] %s", method, requestUrl);
-
 		// 2. 알람 서비스에 전달
-		alarmService.sendErrorAlarm(e, fullPath);
+		alarmService.sendErrorAlarm(e, getFullPath(request));
 
 		return ErrorResponse.toResponseEntity(GlobalErrorCode.INTERNAL_SERVER_ERROR);
+	}
+
+	private String getFullPath(HttpServletRequest request) {
+		String requestUrl = request.getRequestURL().toString();
+		String method = request.getMethod();
+		return String.format("[%s] %s", method, requestUrl);
 	}
 }

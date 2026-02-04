@@ -1,6 +1,7 @@
 package site.okkul.be.infra.ai;
 
 import java.util.List;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.service.annotation.PostExchange;
 import site.okkul.be.infra.ai.dto.AiFeedbackRequest;
@@ -29,12 +30,12 @@ public interface AiClient {
 	 * 한 문제에 대한 상세 피드백과 문장별 교정을 요청합니다.
 	 */
 	@PostExchange("/v1/analyze/exam")
-	QuestionAnalysisResponse analyzeQuestion(@RequestBody QuestionAnalysisRequest request);
+	ResponseEntity<QuestionAnalysisResponse> analyzeQuestion(@RequestBody QuestionAnalysisRequest request);
 
 	/**
 	 * 2. 모의고사 총체적 분석 API
 	 * 전체 답변들의 흐름을 파악하여 종합 등급과 총평을 요청합니다.
 	 */
 	@PostExchange("/v1/analyze/exam-feedback")
-	ExamTotalAnalysisResponse analyzeTotalExam(@RequestBody List<AnswerSummaryDto> request);
+	ResponseEntity<ExamTotalAnalysisResponse> analyzeTotalExam(@RequestBody List<AnswerSummaryDto> request);
 }

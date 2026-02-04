@@ -1,6 +1,7 @@
 package site.okkul.be.domain.question.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import site.okkul.be.domain.exam.entity.AnswerStatus;
 import site.okkul.be.domain.question.entity.Question;
 
 /**
@@ -29,14 +30,16 @@ public record ExamQuestionResponse(
 				description = "모의고사 문제 순서 (Answer 저장 시 복합키로 활용됨)",
 				example = "1"
 		)
-		Integer order
+		Integer order,
+		AnswerStatus answerStatus
 ) {
-	public static ExamQuestionResponse from(Question question, Integer order) {
+	public static ExamQuestionResponse from(Question question, AnswerStatus answerStatus, Integer order) {
 		return new ExamQuestionResponse(
 				question.getId(),
 				question.getQuestionText(),
 				question.getAudioUrl(),
-				order
+				order,
+				answerStatus
 		);
 	}
 }

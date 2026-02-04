@@ -65,9 +65,6 @@ public class ExamAnswerResponse {
     @Schema(description = "문장 단위 교정 피드백")
     public static class SentenceFeedback {
 
-        @Schema(description = "문장 피드백 ID", example = "9001")
-        private Long feedbackId;
-
         @Schema(description = "원본 문장")
         private String targetSentence;
 
@@ -85,7 +82,6 @@ public class ExamAnswerResponse {
 
         public static SentenceFeedback from(site.okkul.be.domain.exam.entity.ExamSentenceFeedback f) {
             return SentenceFeedback.builder()
-//                    .feedbackId(f.getId())
                     .targetSentence(f.getTargetSentence())
                     .targetSegment(f.getTargetSegment())
                     .correctedSegment(f.getCorrectedSegment())
@@ -99,9 +95,21 @@ public class ExamAnswerResponse {
         return ExamAnswerResponse.builder()
                 .examId(answer.getId().getExamId())
                 .questionOrder(answer.getId().getQuestionOrder())
-//                .sttScript(answer.getSttScript())
+                .answerId(null) // 혹은 필요하다면 answer.getId() 관련 처리
+
+                // 1. STT 스크립트 매핑
+                .sttScript(answer.getUserAnswer())
+
                 .improvedAnswer(answer.getImprovedAnswer())
-//                .categoryFeedback(toCategoryFeedback(answer.getAnswerFeedbacks()))
+
+                // 2. 카테고리 피드백 매핑 (엔티티에 필드가 있다고 가정)
+                .categoryFeedback(CategoryFeedback.builder()
+                        .logicFeedback(answer.getLogicFeedback())
+                        .fluencyFeedback(answer.getFluencyFeedback())
+                        .relevanceFeedback(answer.getRelevanceFeedback())
+                        .build())
+
+                // 3. 문장 피드백 매핑
                 .sentenceFeedbacks(
                         answer.getSentenceFeedbacks() == null
                                 ? List.of()

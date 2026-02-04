@@ -8,15 +8,21 @@ import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import site.okkul.be.domain.exam.dto.request.ExamQuestionAnswerRequest;
 import site.okkul.be.domain.exam.dto.response.ExamDetailResponse;
+import site.okkul.be.domain.exam.entity.AnswerStatus;
 import site.okkul.be.domain.exam.entity.Exam;
 import site.okkul.be.domain.exam.entity.ExamAnswer;
 import site.okkul.be.domain.exam.entity.ExamReport;
 import site.okkul.be.domain.exam.entity.ExamSentenceFeedback;
+import site.okkul.be.domain.exam.entity.ExamStatus;
 import site.okkul.be.domain.exam.exception.ExamErrorCode;
 import site.okkul.be.domain.exam.repository.ExamAnswerJpaRepository;
 import site.okkul.be.domain.exam.repository.ExamJpaRepository;
@@ -87,6 +93,13 @@ public class ExamService {
 	private final AiClientProvider aiClientProvider;
 
 	private final ExamReportJpaRepository examReportJpaRepository;
+
+	private ExamService self;
+
+	@Autowired
+	public void setSelf(@Lazy ExamService self) {
+		this.self = self;
+	}
 
 
 	/**
@@ -290,6 +303,8 @@ public class ExamService {
 				.createdAt(Instant.now())
 				.updatedAt(Instant.now())
 				.build());
+
+		exam.updateStatus(ExamStatus.IN_PROGRESS);
 	}
 
 	@Async
@@ -303,35 +318,64 @@ public class ExamService {
 		);
 
 		// 2. AI서버에서 답변 분석 진행하기
-		QuestionAnalysisResponse questionAnalysisResponse = aiClientProvider.getClient(useRealAi).analyzeQuestion(
-				QuestionAnalysisRequest.from(
-						examAnswer.getExam().getQuestions().get(questionOrder - 1),
-						examAnswer
-				)
+		self.updateExamAnswerStatus(
+				new ExamAnswer.ExamAnswerId(examId, questionOrder),
+				AnswerStatus.ANALYZING
 		);
 
-		// 3. 분석결과 DB에 적용하기
-		examAnswer.updateFromAi(
-				questionAnalysisResponse.grammarScore(),
-				questionAnalysisResponse.vocabScore(),
-				questionAnalysisResponse.logicScore(),
-				questionAnalysisResponse.fluencyScore(),
-				questionAnalysisResponse.relevanceScore(),
-				questionAnalysisResponse.improvedAnswer(),
-				questionAnalysisResponse.logicFeedback(),
-				questionAnalysisResponse.fluencyFeedback(),
-				questionAnalysisResponse.relevanceFeedback(),
-				questionAnalysisResponse.sentenceFeedbacks() == null || questionAnalysisResponse.sentenceFeedbacks().isEmpty()
-						? new ArrayList<>()
-						: questionAnalysisResponse.sentenceFeedbacks().stream().map(
-						dto -> new ExamSentenceFeedback(
-								dto.targetSentence(),
-								dto.targetSegment(),
-								dto.correctedSegment(),
-								dto.comment(),
-								dto.sentenceOrder(),
-								Instant.now()
-						)).toList()
+		// 최대 3회 시도 하기
+		for (int i = 0; i < 3; i++) {
+			ResponseEntity<QuestionAnalysisResponse> questionAnalysisResponseTemp = aiClientProvider.getClient(useRealAi).analyzeQuestion(
+					QuestionAnalysisRequest.from(
+							examAnswer.getExam().getQuestions().get(questionOrder - 1),
+							examAnswer
+					)
+			);
+			if (questionAnalysisResponseTemp.getStatusCode().is2xxSuccessful()) {
+				// 3. 분석결과 DB에 적용하기
+				QuestionAnalysisResponse questionAnalysisResponse = questionAnalysisResponseTemp.getBody();
+				examAnswer.updateFromAi(
+						questionAnalysisResponse.grammarScore(),
+						questionAnalysisResponse.vocabScore(),
+						questionAnalysisResponse.logicScore(),
+						questionAnalysisResponse.fluencyScore(),
+						questionAnalysisResponse.relevanceScore(),
+						questionAnalysisResponse.improvedAnswer(),
+						questionAnalysisResponse.logicFeedback(),
+						questionAnalysisResponse.fluencyFeedback(),
+						questionAnalysisResponse.relevanceFeedback(),
+						questionAnalysisResponse.sentenceFeedbacks() == null || questionAnalysisResponse.sentenceFeedbacks().isEmpty()
+								? new ArrayList<>()
+								: questionAnalysisResponse.sentenceFeedbacks().stream().map(
+								dto -> new ExamSentenceFeedback(
+										dto.targetSentence(),
+										dto.targetSegment(),
+										dto.correctedSegment(),
+										dto.comment(),
+										dto.sentenceOrder(),
+										Instant.now()
+								)).toList()
+				);
+				self.updateExamAnswerStatus(
+						new ExamAnswer.ExamAnswerId(examId, questionOrder),
+						AnswerStatus.COMPLETED
+				);
+				return;
+			} else {
+				// Answer 분석 실패
+				log.error("Exam Answer 분석 생성 실패 - {}회 실패 재시도 합니다... ", i);
+				self.updateExamAnswerStatus(
+						new ExamAnswer.ExamAnswerId(examId, questionOrder),
+						AnswerStatus.ANALYZING_FAILED
+				);
+
+			}
+		}
+		throw new SystemException(
+				ExamErrorCode.AI_SERVER_ERROR,
+				"문제 리포트 생성이 실패했습니다: AI 서버 응답을 3회 모두 받지 못했습니다.",
+				String.format("ExamId=%d, QuestionOrder=%d, Attempts=%d, Reason=%s",
+						examId, questionOrder, 3, "AI서버 비정상 응답/타임아웃")
 		);
 	}
 
@@ -341,11 +385,12 @@ public class ExamService {
 		Exam exam = examRepository.findById(examId).orElseThrow(
 				() -> new BusinessException(ExamErrorCode.EXAM_NOT_FOUND)
 		);
-		// 2. 이미 완료된 시험이라면 예외 발생 (이후에 AI 분석을 막기 위함)
-		if (exam.getEndAt() != null) {
+		// 2. AI 피드백 중복 생성 방지
+		if (exam.getStatus() == ExamStatus.ANALYZING || exam.getStatus() == ExamStatus.COMPLETED) {
 			throw new BusinessException(ExamErrorCode.EXAM_ALREADY_ENDED);
 		}
-		// 3. 시험 완료 처리
+		// 3. 시험 분석 단계로 넘어감
+		self.updateExamStatus(examId, ExamStatus.ANALYZING);
 		exam.completeExam();
 	}
 
@@ -363,27 +408,39 @@ public class ExamService {
 			throw new BusinessException(ExamErrorCode.EXAM_REPORT_ALREADY_CREATED);
 		}
 
-		// 3. Ai 클라이언트를 가져와서 분석 진행하기
-		ExamTotalAnalysisResponse response = aiClientProvider
-				.getClient(useRealAi)
-				.analyzeTotalExam(
-						exam.getExamAnswers().stream().map(AnswerSummaryDto::from).toList()
-				);
 
-		// 4. 리포트 저장하기
-		examReportJpaRepository.save(ExamReport.createReport(
-				exam,
-				BigDecimal.valueOf(response.averageGrammarScore()),
-				BigDecimal.valueOf(response.averageVocabScore()),
-				BigDecimal.valueOf(response.averageLogicScore()),
-				BigDecimal.valueOf(response.averageFluencyScore()),
-				BigDecimal.valueOf(response.averageRelevanceScore()),
-				BigDecimal.valueOf(response.totalScore()),
-				response.predictedLevel(),
-				response.strengths().toString(),
-				response.improvements().toString(),
-				""
-		));
+		// 3. Ai 클라이언트를 가져와서 분석 진행하기
+		self.updateExamStatus(examId, ExamStatus.ANALYZING);
+		for (int i = 0; i < 3; i++) {
+			ResponseEntity<ExamTotalAnalysisResponse> response = aiClientProvider
+					.getClient(useRealAi)
+					.analyzeTotalExam(
+							exam.getExamAnswers().stream().map(AnswerSummaryDto::from).toList()
+					);
+
+			if (response.getStatusCode().is2xxSuccessful()) {
+				// 4. 리포트 저장하기
+				self.updateExamStatus(examId, ExamStatus.COMPLETED);
+				examReportJpaRepository.save(ExamReport.createReport(
+						exam,
+						BigDecimal.valueOf(response.getBody().averageGrammarScore()),
+						BigDecimal.valueOf(response.getBody().averageVocabScore()),
+						BigDecimal.valueOf(response.getBody().averageLogicScore()),
+						BigDecimal.valueOf(response.getBody().averageFluencyScore()),
+						BigDecimal.valueOf(response.getBody().averageRelevanceScore()),
+						BigDecimal.valueOf(response.getBody().totalScore()),
+						response.getBody().predictedLevel(),
+						response.getBody().strengths().toString(),
+						response.getBody().improvements().toString(),
+						""
+				));
+				return;
+			}
+		}
+		throw new SystemException(ExamErrorCode.AI_SERVER_ERROR,
+				"Exam Report 생성 실패",
+				"AI 서버 응답을 3회 모두 받지 못했습니다."
+		);
 	}
 
 	/**
@@ -441,7 +498,21 @@ public class ExamService {
 				surveyTopicIdsStr,
 				lastTopicName
 		);
+	}
 
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public void updateExamStatus(Long examId, ExamStatus status) {
+		Exam exam = examRepository.findById(examId).orElseThrow(
+				() -> new BusinessException(ExamErrorCode.EXAM_NOT_FOUND)
+		);
+		exam.updateStatus(status);
+	}
 
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public void updateExamAnswerStatus(ExamAnswer.ExamAnswerId id, AnswerStatus status) {
+		ExamAnswer examAnswer = examAnswerRepository.findById(id).orElseThrow(
+				() -> new BusinessException(ExamErrorCode.EXAM_NOT_FOUND)
+		);
+		examAnswer.updateStatus(status);
 	}
 }

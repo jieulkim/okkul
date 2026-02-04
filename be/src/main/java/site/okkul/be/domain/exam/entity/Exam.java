@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -50,6 +52,9 @@ public class Exam {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "exam_id")
 	private Long id;
+
+	@Enumerated(EnumType.STRING)
+	private ExamStatus status;
 
 	/**
 	 * 종료 시간
@@ -134,6 +139,7 @@ public class Exam {
 				.examAnswers(new ArrayList<>())
 				.surveyId(surveyId)
 				.userId(userId)
+				.status(ExamStatus.BEFORE_START)
 				.createdAt(Instant.now())
 				.updatedAt(Instant.now())
 				.build();
@@ -161,5 +167,10 @@ public class Exam {
 		} else {
 			throw new BusinessException(ExamErrorCode.INVALID_DIFFICULTY_VALUE);
 		}
+	}
+
+	public void updateStatus(ExamStatus status) {
+		this.status = status;
+		this.updatedAt = Instant.now();
 	}
 }

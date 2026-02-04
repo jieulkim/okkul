@@ -176,4 +176,8 @@ public class ExamAnswer {
 		this.relevanceFeedback = relevanceFeedback;
 		this.sentenceFeedbacks = sentenceFeedbacks;
 	}
+
+	public void updateStatus(AnswerStatus status) {
+		this.status = status;
+	}
 }

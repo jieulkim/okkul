@@ -54,9 +54,9 @@ build-fe:
   script:
     - echo "⚛️ Frontend 빌드 시작..."
     - cd fe
-    - docker build -t frontend:$CI_COMMIT_REF_SLUG .
-    - docker build 
-      --build-arg PROFILE=$CI_COMMIT_BRANCH -t frontend:$CI_COMMIT_REF_SLUG \
+    - docker build \
+      -t frontend:$CI_COMMIT_REF_SLUG
+      --build-arg PROFILE=$CI_COMMIT_BRANCH \
       --build-arg VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY \
       --build-arg VITE_FIREBASE_AUTH_DOMAIN=$VITE_FIREBASE_AUTH_DOMAIN \
       --build-arg VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID \

@@ -43,7 +43,7 @@ export class Exam<
       ...params,
     });
   /**
-   * @description 모든 답변 제출을 마치고 시험을 종료합니다. 이때 AI 분석이 시작됩니다.
+   * @description 모든 답변 제출을 마치고 시험을 종료합니다. 이때 AI 분석이 시작됩니다.<br>이미 종료된 시험이라면 400 예외를 터트립니다 (AI 중복 리포팅 생성 방지)
    *
    * @tags Exam
    * @name CompleteExam

@@ -186,8 +186,7 @@ const selectCorrection = (index) => {
             목록으로
           </button>
         <div class="header-text-group">
-            <h1 class="feedback-title">유형별 연습 피드백</h1>
-            <p class="practice-topic">{{ allQuestions[0]?.topicTitle || '연습 결과' }}</p>
+            <h1 class="feedback-title">{{ allQuestions[0]?.topicTitle || '연습 결과' }} 연습</h1>
           </div>
         </div>
 

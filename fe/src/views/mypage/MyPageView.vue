@@ -131,13 +131,22 @@ async function loadExamHistory() {
     
     const total = data.page?.totalElements || data.content?.length || 0;
     
-    examHistory.value = data.content?.map((exam, index) => ({
-      examId: exam.examId,
-      num: total - index,
-      title: `제 ${total - index}회 실전 모의고사`,
-      createdAt: exam.createdAt,
-      grade: exam.grade || '채점 중'
-    })) || []
+    examHistory.value = data.content?.map((exam, index) => {
+      const difficulty = exam.adjustedDifficulty || exam.initialDifficulty || 1;
+      const date = new Date(exam.createdAt).toLocaleDateString('ko-KR', { 
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit' 
+      }).replace(/\. /g, '.').replace(/\.$/, '');
+      
+      return {
+        examId: exam.examId,
+        num: total - index,
+        title: `난이도 ${difficulty} 모의고사 (${date})`,
+        createdAt: exam.createdAt,
+        grade: exam.grade || '채점 중'
+      };
+    }) || []
   } catch (error) {
     console.error('시험 내역 로드 실패:', error)
     examHistory.value = []
@@ -160,6 +169,7 @@ async function loadPracticeHistory() {
       questionId: null, 
       typeName: practice.typeName,
       topicName: practice.topic || '토픽 없음',
+      title: `${practice.topic || '토픽 없음'} 연습`,
       createdAt: practice.startedAt,
       status: 'COMPLETED'
     })) || []
@@ -385,7 +395,7 @@ onMounted(() => {
                 <span class="material-icons-outlined">category</span>
               </div>
               <div class="item-content">
-                <h4>{{ practice.topicName }}</h4>
+                <h4>{{ practice.title || practice.topicName }}</h4>
                 <p class="item-date">{{ practice.typeName }} · {{ new Date(practice.createdAt).toLocaleString('ko-KR') }}</p>
               </div>
               <span class="material-icons-outlined arrow">chevron_right</span>

@@ -2,15 +2,67 @@
 import { ref, computed, onMounted, inject } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { historyApi } from '@/api';
+import okkulSvg from '@/assets/images/okkul.svg';
 
 const router = useRouter();
 const route = useRoute();
 
-// 피드백 데이터 (API에서 받은 데이터 - localStorage 또는 props로 전달받음)
-const errorMessage = ref(''); // 에러 메시지 상태 추가
-const feedbackData = ref(null);
+// 피드백 데이터 상태
+const errorMessage = ref('');
+const allQuestions = ref([]); // 연습 세션의 모든 문항
+const selectedQuestionIndex = ref(0); // 현재 선택된 문항 인덱스
+const selectedAttemptIndex = ref(0); // 현재 선택된 시도 인덱스
 const selectedCorrectionIndex = ref(null);
 const isLoading = ref(false);
+
+// 현재 선택된 문항 정보
+const currentQuestion = computed(() => allQuestions.value[selectedQuestionIndex.value] || null);
+
+// 현재 선택된 시도(Attempt) 정보
+const currentAttempt = computed(() => {
+  const q = currentQuestion.value;
+  if (!q || !q.attempts || q.attempts.length === 0) return null;
+  return q.attempts[selectedAttemptIndex.value] || q.attempts[q.attempts.length - 1];
+});
+
+// 피드백 데이터 매핑 (computed로 전환하여 선택 변경 시 자동 업데이트)
+const feedbackData = computed(() => {
+  const attempt = currentAttempt.value;
+  if (!attempt) return null;
+
+  return {
+    userEnglishScript: attempt.userAnswer?.englishScript || '',
+    feedbackResult: {
+      overallComment: [
+        attempt.feedback?.fluencyFeedback,
+        attempt.feedback?.logicFeedback,
+        attempt.feedback?.relevanceFeedback
+      ].filter(Boolean).join('\n\n') || '종합 평가가 아직 준비되지 않았습니다.',
+      scriptCorrections: attempt.feedback?.sentenceDetails?.map(detail => ({
+        originalSegment: detail.targetSegment,
+        correctedSegment: detail.correctedSegment,
+        comment: detail.comment
+      })) || []
+    }
+  };
+});
+
+// 하이라이트 처리를 위한 데이터
+const highlightedWords = computed(() => {
+  const corrections = feedbackData.value?.feedbackResult?.scriptCorrections || [];
+  const script = feedbackData.value?.feedbackResult?.overallComment || ''; // 실제론 improved script가 필요할 수 있음
+  
+  // 현재 구조에 맞게 교정된 텍스트 위주로 간단히 구성 (실제 개선 스크립트 필드 필요 시 보완)
+  const improvedScript = currentAttempt.value?.feedback?.improvedScript || ''; 
+  if (!improvedScript) return [];
+
+  // 교정 항목들을 하이라이트 처리하기 위한 로직
+  // 여기서는 단순히 모든 단어를 파싱하고, 교정된 구간이 포함된 경우 하이라이트
+  return improvedScript.split(/\s+/).map(word => {
+    const isHighlighted = corrections.some(c => c.correctedSegment.includes(word));
+    return { text: word, highlighted: isHighlighted };
+  });
+});
 
 // 컴포넌트 마운트 시 데이터 로드
 onMounted(() => {
@@ -61,58 +113,23 @@ const loadFeedback = async () => {
         throw new Error('이 연습에 대한 질문 데이터가 존재하지 않습니다.');
     }
 
-    // questionId가 없으면 첫 번째 질문 사용
-    if (!questionId) {
-        questionId = data.questions[0].questionId;
-        console.log('[PracticeFeedback] No questionId provided, defaulting to:', questionId);
-        // URL 업데이트 (replace로 history stack 오염 방지)
-        router.replace({ query: { ...route.query, questionId } });
+    allQuestions.value = data.questions;
+
+    // 2. 초기 문항 및 시도 설정
+    if (questionId) {
+        const idx = data.questions.findIndex(q => q.questionId === questionId);
+        if (idx !== -1) {
+            selectedQuestionIndex.value = idx;
+        }
+    } else {
+        selectedQuestionIndex.value = 0;
     }
 
-    // 2. 해당 질문 찾기
-    const targetQuestion = data.questions.find(q => q.questionId === questionId);
-    if (!targetQuestion) {
-      console.error('[PracticeFeedback] Target question not found. Search ID:', questionId, 'Available:', data.questions.map(q => q.questionId));
-      throw new Error('해당 질문을 찾을 수 없습니다.');
+    // 기본적으로 마지막 시도 선택
+    const q = allQuestions.value[selectedQuestionIndex.value];
+    if (q && q.attempts) {
+        selectedAttemptIndex.value = q.attempts.length - 1;
     }
-
-    // 3. 마지막 시도 찾기 (또는 특정 시도)
-    console.log('[PracticeFeedback] Target Question:', targetQuestion);
-    // attempts가 없을 수도 있으므로 안전하게 접근
-    const attempts = targetQuestion.attempts || [];
-    if (attempts.length === 0) {
-         throw new Error('이 질문에 대한 답변 시도 기록이 없습니다.');
-    }
-    
-    const lastAttempt = attempts[attempts.length - 1];
-    
-    if (!lastAttempt || !lastAttempt.feedback) {
-      console.error('[PracticeFeedback] No feedback found in last attempt:', lastAttempt);
-      throw new Error('아직 피드백이 생성되지 않았거나, 데이터를 불러올 수 없습니다.');
-    }
-
-    // status 체크
-    if (lastAttempt.feedback.status && lastAttempt.feedback.status !== 'COMPLETED') {
-         console.warn('Feedback status is:', lastAttempt.feedback.status);
-    }
-
-    // 4. 데이터 매핑
-    feedbackData.value = {
-      userEnglishScript: lastAttempt.userAnswer?.englishScript || '',
-      feedbackResult: {
-        overallComment: [
-          lastAttempt.feedback.fluencyFeedback,
-          lastAttempt.feedback.logicFeedback,
-          lastAttempt.feedback.relevanceFeedback
-        ].filter(Boolean).join('\n\n') || '종합 평가가 아직 준비되지 않았습니다.',
-        scriptCorrections: lastAttempt.feedback.sentenceDetails?.map(detail => ({
-            originalSegment: detail.targetSegment,
-            correctedSegment: detail.correctedSegment,
-            comment: detail.comment
-        })) || []
-      }
-    };
-    console.log('[PracticeFeedback] Mapped Data:', feedbackData.value);
 
   } catch (error) {
     console.error('피드백 로드 실패:', error);
@@ -120,6 +137,37 @@ const loadFeedback = async () => {
   } finally {
       isLoading.value = false;
   }
+};
+// 시도 변경
+const nextAttempt = () => {
+  if (selectedAttemptIndex.value < currentQuestion.value.attempts.length - 1) {
+    selectedAttemptIndex.value++;
+    selectedCorrectionIndex.value = null;
+  }
+};
+
+const prevAttempt = () => {
+  if (selectedAttemptIndex.value > 0) {
+    selectedAttemptIndex.value--;
+    selectedCorrectionIndex.value = null;
+  }
+};
+
+const setAttempt = (index) => {
+  selectedAttemptIndex.value = index;
+  selectedCorrectionIndex.value = null;
+};
+
+// 문항 변경
+const setQuestion = (index) => {
+  selectedQuestionIndex.value = index;
+  selectedAttemptIndex.value = allQuestions.value[index].attempts.length - 1;
+  selectedCorrectionIndex.value = null;
+};
+
+// 교정 항목 선택
+const selectCorrection = (index) => {
+  selectedCorrectionIndex.value = selectedCorrectionIndex.value === index ? null : index;
 };
 </script>
 
@@ -133,40 +181,104 @@ const loadFeedback = async () => {
 
     <div v-else-if="feedbackData" class="feedback-container">
         <div class="feedback-header">
-          <button @click="router.push('/practice')" class="back-btn">
+          <button @click="router.push('/feedback?category=PRACTICE')" class="back-btn">
             <span class="material-icons">arrow_back</span>
-            연습으로 돌아가기
+            목록으로
           </button>
-          <h1 class="feedback-title">유형별 연습 피드백</h1>
+        <div class="header-text-group">
+            <h1 class="feedback-title">유형별 연습 피드백</h1>
+            <p class="practice-topic">{{ allQuestions[0]?.topicTitle || '연습 결과' }}</p>
+          </div>
         </div>
 
-        <div class="enhanced-section">
-             <!-- ... existing ... -->
-             <div class="section-card">
-                <h2 class="section-title">
-                  <span class="material-icons">auto_fix_high</span>
-                  오꿀쌤의 교정 스크립트
-                </h2>
-                <p class="section-description">노란색 표시는 개선된 부분입니다. 단어를 클릭하면 상세 설명을 볼 수 있습니다.</p>
-                <div class="script-box enhanced-script">
-                  <span 
-                    v-for="(word, idx) in highlightedWords" 
-                    :key="idx"
-                    :class="{ 'highlighted-word': word.highlighted }"
-                    class="script-word"
-                  >
-                    {{ word.text }}
-                  </span>
-                </div>
-              </div>
+        <!-- 1. 문항 선택 탭 -->
+        <div class="question-selector">
+          <button 
+            v-for="(q, idx) in allQuestions" 
+            :key="q.questionId"
+            class="q-tab-btn"
+            :class="{ active: selectedQuestionIndex === idx }"
+            @click="setQuestion(idx)"
+          >
+            Question {{ idx + 1 }}
+          </button>
+        </div>
 
-              <!-- 원본 스크립트 비교 -->
-              <div class="section-card">
-                <h3 class="subsection-title">내 원본 답변</h3>
-                <div class="script-box original-script">
-                  <p>{{ feedbackData.userEnglishScript }}</p>
-                </div>
+        <div class="feedback-main-content">
+          <!-- 2. 시도(Attempt) 캐러셀 컨트롤 -->
+          <div class="attempt-carousel-header">
+            <div class="attempt-info">
+              <span class="attempt-label">답변 시도</span>
+              <span class="attempt-count">{{ selectedAttemptIndex + 1 }} / {{ currentQuestion.attempts.length }}</span>
+            </div>
+            <div class="carousel-controls">
+              <div class="carousel-indicators">
+                <span 
+                  v-for="(_, idx) in currentQuestion.attempts" 
+                  :key="idx"
+                  class="indicator-dot"
+                  :class="{ active: selectedAttemptIndex === idx }"
+                  @click="setAttempt(idx)"
+                ></span>
               </div>
+            </div>
+          </div>
+
+          <!-- 질문 텍스트 -->
+          <div class="question-display-card">
+            <span class="q-badge">Q {{ selectedQuestionIndex + 1 }}</span>
+            <p class="question-text">{{ currentQuestion.questionText }}</p>
+          </div>
+
+          <div class="attempt-content-wrapper">
+            <!-- 캐러셀 이동 버튼 (오버레이 스타일 - 사용자 요청) -->
+            <button 
+              class="side-nav-btn prev" 
+              v-if="selectedAttemptIndex > 0"
+              @click="prevAttempt"
+            >
+              <span class="material-icons">chevron_left</span>
+            </button>
+
+            <div class="enhanced-section">
+                <!-- 오꿀쌤 추천 답변 (상단 캐릭터 + 하단 100% 너비 말풍선) -->
+                <div class="okkul-feedback-container full-width-layout">
+                  <div class="okkul-character-header">
+                    <img :src="okkulSvg" alt="오꿀쌤" class="okkul-img-small" />
+                    <span class="okkul-name">오꿀쌤의 교정 스크립트</span>
+                  </div>
+                  <div class="speech-bubble-full">
+                    <p class="section-description">노란색 표시는 개선된 부분입니다. 단어를 클릭하면 상세 설명을 볼 수 있습니다.</p>
+                    <div class="script-box enhanced-script">
+                      <span 
+                        v-for="(word, idx) in highlightedWords" 
+                        :key="idx"
+                        :class="{ 'highlighted-word': word.highlighted }"
+                        class="script-word"
+                      >
+                        {{ word.text }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 원본 스크립트 비교 (100% 너비) -->
+                <div class="section-card original-card-full">
+                    <h3 class="subsection-title">내 원본 답변</h3>
+                    <div class="script-box original-script">
+                      <p>{{ feedbackData.userEnglishScript }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <button 
+              class="side-nav-btn next" 
+              v-if="selectedAttemptIndex < currentQuestion.attempts.length - 1"
+              @click="nextAttempt"
+            >
+              <span class="material-icons">chevron_right</span>
+            </button>
+          </div>
         </div>
 
         <!-- 교정 항목 상세 -->
@@ -212,13 +324,13 @@ const loadFeedback = async () => {
 
         <!-- 종합 피드백 -->
         <div class="overall-section">
-          <div class="section-card overall-card">
-            <h2 class="section-title">
-              <span class="material-icons">rate_review</span>
-              종합 평가
-            </h2>
-            <div class="overall-content">
-              <p class="overall-comment">{{ feedbackData.feedbackResult?.overallComment || '종합 평가가 제공되지 않았습니다.' }}</p>
+          <div class="okkul-feedback-container full-width-layout">
+            <div class="okkul-character-header">
+              <img :src="okkulSvg" alt="오꿀쌤" class="okkul-img-small" />
+              <span class="okkul-name">오꿀쌤의 종합 평가</span>
+            </div>
+            <div class="speech-bubble-full">
+              <p class="bubble-text">{{ feedbackData.feedbackResult?.overallComment || '종합 평가가 아직 준비되지 않았습니다.' }}</p>
             </div>
           </div>
         </div>
@@ -249,93 +361,51 @@ const loadFeedback = async () => {
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 
-/* 에러 화면 스타일 */
-.error-screen {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 50vh;
-  gap: 24px;
-  text-align: center;
-  color: var(--text-secondary);
-}
-
-.error-icon {
-  font-size: 64px;
-  color: #ef4444; /* Error red */
-  margin-bottom: 8px;
-}
-
-.error-message {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  max-width: 400px;
-  line-height: 1.6;
-}
-
-.btn-secondary {
-    padding: 12px 24px;
-    border-radius: 12px;
-    background: #FFFFFF;
-    border: 1px solid var(--border-primary);
-    cursor: pointer;
-    font-weight: 600;
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
+/* 컨테이너 및 기본 공백 */
 .practice-feedback-page {
   min-height: 100vh;
-  background: var(--bg-primary);
+  background: #FDFBF5; /* Soft beige background */
   padding: 48px 24px;
 }
 
-@keyframes slideUpFade {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* 컨테이너 */
 .feedback-container {
-  max-width: 1000px;
+  max-width: 1200px; /* Increased from 1000px */
   margin: 0 auto;
   animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* 헤더 */
+/* 헤더 그룹 */
 .feedback-header {
-  margin-bottom: 48px;
+  margin-bottom: 40px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.header-text-group {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 4px;
+}
+
+.practice-topic {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary-color);
 }
 
 .back-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 24px;
+  padding: 12px 20px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-primary);
   border-radius: 12px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: var(--shadow-sm);
   color: var(--text-secondary);
-  align-self: flex-start;
 }
 
 .back-btn:hover {
@@ -345,325 +415,399 @@ const loadFeedback = async () => {
 }
 
 .feedback-title {
-  font-size: 2.5rem;
-  font-weight: 800;
+  font-size: 2rem;
+  font-weight: 900;
   color: var(--text-primary);
 }
 
-/* 섹션 */
-.enhanced-section,
-.corrections-section,
-.overall-section {
-  margin-bottom: 48px;
-}
-
-.section-card {
-  background: var(--bg-secondary);
-  border-radius: 24px;
-  padding: 40px;
-  box-shadow: var(--shadow-md);
-  border: var(--border-primary);
-  margin-bottom: 24px;
-}
-
-.section-title {
-  font-size: 1.5rem;
-  font-weight: 800;
-  margin-bottom: 24px;
+/* 문항 선택기 (탭) */
+.question-selector {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  color: var(--text-primary);
-}
-
-.section-title .material-icons {
-  color: var(--primary-color);
-  font-size: 28px;
-}
-
-.section-description {
-  color: var(--text-secondary);
-  margin-bottom: 24px;
-  font-size: 0.95rem;
-  line-height: 1.6;
-}
-
-.subsection-title {
-  font-size: 1.125rem;
-  font-weight: 700;
-  margin-bottom: 16px;
-  color: var(--text-primary);
-}
-
-/* 스크립트 박스 */
-.script-box {
-  padding: 32px;
+  gap: 8px;
+  margin-bottom: 32px;
+  padding: 6px;
+  background: #f1f5f9;
   border-radius: 16px;
-  line-height: 1.8;
-  font-size: 1.125rem;
+  width: fit-content;
 }
 
-.enhanced-script {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-primary);
-}
-
-.original-script {
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-primary);
-}
-
-.script-word {
-  margin-right: 6px;
-  display: inline-block;
+.q-tab-btn {
+  padding: 10px 24px;
+  border: none;
+  background: transparent;
+  border-radius: 10px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  cursor: pointer;
   transition: all 0.2s;
 }
 
-.highlighted-word {
-  background: var(--primary-light);
-  color: #E65100;
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-weight: 700;
-  cursor: pointer;
-  display: inline-block;
-  margin: 2px;
+.q-tab-btn.active {
+  background: #FFFFFF;
+  color: #212529;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
-/* 교정 목록 */
-.corrections-list {
+/* 캐러셀 헤더 (시도 정보 + 컨트롤) */
+.attempt-carousel-header {
   display: flex;
-  flex-direction: column;
-  gap: 20px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 0 8px;
+}
+
+.attempt-info {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.attempt-label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-tertiary);
+}
+
+.attempt-count {
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: var(--text-primary);
+}
+
+.carousel-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.carousel-nav-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.carousel-nav-btn:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: var(--primary-color);
+}
+
+.carousel-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.carousel-indicators {
+  display: flex;
+  gap: 6px;
+}
+
+.indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.indicator-dot.active {
+  background: var(--primary-color);
+  width: 20px;
+  border-radius: 4px;
+}
+
+/* 질문 표시 카드 */
+.question-display-card {
+  background: #FFFFFF;
+  padding: 32px;
+  border-radius: 20px;
+  border: 1px solid var(--border-primary);
+  margin-bottom: 32px;
+  display: flex;
+  align-items: flex-start; /* Badge at top even if text is long */
+  gap: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.q-badge {
+  background: #212529;
+  color: white;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.question-text {
+  font-size: 1.15rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+/* 캐러셀 내용 래퍼 */
+.attempt-content-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.side-nav-btn {
+  position: absolute;
+  top: 40%;
+  transform: translateY(-50%);
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.3s;
+}
+
+.side-nav-btn:hover {
+  background: white;
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+}
+
+.side-nav-btn.prev {
+  left: -72px; /* Pull further out to avoid overlap */
+}
+
+.side-nav-btn.next {
+  right: -72px; /* Pull further out to avoid overlap */
+}
+
+.side-nav-btn .material-icons {
+  font-size: 32px;
+  color: var(--primary-color);
+}
+
+.feedback-main-content {
+  width: 100%;
+}
+
+/* 오꿀쌤 피드백 컨테이너 (100% 너비 레이아웃) */
+.okkul-feedback-container.full-width-layout {
+  display: block;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.okkul-character-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-left: 8px;
+}
+
+.okkul-img-small {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+.okkul-name {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #8B7300;
+}
+
+.speech-bubble-full {
+  background: #FFF9EB; /* Soft cream color */
+  border: 2px solid #F5EAD8;
+  border-radius: 20px;
+  padding: 32px;
+  width: 100%;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+
+/* 말풍선 꼬리 (상단으로 변경) */
+.speech-bubble-full::after {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 20px;
+  width: 20px;
+  height: 20px;
+  background: #FFF9EB;
+  border-top: 2px solid #F5EAD8;
+  border-left: 2px solid #F5EAD8;
+  transform: rotate(45deg);
+  border-radius: 4px 0 0 0;
+}
+
+.bubble-text {
+  font-size: 1.15rem;
+  line-height: 1.8;
+  color: #333;
+  margin: 0;
+  white-space: pre-wrap;
+  font-weight: 500;
+}
+
+/* 카드공통 */
+.section-card {
+  background: #FFF9EB; /* Soft cream color */
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: var(--shadow-sm);
+  border: 2px solid #F5EAD8;
+  margin-bottom: 24px;
+}
+
+/* 원본 답변 카드 (100% 너비 유지) */
+.original-card-full {
+  width: 100%;
+}
+
+.subsection-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin-bottom: 20px;
+  color: #8B7300;
+}
+
+.script-box {
+  padding: 24px;
+  border-radius: 12px;
+  line-height: 1.8;
+  font-size: 1.15rem;
+  background: #FFFFFF; /* White for content readability on cream card */
+}
+
+.enhanced-script {
+  border: 1px solid #f5ead8;
+}
+
+.original-script {
+  color: var(--text-secondary);
+  border: 1px solid #e2e8f0;
+}
+
+.highlighted-word {
+  background: #fffce0;
+  color: #E65100;
+  padding: 2px 4px;
+  border-bottom: 2px solid #ffd700;
+  font-weight: 700;
+}
+
+/* 교정 섹션 */
+.corrections-section {
+  margin-top: 48px;
 }
 
 .correction-item {
   display: flex;
   gap: 24px;
-  background: var(--bg-secondary);
+  background: #FFF;
   border-radius: 20px;
-  padding: 32px;
-  border: 1px solid var(--border-primary);
+  padding: 24px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 16px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: var(--shadow-sm);
+  transition: all 0.2s;
 }
 
 .correction-item:hover {
-  background: var(--bg-tertiary);
   border-color: var(--primary-color);
   box-shadow: var(--shadow-md);
 }
 
-.correction-item.selected {
-  border-color: var(--primary-color);
-  background: var(--primary-light);
-}
-
 .correction-number {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
+  background: var(--primary-color);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--primary-color);
-  color: #212529;
-  font-weight: 700;
-  font-size: 1.125rem;
-  border-radius: 50%;
-}
-
-.correction-content {
-  flex: 1;
+  font-weight: 800;
 }
 
 .correction-comparison {
   display: flex;
   align-items: center;
-  gap: 20px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-
-.before,
-.after {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--text-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  gap: 16px;
+  margin-bottom: 16px;
 }
 
 .text {
-  font-size: 1.125rem;
+  padding: 8px 16px;
+  border-radius: 8px;
   font-weight: 600;
-  padding: 10px 20px;
-  border-radius: 10px;
 }
 
-.original {
-  background: #fee2e2;
-  color: #ef4444;
-  text-decoration: line-through;
-}
-
-.corrected {
-  background: #dcfce7;
-  color: #16a34a;
-}
-
-.arrow {
-  color: var(--text-tertiary);
-  font-size: 24px;
-}
+.original { background: #fee2e2; color: #ef4444; text-decoration: line-through; }
+.corrected { background: #dcfce7; color: #16a34a; }
 
 .correction-comment {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 20px;
-  background: var(--bg-secondary);
-  border-radius: 12px;
-  border-left: 4px solid var(--primary-color);
-  line-height: 1.6;
+  gap: 8px;
   color: var(--text-secondary);
   font-size: 0.95rem;
-}
-
-.correction-comment .material-icons {
-  color: var(--primary-color);
-  font-size: 20px;
-  margin-top: 2px;
-}
-
-.no-corrections {
-  text-align: center;
-  padding: 64px 24px;
-  color: #10b981;
-}
-
-.no-corrections .material-icons {
-  font-size: 64px;
-  margin-bottom: 20px;
-}
-
-.no-corrections p {
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
-/* 종합 평가 */
-.overall-card {
-  border-top: 4px solid var(--primary-color);
-}
-
-.overall-content {
-  padding: 20px;
-  background: var(--bg-secondary);
-  border-radius: var(--border-radius);
-  border: var(--border-thin);
-}
-
-.overall-comment {
-  font-size: 1.125rem;
-  line-height: 1.8;
-  color: var(--text-primary);
 }
 
 /* 액션 버튼 */
 .action-buttons {
   display: flex;
-  gap: 20px;
-  justify-content: center;
+  gap: 16px;
   margin-top: 64px;
+  justify-content: center;
 }
 
 .action-btn {
+  padding: 16px 32px;
+  border-radius: 14px;
+  font-weight: 700;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 18px 40px;
-  border-radius: 16px;
-  font-weight: 700;
-  font-size: 1.125rem;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: var(--shadow-md);
+  gap: 8px;
+  transition: all 0.2s;
 }
 
 .retry-btn {
   background: var(--primary-color);
-  color: #212529;
   border: none;
 }
 
-.retry-btn:hover {
-  background: var(--primary-hover);
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-}
-
 .home-btn {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-primary);
+  background: #FFFFFF;
+  border: 1px solid #e2e8f0;
 }
 
-.home-btn:hover {
-  background: var(--bg-tertiary);
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-}
-
-/* 반응형 */
-@media (max-width: 768px) {
-  .correction-comparison {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .arrow {
-    transform: rotate(90deg);
-  }
-  
-  .action-buttons {
-    flex-direction: column;
-  }
-  
-  .action-btn {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-/* 로딩 스타일 */
-.loading-container {
+/* 에러 뷰 */
+.error-screen {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  min-height: 50vh;
-  gap: 16px;
-  color: var(--text-secondary);
+  margin-top: 100px;
+  gap: 20px;
 }
 
-.spinner {
-  width: 48px;
-  height: 48px;
-  border: 4px solid var(--border-primary);
-  border-top-color: var(--primary-color);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-color); border-radius: 50%; animation: spin 1s linear infinite; }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes slideUpFade { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 </style>

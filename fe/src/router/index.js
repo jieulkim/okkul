@@ -119,31 +119,30 @@ import { useAuthStore } from '@/stores/auth'
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
   
-  // 인증이 필요한 페이지 접근 시
+  // 1. 토큰은 있는데 유저 정보가 없으면 가져오기
+  if (!authStore.isAuthenticated && localStorage.getItem('accessToken')) {
+    await authStore.fetchUser()
+  }
+
+  // 2. 로그인 상태인 경우 필수 설정(targetLevel) 체크
+  if (authStore.isAuthenticated) {
+    // 목표 등급이 없는데 목표 설정 페이지가 아닌 곳으로 가려는 경우 강제 이동
+    if (!authStore.user?.targetLevel && to.name !== 'level-setting') {
+      console.log('[Router] Missing targetLevel. Redirecting to Level Setting...');
+      return next({ name: 'level-setting' })
+    }
+    
+    // 이미 목표 등급이 있는데 목표 설정 페이지로 가려는 경우 홈으로
+    if (authStore.user?.targetLevel && to.name === 'level-setting') {
+      return next({ name: 'home' })
+    }
+
+    // 그 외 일반적인 이동 허용
+    return next()
+  }
+
+  // 3. 비로그인 상태인데 인증이 필요한 페이지 접근 시
   if (to.meta.requiresAuth) {
-    // 토큰은 있는데 유저 정보가 없으면 가져오기
-    if (!authStore.isAuthenticated && localStorage.getItem('accessToken')) {
-      await authStore.fetchUser()
-    }
-
-    // 로그인 되어 있는 경우
-    if (authStore.isAuthenticated) {
-      // 1. 신규 유저(목표 등급 없음)인 경우 목표 설정 페이지로 강제 이동
-      // 무한 루프 방지: 현재 가려는 페이지가 목표 설정 페이지인 경우는 제외
-      if (!authStore.user?.targetLevel && to.name !== 'level-setting') {
-        console.log('[Router] Missing targetLevel. Redirecting to Level Setting...');
-        return next({ name: 'level-setting' })
-      }
-      
-      // 2. 이미 목표 등급이 있는데 목표 설정 페이지로 가려는 경우 홈으로 (선택 사항)
-      if (authStore.user?.targetLevel && to.name === 'level-setting') {
-        return next({ name: 'home' })
-      }
-
-      return next()
-    }
-
-    // 로그인 안되어 있으면 로그인 페이지로
     if (confirm('로그인이 필요한 서비스입니다. 로그인 하시겠습니까?')) {
         return next('/login')
     } else {

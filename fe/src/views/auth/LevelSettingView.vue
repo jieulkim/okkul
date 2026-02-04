@@ -30,12 +30,12 @@ const saveLevel = async () => {
     isSubmitting.value = true
     
     // 닉네임과 목표 레벨을 각각 업데이트 (병렬 실행)
-    await Promise.all([
+    const [nicknameRes, levelRes] = await Promise.all([
       usersApi.updateNickname({ nickname: nickname.value.trim() }),
       usersApi.updateTargetLevel({ targetLevel: targetLevel.value })
     ])
     
-    // 유저 정보 갱신
+    // 유저 정보 강제 갱신 (서버로부터 최신 정보를 다시 가져옴)
     await authStore.fetchUser()
     
     // 완료 후 홈으로 이동

@@ -399,13 +399,7 @@ const analyze = async () => {
 
     const response = await practicesApi.savePracticeSession(
       practiceIdRef.value,
-      payload,
-      // 실제 AI 서버를 사용하려면 주석 해제
-      // {
-      //   headers: {
-      //     "X-Use-Real-AI": "true",
-      //   },
-      // },
+      payload
     );
 
     const practiceAnswerId = response.data.practiceAnswerId;

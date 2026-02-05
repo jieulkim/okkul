@@ -1,0 +1,133 @@
+plugins {
+    id 'java'
+    id 'jacoco'
+    id 'org.springframework.boot' version '3.5.9'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'site.okkul'
+version = '0.0.1-SNAPSHOT'
+description = 'be'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+jacoco  {
+    toolVersion = '0.8.11' // Java 21 호환을 위해 최신 버전 권장
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+    implementation "org.springframework.boot:spring-boot-starter-actuator"
+    implementation 'io.minio:minio:8.6.0'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
+    implementation "io.jsonwebtoken:jjwt-api:0.13.0"
+    runtimeOnly "io.jsonwebtoken:jjwt-impl:0.13.0"
+    runtimeOnly "io.jsonwebtoken:jjwt-jackson:0.13.0"
+    runtimeOnly "io.micrometer:micrometer-registry-prometheus:1.16.2"
+    compileOnly 'org.projectlombok:lombok'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    runtimeOnly 'org.postgresql:postgresql'
+    annotationProcessor 'org.projectlombok:lombok'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.awaitility:awaitility'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform {
+        excludeTags 'integration'
+    }
+    finalizedBy jacocoTestReport // 테스트 종료 후 리포트 생성
+}
+
+tasks.register('integrationTest', Test) {
+    useJUnitPlatform {
+        includeTags 'integration'
+    }
+}
+
+tasks.named('bootBuildImage') {
+    createdDate = "now"
+}
+
+// JaCoCo 리포트 설정
+jacocoTestReport {
+    dependsOn test // 리포트 생성 전 테스트 실행 보장
+
+    reports {
+        xml.required = true
+        html.required = true
+        csv.required = false
+    }
+
+    // QueryDSL QClass 및 기타 제외 설정
+    def Qdomains = []
+    for (qPattern in '**/QA'..'**/QZ') {
+        Qdomains.add(qPattern + '*')
+    }
+
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                    "**/*Application*",
+                    "**/*Config*",
+                    "**/*Dto*",
+                    "**/*Request*",
+                    "**/*Response*",
+                    "**/*Interceptor*",
+                    "**/*Exception*",
+                    "**/*Entity*", // 엔티티 제외 여부는 팀 정책에 따름
+                    "**/global/**",
+                    "**/infra/**"
+            ] + Qdomains)
+        }))
+    }
+}
+
+// JaCoCo 커버리지 검증 설정
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            enabled = true
+            element = 'CLASS'
+
+            // 라인 커버리지 최소 기준 (현재는 0%로 설정, 추후 상향 조정)
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.00
+            }
+
+            // 브랜치 커버리지 최소 기준
+            limit {
+                counter = 'BRANCH'
+                value = 'COVEREDRATIO'
+                minimum = 0.00
+            }
+        }
+    }
+}

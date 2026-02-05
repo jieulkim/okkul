@@ -1,0 +1,97 @@
+spring:
+  application:
+    name: be
+
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/okkul_db}
+    username: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+    show-sql: true
+    properties:
+      hibernate.format_sql: true
+
+  flyway:
+    enabled: true
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/okkul_db}
+    user: ${DATABASE_USERNAME:postgres}
+    password: ${DATABASE_PASSWORD:postgres}
+    locations: classpath:db/migration/common # 기본 경로는 common으로 설정
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: ${REDIS_DATABASE:0}
+      password: ${REDIS_PASSWORD:}
+
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:google-client-id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:google-client-secret}
+            scope:
+              - email
+              - profile
+
+  servlet:
+    multipart:
+      max-file-size: 25MB
+      max-request-size: 25MB
+
+server:
+  forward-headers-strategy: framework
+  port: 8080
+
+management:
+  server:
+    port: 8081 # 엑추에이터 및 모니터링 포트 분리
+  endpoints:
+    web:
+      exposure:
+        include: "prometheus,health,info" # 프로메테우스와 기본 정보 노출
+  endpoint:
+    prometheus:
+      access: read_only
+    health:
+      show-details: always # 상세 건강상태 확인 (선택 사항)
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      profile: ${SPRING_PROFILES_ACTIVE:default} # 프로필 정보 추가 (기본값 default)
+
+springdoc:
+  override-with-generic-response: false
+
+# 어플리케이션 설정
+app:
+  frontend:
+    url: ${FRONTEND_URL:http://localhost:3000}
+  backend:
+    url: ${BACKEND_URL:http://localhost:8080}
+  jwt:
+    secret: ${JWT_SECRET:your-jwt-secret-key-change-this-sure-to-change-this}
+    access-token-expiration: 15m
+    refresh-token-expiration: 7d
+
+minio:
+  endpoint: ${MINIO_ENDPOINT:https://minio.okkul.site}
+  access-key: ${MINIO_ACCESS_KEY:minio_access_key}
+  secret-key: ${MINIO_SECRET_KEY:minio_secret_key}
+  bucket-name: ${MINIO_BUCKET:okkul}
+
+ai:
+  server:
+    url: ${AI_SERVER_ENDPOINT:https://ai.dev.okkul.site}
+
+notification:
+  mattermost:
+    webhook-url: ${MATTERMOST_WEBHOOK_URL:https://meeting.ssafy.com/hooks/wy4zz3nhypfbfeeq6nn7f5mqhy}

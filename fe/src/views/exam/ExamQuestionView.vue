@@ -29,6 +29,7 @@ let recognition = null; // Web Speech API SpeechRecognition 객체
 const showConfirmNextModal = ref(false); // 답변 없이 다음으로 넘어갈지 묻는 모달
 const forceNextQuestion = ref(false); // 모달 확인 후 다음 문제로 넘어갈지 결정
 const isNavigatingAwayIntentionally = ref(false); // 의도적인 페이지 이동인지 확인하는 플래그
+const isNoiseDetectionEnabled = ref(false); // 실시간 소음 모드 상태
 
 // 제약 조건 관련 상태
 const playCount = ref(0); // 재생 횟수 (0: 초기, 1: 1회 재생, 2: 2회 재생/완료)
@@ -545,9 +546,22 @@ onUnmounted(() => {
           <span class="material-icons">close</span>
           나가기
         </button>
-        <div class="time-display">
-          <span class="material-icons">timer</span>
-          {{ formattedTotalTime }}
+        <div class="header-right">
+          <div class="noise-toggle-container">
+            <span class="toggle-label">실시간 소음 모드</span>
+            <button 
+              @click="isNoiseDetectionEnabled = !isNoiseDetectionEnabled" 
+              class="toggle-switch"
+              :class="{ active: isNoiseDetectionEnabled }"
+              :aria-label="isNoiseDetectionEnabled ? '소음 모드 끄기' : '소음 모드 켜기'"
+            >
+              <span class="toggle-slider"></span>
+            </button>
+          </div>
+          <div class="time-display">
+            <span class="material-icons">timer</span>
+            {{ formattedTotalTime }}
+          </div>
         </div>
       </header>
 
@@ -763,11 +777,67 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 24px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--primary-color);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-right: 16px;
+}
+
+/* 실시간 소음 모드 토글 */
+.noise-toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-right: 16px;
+}
+
+.toggle-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.toggle-switch {
+  position: relative;
+  width: 46px;
+  height: 24px;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-primary);
+  border-radius: 12px;
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+}
+
+.toggle-switch:hover {
+  border-color: var(--primary-color);
+}
+
+.toggle-switch.active {
   background: var(--primary-color);
-  border-radius: 10px;
-  font-weight: 700;
-  color: #212529;
+  border-color: var(--primary-color);
+}
+
+.toggle-slider {
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch.active .toggle-slider {
+  transform: translate(22px, -50%);
 }
 
 .content-wrapper {

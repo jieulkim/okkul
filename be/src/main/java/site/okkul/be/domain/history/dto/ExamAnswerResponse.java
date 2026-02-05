@@ -6,10 +6,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import site.okkul.be.domain.exam.entity.ExamAnswer;
+import site.okkul.be.domain.exam.entity.ExamSentenceFeedback;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.List;
 
 @Getter
@@ -74,19 +73,31 @@ public class ExamAnswerResponse {
         @Schema(description = "교정된 표현")
         private String correctedSegment;
 
+        @Schema(description = "문법 점수")
+        private Integer grammarScore;
+
+        @Schema(description = "어휘 점수")
+        private Integer vocabScore;
+
+        @Schema(description = "논리성 점수")
+        private Integer logicScore;
+
         @Schema(description = "피드백 텍스트")
         private String comment;
 
         @Schema(description = "문장 순서", example = "1")
         private Integer sentenceOrder;
 
-        public static SentenceFeedback from(site.okkul.be.domain.exam.entity.ExamSentenceFeedback f) {
+        public static SentenceFeedback from(ExamSentenceFeedback f, ExamAnswer examAnswer) {
             return SentenceFeedback.builder()
                     .targetSentence(f.getTargetSentence())
                     .targetSegment(f.getTargetSegment())
                     .correctedSegment(f.getCorrectedSegment())
                     .comment(f.getComment())
                     .sentenceOrder(f.getSentenceOrder())
+                    .grammarScore(examAnswer.getGrammarScore())
+                    .vocabScore(examAnswer.getVocabScore())
+                    .logicScore(examAnswer.getLogicScore())
                     .build();
         }
     }
@@ -114,7 +125,7 @@ public class ExamAnswerResponse {
                         answer.getSentenceFeedbacks() == null
                                 ? List.of()
                                 : answer.getSentenceFeedbacks().stream()
-                                .map(SentenceFeedback::from)
+                                .map(f -> SentenceFeedback.from(f, answer))
                                 .toList()
                 )
                 .createdAt(answer.getCreatedAt())

@@ -82,15 +82,27 @@ public interface ExamControllerDocs {
 			@Parameter(description = "실제 AI 쓸지말지", example = "false") boolean useRealAi
 	);
 
+	@Operation(
+			summary = "AI 피드백 재요청 (재시도)",
+			description = "특정 문항에 대해 AI 피드백을 재요청합니다."
+	)
+	@SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
+	ResponseEntity<String> retryAnswerAiFeedback(
+			@Parameter(description = "시험 ID") Long examId,
+			@Parameter(description = "답변 번호 (1번, 2번...)") Integer questionOrder,
+			@Parameter(hidden = true) UserDetails user,
+			@Parameter(description = "실제 AI 쓸지말지", example = "false") boolean useRealAi
+	);
+
 	/**
-	 * 시험 종료
+	 * 시험 종료 (재시도 가능)
 	 * - 모든 답변 제출 후 시험을 종료합니다.
 	 *
 	 * @param examId 시험번호
 	 * @param user   유저정보
 	 */
 	@Operation(
-			summary = "시험 최종 종료",
+			summary = "시험 최종 종료 (재시도 가능)",
 			description = "모든 답변 제출을 마치고 시험을 종료합니다. 이때 AI 분석이 시작됩니다.<br>" +
 					"이미 종료된 시험이라면 400 예외를 터트립니다 (AI 중복 리포팅 생성 방지)"
 	)

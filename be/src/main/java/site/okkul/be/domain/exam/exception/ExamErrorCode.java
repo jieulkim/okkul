@@ -19,8 +19,12 @@ public enum ExamErrorCode implements ErrorCode {
 	EXAM_ANSWER_ALREADY_SUBMITTED(HttpStatus.BAD_REQUEST, "EXAM_008", "이미 제출된 답변입니다."),
 	EXAM_REPORT_ALREADY_CREATED(HttpStatus.BAD_REQUEST, "EXAM_009", "이미 리포트가 생성된 시험입니다."),
 	AI_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "EXAM_010", "AI 서버 오류입니다"),
+	ANALYZING_IN_PROGRESS(HttpStatus.BAD_REQUEST, "EXAM_011", "이미 분석이 진행중입니다"),
+	ANALYZING_COMPLETED(HttpStatus.BAD_REQUEST, "EXAM_012", "이미 완료된 분석입니다"),
+	EXAM_ANSWER_NOTFOUND(HttpStatus.NOT_FOUND, "EXAM_013", "답변을 찾을 수 없습니다"),
+	EXAM_REPORT_ANALYZING(HttpStatus.BAD_REQUEST, "EXAM_014", "이미 생성중입니다"),
+	EXAM_ADJUSTED_DIFFICULTY_ALREADY_SET(HttpStatus.BAD_REQUEST, "EXAM_0015", "이미 레벨이 추가되었습니다"),
 	;
-
 
 	private final HttpStatus status;
 	private final String code;

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, defineProps, defineEmits, inject } from "vue";
+import { ref, defineProps, defineEmits, inject, computed } from "vue";
 
 const props = defineProps({
   isVisible: {
@@ -13,6 +13,22 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["close", "start-new", "use-selected", "use-recommended"]);
+
+const modalTitle = computed(() => {
+  if (props.existingSurveys.length === 0) {
+    return "새로운 설문이 필요합니다.";
+  }
+  return "이전 설문 선택";
+});
+
+const modalWarning = computed(() => {
+  if (props.existingSurveys.length === 0) {
+    return "아직 설문 데이터가 없습니다. 설문을 시작하고 자신의 레벨을 진단해 보세요.";
+  } else if (props.existingSurveys.length < 3) {
+    return `현재 ${props.existingSurveys.length}개의 설문이 있습니다. 새로운 설문을 작성할 수 있습니다.`;
+  }
+  return "가장 최근 설문 3개 중 하나를 선택하거나, 새로운 설문을 시작할 수 있습니다.";
+});
 
 const selectedSurveyId = ref(null);
 const isPreviewing = ref(false);
@@ -199,9 +215,9 @@ const getCategorizedRecommendedTopics = (data) => {
           <button class="modal-close-btn" @click="$emit('close')" title="닫기">
             <span class="material-icons">close</span>
           </button>
-          <h3>최근 설문 선택</h3>
+          <h3>{{ modalTitle }}</h3>
           <p class="limit-warning">
-            설문 3개 중 선택하세요
+            {{ modalWarning }}
           </p>
         </div>
 

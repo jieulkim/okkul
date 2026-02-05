@@ -92,6 +92,7 @@ const displayedTopics = computed(() => {
 
 // 현재 선택된 주제 이름
 const currentTopicName = computed(() => {
+  if (route.query.type === 'INTRO') return null; // 자기소개 유형은 주제 표시 안함
   const source =
     localTopics.value.length > 0 ? localTopics.value : props.availableTopics;
   const found = source.find(
@@ -137,12 +138,20 @@ const currentQuestion = computed(() => {
 });
 
 const showQuestionText = ref(false);
+const currentAudio = ref(null); // 현재 재생 중인 오디오 추적
 
 // 오디오 재생 (question_bank의 audio_url)
 const playQuestionAudio = () => {
   if (currentQuestion.value?.audio_url) {
-    const audio = new Audio(currentQuestion.value.audio_url);
-    audio.play().catch((e) => console.error("오디오 재생 실패:", e));
+    // 이전 오디오가 재생 중이면 정지
+    if (currentAudio.value) {
+      currentAudio.value.pause();
+      currentAudio.value.currentTime = 0;
+    }
+    
+    // 새 오디오 재생
+    currentAudio.value = new Audio(currentQuestion.value.audio_url);
+    currentAudio.value.play().catch((e) => console.error("오디오 재생 실패:", e));
   }
 };
 
@@ -469,10 +478,19 @@ const resetState = () => {
   selectedSentenceIndex.value = null;
   currentPage.value = 0;
 
+  // 질문 텍스트 접기 (다음 문제로 넘어갈 때 기본값으로)
+  showQuestionText.value = false;
+
   // 인터벌/녹음기 정리
   if (timerInterval) clearInterval(timerInterval);
   if (pollInterval) clearInterval(pollInterval);
   isRecording.value = false;
+  
+  // 오디오 정리
+  if (currentAudio.value) {
+    currentAudio.value.pause();
+    currentAudio.value = null;
+  }
 };
 
 const retryQuestion = () => {
@@ -553,7 +571,7 @@ onMounted(async () => {
         return;
       }
       // 가상의 토픽 ID 할당
-      if (!queryTopicId) queryTopicId = 1; 
+      if (!queryTopicId) queryTopicId = 101; 
     } catch (e) {
       console.error("설문 목록 자동 조회 실패:", e);
       alert("설문 정보를 불러올 수 없어 연습을 시작할 수 없습니다.");
@@ -602,7 +620,7 @@ onMounted(async () => {
 
         const startRes = await practicesApi.startPractice({
           surveyId,
-          topicId: queryTopicId || 1, // TopicId가 없으면 1(자기소개)로 default
+          topicId: queryTopicId || 101, // TopicId가 없으면 101로 default (자기소개 유형)
           typeId: dynamicTypeId,
         });
         practiceIdRef.value = startRes.data.practiceId;
@@ -645,12 +663,18 @@ onMounted(async () => {
   }
 });
 
-onMounted(() => {
+onBeforeUnmount(() => {
   if (timerInterval) clearInterval(timerInterval);
   if (pollInterval) clearInterval(pollInterval);
   if (recognition) recognition.stop();
   if (audioRecorder && audioRecorder.state === "recording") {
     audioRecorder.stop();
+  }
+  
+  // 페이지 이동 시 오디오 즉시 중지
+  if (currentAudio.value) {
+    currentAudio.value.pause();
+    currentAudio.value = null; // 참조 해제
   }
 });
 </script>
@@ -683,7 +707,7 @@ onMounted(() => {
           <!-- 유형 배지 + 토픽 배지 (상단 배치) -->
           <div class="type-badge-row">
             <span v-if="currentTypeName" class="current-type-badge">{{ currentTypeName }}</span>
-            <span v-if="currentTopicName" class="current-topic-badge">{{ currentTopicName }}</span>
+            <span v-if="currentTopicName && route.query.type !== 'INTRO'" class="current-topic-badge">{{ currentTopicName }}</span>
           </div>
           <div class="question-header">
             <div class="q-id-group">

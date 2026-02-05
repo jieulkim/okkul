@@ -9,6 +9,7 @@ import axios from 'axios';
 const commonConfig = {
   baseURL: import.meta.env.VITE_API_BASE_URL,
   secure: true,
+  useRealAI: true, // Automatically add X-Use-Real-AI header for requests from these APIs
   securityWorker: async () => {
     const accessToken = localStorage.getItem("accessToken");
     // securityWorker 에서는 refresh token을 헤더에 담지 않습니다.

@@ -49,6 +49,7 @@ export interface ApiConfig<SecurityDataType = unknown>
   ) => Promise<AxiosRequestConfig | void> | AxiosRequestConfig | void;
   secure?: boolean;
   format?: ResponseType;
+  useRealAI?: boolean; // Added useRealAI
 }
 
 export enum ContentType {
@@ -65,11 +66,13 @@ export class HttpClient<SecurityDataType = unknown> {
   private securityWorker?: ApiConfig<SecurityDataType>["securityWorker"];
   private secure?: boolean;
   private format?: ResponseType;
+  private useRealAI?: boolean; // Stored useRealAI
 
   constructor({
     securityWorker,
     secure,
     format,
+    useRealAI, // Destructured useRealAI
     ...axiosConfig
   }: ApiConfig<SecurityDataType> = {}) {
     this.instance = axios.create({
@@ -79,6 +82,21 @@ export class HttpClient<SecurityDataType = unknown> {
     this.secure = secure;
     this.format = format;
     this.securityWorker = securityWorker;
+    this.useRealAI = useRealAI; // Assigned useRealAI
+
+    // Add a request interceptor to automatically add the X-Use-Real-AI header
+    this.instance.interceptors.request.use(
+      (config) => {
+        if (this.useRealAI && !(config.headers && config.headers['X-Use-Real-AI'])) {
+          config.headers = {
+            ...(config.headers || {}),
+            'X-Use-Real-AI': 'true',
+          };
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
   }
 
   public setSecurityData = (data: SecurityDataType | null) => {

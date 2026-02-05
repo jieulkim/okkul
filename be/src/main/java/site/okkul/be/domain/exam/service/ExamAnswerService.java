@@ -23,7 +23,6 @@ import site.okkul.be.domain.exam.entity.ExamStatus;
 import site.okkul.be.domain.exam.exception.ExamErrorCode;
 import site.okkul.be.domain.exam.repository.ExamAnswerJpaRepository;
 import site.okkul.be.domain.exam.repository.ExamJpaRepository;
-import site.okkul.be.domain.exam.repository.ExamReportJpaRepository;
 import site.okkul.be.domain.question.entity.QuestionSet;
 import site.okkul.be.domain.question.entity.QuestionType;
 import site.okkul.be.domain.question.repository.QuestionSetRepository;
@@ -255,6 +254,20 @@ public class ExamAnswerService {
 		exam.updateStatus(ExamStatus.IN_PROGRESS);
 	}
 
+	/**
+	 * 특정 시험의 특정 문항에 대한 답변 존재 여부를 확인합니다.
+	 * 없으면 예외 펑
+	 *
+	 * @param examId        시험 ID
+	 * @param questionOrder 문항 순서(1-based)
+	 */
+	@Transactional(readOnly = true)
+	public void answerExists(Long examId, Integer questionOrder) {
+		if (!examAnswerRepository.existsById(new ExamAnswer.ExamAnswerId(examId, questionOrder))) {
+			throw new BusinessException(ExamErrorCode.EXAM_ANSWER_NOTFOUND);
+		}
+	}
+
 	@Async
 	@Transactional
 	public void feedbackAnswer(Long examId, Integer questionOrder, boolean useRealAi) {
@@ -264,6 +277,14 @@ public class ExamAnswerService {
 		).orElseThrow(
 				() -> new BusinessException(ExamErrorCode.EXAM_NOT_FOUND)
 		);
+
+		// 진행중, 완료상태면 진행하면 안됨
+		if (examAnswer.getStatus().equals(AnswerStatus.ANALYZING)) {
+			throw new BusinessException(ExamErrorCode.ANALYZING_IN_PROGRESS);
+		}
+		if (examAnswer.getStatus().equals(AnswerStatus.COMPLETED)) {
+			throw new BusinessException(ExamErrorCode.ANALYZING_COMPLETED);
+		}
 
 		// 2. AI서버에서 답변 분석 진행하기
 		self.updateExamAnswerStatus(

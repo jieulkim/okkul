@@ -82,6 +82,18 @@ public interface ExamControllerDocs {
 			@Parameter(description = "실제 AI 쓸지말지", example = "false") boolean useRealAi
 	);
 
+	@Operation(
+			summary = "AI 피드백 재요청 (재시도)",
+			description = "특정 문항에 대해 AI 피드백을 재요청합니다."
+	)
+	@SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
+	ResponseEntity<String> retryAnswerAiFeedback(
+			@Parameter(description = "시험 ID") Long examId,
+			@Parameter(description = "답변 번호 (1번, 2번...)") Integer questionOrder,
+			@Parameter(hidden = true) UserDetails user,
+			@Parameter(description = "실제 AI 쓸지말지", example = "false") boolean useRealAi
+	);
+
 	/**
 	 * 시험 종료
 	 * - 모든 답변 제출 후 시험을 종료합니다.
@@ -96,6 +108,24 @@ public interface ExamControllerDocs {
 	)
 	@SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
 	ResponseEntity<Void> completeExam(
+			@Parameter(description = "시험 ID") Long examId,
+			@Parameter(hidden = true) UserDetails user,
+			@Parameter(description = "실제 AI 쓸지말지", example = "false") boolean useRealAi
+	);
+
+	/**
+	 * 시험 리포트 재생성
+	 *
+	 * @param examId    시험번호
+	 * @param user      유저정보
+	 * @param useRealAi 실제 AI 사용 여부
+	 */
+	@Operation(
+			summary = "시험 리포트 재생성",
+			description = "시험 리포트를 재생성합니다. (AI 재분석 등)"
+	)
+	@SecurityRequirement(name = SwaggerConfig.BEARER_AUTH)
+	ResponseEntity<Void> regenerateExamReport(
 			@Parameter(description = "시험 ID") Long examId,
 			@Parameter(hidden = true) UserDetails user,
 			@Parameter(description = "실제 AI 쓸지말지", example = "false") boolean useRealAi

@@ -68,6 +68,7 @@ public class FakeAiClient implements AiClient {
 	@Override
 	public ResponseEntity<ExamTotalAnalysisResponse> analyzeTotalExam(List<AnswerSummaryDto> request) {
 		// 간단한 Mock 응답 반환
+//		return ResponseEntity.badRequest().build();
 		return ResponseEntity.ok(new ExamTotalAnalysisResponse(
 				"IH", // predictedLevel
 				83,   // totalScore

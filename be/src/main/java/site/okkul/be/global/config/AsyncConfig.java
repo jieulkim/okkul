@@ -6,6 +6,7 @@ import org.springframework.aop.interceptor.AsyncUncaughtExceptionHandler;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
+import site.okkul.be.global.exception.BusinessException;
 import site.okkul.be.global.exception.SystemException;
 import site.okkul.be.infra.alarm.AlarmService;
 
@@ -23,7 +24,10 @@ public class AsyncConfig implements AsyncConfigurer {
 
 			// 여기서 알람 발송!
 			if (ex instanceof SystemException systemException) {
+				log.error("{}\n{}", systemException.getTitle(), systemException.getMessage());
 				alarmService.sendMessage("🚨 [비동기] 시스템 장애", systemException.getTitle(), systemException.getMessage());
+			} else if (ex instanceof BusinessException businessException) {
+				log.error("{} - {}", businessException.getErrorCode().getCode(), businessException.getErrorCode().getMessage());
 			}
 		};
 	}

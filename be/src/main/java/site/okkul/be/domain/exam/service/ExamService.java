@@ -115,9 +115,9 @@ public class ExamService {
 
 
 	@Transactional
-	public void completeExam(Long examId) {
+	public void completeExam(Long examId, Long userId) {
 		// 1. 시험 검색
-		Exam exam = examRepository.findById(examId).orElseThrow(
+		Exam exam = examRepository.findByIdAndUserId(examId, userId).orElseThrow(
 				() -> new BusinessException(ExamErrorCode.EXAM_NOT_FOUND)
 		);
 		// 2. AI 피드백 중복 생성 방지
@@ -141,6 +141,10 @@ public class ExamService {
 		// 2. 이미 리포트가 생성되어 있다면 예외 발생
 		if (examReportJpaRepository.existsById(examId)) {
 			throw new BusinessException(ExamErrorCode.EXAM_REPORT_ALREADY_CREATED);
+		}
+		// 2. AI 피드백 중복 생성 방지
+		if (exam.getStatus() == ExamStatus.ANALYZING || exam.getStatus() == ExamStatus.COMPLETED) {
+			throw new BusinessException(ExamErrorCode.EXAM_REPORT_ANALYZING);
 		}
 
 
@@ -172,6 +176,7 @@ public class ExamService {
 				return;
 			}
 		}
+		self.updateExamStatus(examId, ExamStatus.ANALYZING_FAILED);
 		throw new SystemException(ExamErrorCode.AI_SERVER_ERROR,
 				"Exam Report 생성 실패",
 				"AI 서버 응답을 3회 모두 받지 못했습니다."
@@ -184,5 +189,20 @@ public class ExamService {
 				() -> new BusinessException(ExamErrorCode.EXAM_NOT_FOUND)
 		);
 		exam.updateStatus(status);
+	}
+
+	/**
+	 * checkExamExist:
+	 * 유저가 소유한 시험 세션이 존재하는지 확인한다.
+	 *
+	 * @param userId 유저 ID
+	 * @param examId 시험 ID
+	 * @throws BusinessException 시험이 존재하지 않으면 {@link ExamErrorCode#EXAM_NOT_FOUND}로 예외 발생
+	 */
+	@Transactional(readOnly = true)
+	public void checkExamExist(Long examId, Long userId) {
+		if (examRepository.findByIdAndUserId(examId, userId).isEmpty()) {
+			throw new BusinessException(ExamErrorCode.EXAM_NOT_FOUND);
+		}
 	}
 }

@@ -109,6 +109,10 @@ public class ExamService {
 		Exam exam = examRepository.findByIdAndUserId(examId, userId).orElseThrow(
 				() -> new BusinessException(ExamErrorCode.EXAM_NOT_FOUND)
 		);
+		// 이미 할당되었거나, 문제가 10개 이상이면 재시도 못하게 막아야함
+		if (exam.getAdjustedDifficulty() != null && 10 < exam.getQuestions().size()) {
+			throw new BusinessException(ExamErrorCode.EXAM_ADJUSTED_DIFFICULTY_ALREADY_SET);
+		}
 		exam.updateAdjustedDifficulty(newLevel);
 		return ExamDetailResponse.from(exam);
 	}
@@ -189,20 +193,5 @@ public class ExamService {
 				() -> new BusinessException(ExamErrorCode.EXAM_NOT_FOUND)
 		);
 		exam.updateStatus(status);
-	}
-
-	/**
-	 * checkExamExist:
-	 * 유저가 소유한 시험 세션이 존재하는지 확인한다.
-	 *
-	 * @param userId 유저 ID
-	 * @param examId 시험 ID
-	 * @throws BusinessException 시험이 존재하지 않으면 {@link ExamErrorCode#EXAM_NOT_FOUND}로 예외 발생
-	 */
-	@Transactional(readOnly = true)
-	public void checkExamExist(Long examId, Long userId) {
-		if (examRepository.findByIdAndUserId(examId, userId).isEmpty()) {
-			throw new BusinessException(ExamErrorCode.EXAM_NOT_FOUND);
-		}
 	}
 }

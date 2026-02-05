@@ -61,7 +61,7 @@ public class ExamController implements ExamControllerDocs {
 				examService.getExamInfoDetails(
 						Long.parseLong(user.getUsername()),
 						exam.id()
-				).questionSubList(1, 8)
+				).questionSubList(1)
 		);
 	}
 
@@ -106,7 +106,7 @@ public class ExamController implements ExamControllerDocs {
 				examService.getExamInfoDetails(
 						Long.parseLong(user.getUsername()),
 						examId
-				).questionSubList(8, 15)
+				).questionSubList(8)
 		);
 	}
 
@@ -157,20 +157,5 @@ public class ExamController implements ExamControllerDocs {
 		examService.completeExam(examId, Long.parseLong(user.getUsername()));
 		examService.examCreateReport(examId, useRealAi);
 		return ResponseEntity.ok().build();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	@PostMapping("/{examId}/report/regenerate")
-	public ResponseEntity<Void> regenerateExamReport(
-			@PathVariable Long examId,
-			@AuthenticationPrincipal UserDetails user,
-			@RequestHeader(value = SwaggerConfig.REAL_AI_USE, defaultValue = "false") boolean useRealAi
-	) {
-		examService.checkExamExist(examId, Long.parseLong(user.getUsername()));
-		examService.examCreateReport(examId, useRealAi);
-		return ResponseEntity.accepted().build();
 	}
 }

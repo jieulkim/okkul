@@ -67,16 +67,15 @@ public record ExamDetailResponse(
 	 * 문제들 서브리스트 하는 함수
 	 *
 	 * @param start 시작 번호 1번부터~
-	 * @param end   마지막 번호 2번부터~
 	 * @return 서브리스트
 	 */
-	public ExamDetailResponse questionSubList(int start, int end) {
+	public ExamDetailResponse questionSubList(int start) {
 		return new ExamDetailResponse(
 				this.id,
 				this.initialDifficulty,
 				this.adjustedDifficulty,
 				this.createdAt,
-				this.questions.subList(start - 1, end - 1),
+				this.questions.subList(start - 1, this.questions.size()),
 				this.examStatus
 		);
 	}

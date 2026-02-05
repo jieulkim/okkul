@@ -16,5 +16,5 @@ public interface ExamJpaRepository extends JpaRepository<Exam, Long> {
 
 	Optional<Exam> findByIdAndUserId(Long id, Long userId);
 
-	Page<Exam> findByUserId(Long userId, Pageable pageable);
+	Page<Exam> findByUserIdAndEndAtIsNotNull(Long userId, Pageable pageable);
 }

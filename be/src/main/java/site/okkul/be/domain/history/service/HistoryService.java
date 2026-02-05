@@ -36,8 +36,7 @@ public class HistoryService {
     public Page<ExamHistorySummary> getExamHistories(Long userId, Pageable pageable) {
 
         // 1) 기준 페이지: Exam 목록
-        Page<Exam> page = examJpaRepository.findByUserId(userId, pageable);
-
+        Page<Exam> page = examJpaRepository.findByUserIdAndEndAtIsNotNull(userId, pageable);
         // 2) 현재 페이지 examId들 뽑기
         List<Long> examIds = page.getContent().stream()
                 .map(Exam::getId)

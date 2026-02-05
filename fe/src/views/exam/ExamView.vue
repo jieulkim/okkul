@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, inject } from "vue";
+import { ref, onMounted, inject, computed } from "vue";
 import { useRouter } from "vue-router";
 import SurveySelectModal from "@/components/common/SurveySelectModal.vue";
 import { surveysApi, examApi } from "@/api";
@@ -13,6 +13,22 @@ const showSurveySelectModal = ref(false);
 const showResumeModal = ref(false);
 const existingSurveys = ref([]);
 const incompleteExam = ref(null);
+
+const displayQuestionNumber = computed(() => {
+  if (!incompleteExam.value) return 0;
+  
+  const { currentQuestion, isSubmitted, currentIndex, totalQuestions } = incompleteExam.value;
+  // 기존 데이터 호환성 체크
+  if (isSubmitted === undefined) return currentQuestion;
+
+  const isIndexSix = currentIndex === 6;
+  const isLast = (currentIndex + 1) === (totalQuestions || 15);
+
+  if (isSubmitted && !isIndexSix && !isLast) {
+    return currentQuestion + 1;
+  }
+  return currentQuestion;
+});
 
 const fetchExistingSurveys = async () => {
   try {
@@ -153,7 +169,7 @@ onMounted(async () => {
         <div class="resume-info" v-if="incompleteExam">
           <div class="info-row">
             <span class="label">문항 진행도</span>
-            <span class="value">{{ incompleteExam.currentQuestion }} 번</span>
+            <span class="value">{{ displayQuestionNumber }} 번</span>
           </div>
           <div class="info-row">
             <span class="label">남은 시간</span>

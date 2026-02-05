@@ -500,7 +500,10 @@ const saveProgress = () => {
   localStorage.setItem('incompleteExam', JSON.stringify({
     examId: examId.value,
     currentQuestion: currentQuestionIndex.value + 1,
-    remainingTime: formattedTotalTime.value
+    remainingTime: formattedTotalTime.value,
+    isSubmitted: isSubmitted.value,
+    currentIndex: currentQuestionIndex.value,
+    totalQuestions: totalQuestions.value
   }));
   
   console.log('[ExamQuestionView] 진행상황 저장:', data);

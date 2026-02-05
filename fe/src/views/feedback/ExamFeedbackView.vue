@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, inject } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { examApi, historyApi } from '@/api';
 
@@ -8,18 +8,32 @@ const route = useRoute();
 
 const examResult = ref(null);
 const isLoading = ref(true);
+let pollingInterval = null; // pollingInterval ref 추가
+
+// 피드백 완료 여부를 폴링하는 함수
+const pollForFeedbackCompletion = async (examId) => {
+  try {
+    const response = await examApi.getExamInfo(examId);
+    if (response.data.examStatus?.code === 'COMPLETED') {
+      console.log('Feedback COMPLETED, stopping polling.');
+      if (pollingInterval) clearInterval(pollingInterval);
+      await loadExamResult(); // 피드백 완료 후 결과 로드
+    } else {
+      console.log('Feedback not yet COMPLETED, polling again in 3 seconds...');
+    }
+  } catch (error) {
+    console.error('Polling failed:', error);
+    if (pollingInterval) clearInterval(pollingInterval);
+    // 에러 처리, 예를 들어 사용자에게 알림 또는 다른 페이지로 리디렉션
+    alert('피드백 상태를 확인하는 중 오류가 발생했습니다.');
+    router.push('/exam'); // 에러 발생 시 시험 목록으로 이동
+  }
+};
 
 // 시험 결과 로드 (API 연동 버전)
 const loadExamResult = async () => {
   try {
-    isLoading.value = true;
     const examId = parseInt(route.query.examId);
-    
-    if (!examId) {
-      alert('시험 ID가 없습니다.');
-      router.push('/exam');
-      return;
-    }
     
     // 1. 시험 히스토리(리포트) 조회
     const historyResponse = await historyApi.getExamHistoryDetail(examId);
@@ -28,6 +42,36 @@ const loadExamResult = async () => {
     // 2. 시험 문제 목록 조회 (질문 텍스트 등)
     const infoResponse = await examApi.getExamInfo(examId);
     console.log("Info Response questions:", infoResponse.data.questions);
+
+    // 2.5. 각 문항별 상세 점수 (문법, 어휘, 논리) 조회
+    const questionDetailsPromises = infoResponse.data.questions?.map(async q => {
+      try {
+        const detailResponse = await historyApi.getExamAnswerDetail(examId, q.order);
+        const latestFeedback = detailResponse.data.sentenceFeedbacks?.[0]; // 첫 번째 세부 피드백에서 점수 추출
+        return {
+          questionOrder: q.order,
+          questionText: q.questionText,
+          sttScript: detailResponse.data.sttScript || '',
+          enhancedScript: detailResponse.data.improvedAnswer || '',
+          grammar: { score: latestFeedback?.grammarScore !== undefined ? latestFeedback.grammarScore : 0 },
+          vocabulary: { score: latestFeedback?.vocabScore !== undefined ? latestFeedback.vocabScore : 0 },
+          logic: { score: latestFeedback?.logicScore !== undefined ? latestFeedback.logicScore : 0 },
+        };
+      } catch (detailError) {
+        console.warn(`Failed to fetch detail for question ${q.order}:`, detailError);
+        return {
+          questionOrder: q.order,
+          questionText: q.questionText,
+          sttScript: '',
+          enhancedScript: '',
+          grammar: { score: 0 },
+          vocabulary: { score: 0 },
+          logic: { score: 0 },
+        };
+      }
+    }) || [];
+
+    const questionResultsWithScores = await Promise.all(questionDetailsPromises);
 
     // 3. 데이터 매핑
     const difficulty = historyResponse.data.initialDifficulty || historyResponse.data.adjustedDifficulty || 1;
@@ -56,19 +100,7 @@ const loadExamResult = async () => {
         weakness: report?.weaknessTypes?.join(', ') || '없음'
       },
       // 질문 목록은 infoResponse에서 가져옴. 
-      // 개별 점수가 없으므로 기본값 처리하거나 상세 조회 시 가져올 수 있는지 확인 필요.
-      // 현재 API 구조상 개별 점수는 없고 피드백 텍스트만 존재함.
-      questionResults: infoResponse.data.questions?.map(q => ({
-        questionOrder: q.order,
-        questionText: q.questionText,
-        sttScript: '', // 상세 데이터는 클릭 시 로드하거나 여기서 Promise.all로 로드해야 함
-        enhancedScript: '',
-        grammar: { score: 0, feedback: '' },
-        vocabulary: { score: 0, feedback: '' },
-        logic: { score: 0, feedback: '' },
-        fluency: { score: 0, feedback: '' },
-        relevance: { score: 0, feedback: '' }
-      })) || []
+      questionResults: questionResultsWithScores
     };
     
   } catch (error) {
@@ -81,6 +113,26 @@ const loadExamResult = async () => {
 };
 
 // 오각형 차트 데이터
+const parseFeedbackList = (feedbackString) => {
+  if (!feedbackString || feedbackString === '없음') {
+    return [];
+  }
+  // 대괄호 제거
+  let cleanedString = feedbackString.startsWith('[') && feedbackString.endsWith(']')
+    ? feedbackString.slice(1, -1)
+    : feedbackString;
+
+  // 온점과 쉼표가 같이 나올 경우를 기준으로 분리 (. ,)
+  // 정규식: 마침표, 선택적 공백, 쉼표, 선택적 공백
+  return cleanedString.split(/\.\s*,\s*/).map(item => {
+    item = item.trim();
+    if (item.length > 0 && !item.endsWith('.')) {
+      item += '.'; // 마침표로 끝나지 않으면 추가
+    }
+    return item;
+  }).filter(item => item.length > 0);
+};
+
 const radarData = computed(() => {
   if (!examResult.value?.summary?.categoryScores) return [];
   
@@ -147,7 +199,25 @@ const selectQuestion = (index) => {
 // 선택된 문항 관련 로직 제거 (상세 페이지로 이동하므로)
 
 onMounted(() => {
-  loadExamResult();
+  const examId = parseInt(route.query.examId);
+  if (!examId) {
+    alert('시험 ID가 없습니다.');
+    router.push('/exam');
+    return;
+  }
+
+  // 로딩 상태 시작
+  isLoading.value = true;
+  // 초기 즉시 실행 후 폴링 시작
+  pollForFeedbackCompletion(examId); // 첫 실행
+  pollingInterval = setInterval(() => pollForFeedbackCompletion(examId), 3000); // 3초마다 폴링
+});
+
+// 컴포넌트 언마운트 시 인터벌 정리
+onBeforeUnmount(() => {
+  if (pollingInterval) {
+    clearInterval(pollingInterval);
+  }
 });
 </script>
 
@@ -181,6 +251,30 @@ onMounted(() => {
             <div class="grade-display">
               <div class="grade">{{ examResult.summary.grade }}</div>
               <div class="score">{{ Math.round(examResult.summary.totalScore) }}점</div>
+            </div>
+            
+            <h3 style="margin-top: 40px;">총평</h3>
+            <p class="comment-text">{{ examResult.summary.comment }}</p>
+            
+            <div class="strengths-weakness">
+              <div class="strength-box">
+                <h4>강점</h4>
+                <ul v-if="parseFeedbackList(examResult.summary.strengths).length > 0">
+                  <li v-for="(item, i) in parseFeedbackList(examResult.summary.strengths)" :key="`strength-${i}`">
+                    {{ item }}
+                  </li>
+                </ul>
+                <p v-else>없음</p>
+              </div>
+              <div class="weakness-box">
+                <h4>개선 필요</h4>
+                <ul v-if="parseFeedbackList(examResult.summary.weakness).length > 0">
+                  <li v-for="(item, i) in parseFeedbackList(examResult.summary.weakness)" :key="`weakness-${i}`">
+                    {{ item }}
+                  </li>
+                </ul>
+                <p v-else>없음</p>
+              </div>
             </div>
           </div>
 
@@ -262,23 +356,6 @@ onMounted(() => {
               </div>
             </div>
           </div>
-
-          <!-- 총평 -->
-          <div class="comment-card">
-            <h3>총평</h3>
-            <p class="comment-text">{{ examResult.summary.comment }}</p>
-            
-            <div class="strengths-weakness">
-              <div class="strength-box">
-                <h4>강점</h4>
-                <p>{{ examResult.summary.strengths }}</p>
-              </div>
-              <div class="weakness-box">
-                <h4>개선 필요</h4>
-                <p>{{ examResult.summary.weakness }}</p>
-              </div>
-            </div>
-          </div>
         </div>
 
         <!-- 문항별 세부 피드백 -->
@@ -296,9 +373,9 @@ onMounted(() => {
               <div class="question-preview">
                 <p class="question-text">{{ question.questionText }}</p>
                 <div class="scores-mini">
-                  <span class="mini-score">문법 {{ question.grammar?.score || 0 }}</span>
-                  <span class="mini-score">어휘 {{ question.vocabulary?.score || 0 }}</span>
-                  <span class="mini-score">논리 {{ question.logic?.score || 0 }}</span>
+                  <span class="mini-score">문법 {{ question.grammar?.score }}</span>
+                  <span class="mini-score">어휘 {{ question.vocabulary?.score }}</span>
+                  <span class="mini-score">논리 {{ question.logic?.score }}</span>
                 </div>
               </div>
               <span class="material-icons">chevron_right</span>

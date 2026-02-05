@@ -1011,6 +1011,21 @@ export interface SentenceFeedback {
   targetSegment?: string;
   /** 교정된 표현 */
   correctedSegment?: string;
+  /**
+   * 문법 점수
+   * @format int32
+   */
+  grammarScore?: number;
+  /**
+   * 어휘 점수
+   * @format int32
+   */
+  vocabScore?: number;
+  /**
+   * 논리성 점수
+   * @format int32
+   */
+  logicScore?: number;
   /** 피드백 텍스트 */
   comment?: string;
   /**

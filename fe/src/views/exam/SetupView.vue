@@ -15,6 +15,7 @@ const isPlaying = ref(false)
 const isRecording = ref(false)
 const hasRecording = ref(false)
 const isLoading = ref(false)
+const isNoiseDetectionEnabled = ref(false) // 실시간 소음 모드 상태
 
 const audio = new Audio('https://audio-dataset.minio.okkul.site/opic_audio_all/okkul.mp3')
 
@@ -239,7 +240,20 @@ onUnmounted(() => audio.pause())
           </div>
         </div>
       </nav>
-      <h1 class="page-title">Device Setup</h1>
+      <div class="title-row">
+        <h1 class="page-title">Device Setup</h1>
+        <div class="noise-toggle-container">
+          <span class="toggle-label">실시간 소음 모드</span>
+          <button 
+            @click="isNoiseDetectionEnabled = !isNoiseDetectionEnabled" 
+            class="toggle-switch"
+            :class="{ active: isNoiseDetectionEnabled }"
+            :aria-label="isNoiseDetectionEnabled ? '소음 모드 끄기' : '소음 모드 켜기'"
+          >
+            <span class="toggle-slider"></span>
+          </button>
+        </div>
+      </div>
     </header>
 
     <main class="page-content">
@@ -362,14 +376,71 @@ onUnmounted(() => audio.pause())
   flex-shrink: 0;
 }
 
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  border-bottom: 1px solid var(--border-primary);
+  padding-bottom: 12px;
+}
+
 .page-title {
   font-size: 2rem;
   font-weight: 800;
-  margin-top: 16px;
   color: var(--text-primary);
-  border-bottom: 1px solid var(--border-primary);
-  padding-bottom: 12px;
-  text-align: center;
+  margin: 0;
+}
+
+/* 실시간 소음 모드 토글 */
+.noise-toggle-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-right: 16px;
+}
+
+.toggle-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.toggle-switch {
+  position: relative;
+  width: 46px;
+  height: 24px;
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-primary);
+  border-radius: 12px;
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+}
+
+.toggle-switch:hover {
+  border-color: var(--primary-color);
+}
+
+.toggle-switch.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.toggle-slider {
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.toggle-switch.active .toggle-slider {
+  transform: translate(22px, -50%);
 }
 
 .setup-grid {

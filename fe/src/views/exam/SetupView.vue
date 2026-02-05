@@ -242,7 +242,7 @@ onUnmounted(() => audio.pause())
       </nav>
       <div class="title-row">
         <h1 class="page-title">Device Setup</h1>
-        <div class="noise-toggle-container">
+        <!-- <div class="noise-toggle-container">
           <span class="toggle-label">실시간 소음 모드</span>
           <button 
             @click="isNoiseDetectionEnabled = !isNoiseDetectionEnabled" 
@@ -252,7 +252,7 @@ onUnmounted(() => audio.pause())
           >
             <span class="toggle-slider"></span>
           </button>
-        </div>
+        </div> -->
       </div>
     </header>
 

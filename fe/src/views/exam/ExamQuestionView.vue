@@ -64,9 +64,18 @@ const volumeLevel = computed(() => {
   return Math.round(audioLevel.value / 10);
 });
 
-// 현재 문제
+// 현재 난이도 레벨 (1-6)
+const currentDifficultyLevel = computed(() => {
+  return adjustedDifficulty.value || initialDifficulty.value;
+});
+
 const currentQuestion = computed(() => {
   return questions.value[currentQuestionIndex.value];
+});
+
+// 마지막 문제 여부 확인 (총 문항 수에 도달했는지 확인)
+const isLastQuestion = computed(() => {
+  return questions.value.length > 0 && (currentQuestionIndex.value + 1) === totalQuestions.value;
 });
 
 // 난이도별 총 문항 수 계산 (Lv1-2: 12문항, Lv3-6: 15문항)
@@ -85,10 +94,13 @@ const pollForQuestions = async (targetExamId, retries = 5, delay = 1000) => {
       if (examData && examData.questions && examData.questions.length > 0) {
         console.log(`[ExamQuestionView] 질문 생성 완료! (${examData.questions.length}개)`);
         
-        questions.value = examData.questions;
         // 난이도에 따라 총 문항 수 결정
         const currentLevel = examData.adjustedDifficulty || examData.initialDifficulty || initialDifficulty.value;
         totalQuestions.value = getTotalQuestionsByLevel(currentLevel);
+        
+        // 총 문항 수에 맞게 자르기 (안전장치)
+        questions.value = examData.questions.slice(0, totalQuestions.value);
+        
         currentQuestionIndex.value = 0;
         
         // 문제 로드 후 저장
@@ -135,6 +147,22 @@ const initializeExam = async () => {
       totalQuestions.value = getTotalQuestionsByLevel(adjustedDifficulty.value || initialDifficulty.value);
       
       console.log('[ExamQuestionView] 저장된 진행 상황 로드:', data);
+      
+      // 이미 제출된 상태였다면 처리
+      if (data.isSubmitted) {
+        isSubmitted.value = true;
+        
+        // 난이도 재조정 문제(index 6)나 마지막 문제가 아니라면 자동으로 다음 문제로 이동
+        const isIndexSix = currentQuestionIndex.value === 6;
+        const isLast = (currentQuestionIndex.value + 1) === totalQuestions.value;
+        
+        if (!isIndexSix && !isLast) {
+          currentQuestionIndex.value++;
+          isSubmitted.value = false;
+          console.log('[ExamQuestionView] 이미 제출된 문제이므로 다음 문제로 자동 이동합니다.');
+          saveProgress(); // 이동된 상태 저장
+        }
+      }
     } else {
       if (!examId.value) {
          throw new Error("Exam ID not found");
@@ -229,6 +257,15 @@ const resetQuestionState = () => {
 const startRecording = async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    
+    // 오디오 재생 중이면 중지 및 다시 듣기 불가 처리
+    if (currentAudio.value) {
+      currentAudio.value.pause();
+      isPlaying.value = false;
+    }
+    canReplay.value = false;
+    playCount.value = 2; // 재생 기회 소진 (버튼 비활성화)
+    
     mediaRecorder = new MediaRecorder(stream);
     audioChunks = [];
     sttResult.value = "";
@@ -386,7 +423,7 @@ const cancelGoNext = () => {
 // 난이도 재조정
 const setRelevel = async (choice) => {
   const difficultyMap = { easy: -1, same: 0, hard: 1 };
-  const baseLevel = initialDifficulty.value;
+  const baseLevel = Number(initialDifficulty.value);
   const targetLevel = baseLevel + difficultyMap[choice];
   const finalLevel = Math.max(1, Math.min(6, targetLevel));
 
@@ -399,12 +436,30 @@ const setRelevel = async (choice) => {
       { adjustedDifficulty: adjustedDifficulty.value },
     );
     
-    const currentQuestions = questions.value.slice(0, currentQuestionIndex.value + 1);
-    const newQuestions = response.data.questions || [];
+    // 전체 문제를 다시 불러와서 확실하게 동기화 (문제 누락 방지)
+    const infoResponse = await examApi.getExamInfo(examId.value);
+    const examData = infoResponse.data;
     
-    const combinedQuestions = [...currentQuestions, ...newQuestions];
-    totalQuestions.value = getTotalQuestionsByLevel(adjustedDifficulty.value);
-    questions.value = combinedQuestions.slice(0, totalQuestions.value);
+    if (examData && examData.questions) {
+      questions.value = examData.questions;
+      // 서버에서 확정된 난이도로 다시 설정
+      if (examData.adjustedDifficulty) {
+        adjustedDifficulty.value = examData.adjustedDifficulty;
+      }
+      totalQuestions.value = getTotalQuestionsByLevel(adjustedDifficulty.value);
+      
+      // 서버에서 받은 문제를 난이도별 개수에 맞게 자르기
+      questions.value = examData.questions.slice(0, totalQuestions.value);
+      
+      console.log(`[ExamQuestionView] 난이도 재조정 완료. 총 문제 수: ${totalQuestions.value}, 로드된 문제 수: ${questions.value.length}`);
+    } else {
+      // 만약 재조회 실패 시 기존 방식 fallback (혹은 에러 처리)
+       const currentQuestions = questions.value.slice(0, currentQuestionIndex.value + 1);
+       const newQuestions = response.data.questions || [];
+       const combinedQuestions = [...currentQuestions, ...newQuestions];
+       questions.value = combinedQuestions;
+       totalQuestions.value = getTotalQuestionsByLevel(adjustedDifficulty.value);
+    }
     
     currentQuestionIndex.value++;
     resetQuestionState();
@@ -412,7 +467,7 @@ const setRelevel = async (choice) => {
     
   } catch (error) {
     console.error('[ExamQuestionView] 난이도 재조정 실패:', error);
-    alert('난이도 재조정에 실패했습니다.');
+    alert(`난이도 재조정에 실패했습니다. (${error.message || 'Unknown Error'})`);
   }
 };
 
@@ -435,10 +490,23 @@ const saveProgress = () => {
     totalQuestions: totalQuestions.value,
     initialDifficulty: initialDifficulty.value,
     adjustedDifficulty: adjustedDifficulty.value,
+    isSubmitted: isSubmitted.value,
     timestamp: new Date().toISOString()
   };
   
   localStorage.setItem(`exam_${examId.value}`, JSON.stringify(data));
+  
+  // 중단된 시험 정보 저장 (홈 화면에서 '이어하기' 버튼 활성화용)
+  localStorage.setItem('incompleteExam', JSON.stringify({
+    examId: examId.value,
+    currentQuestion: currentQuestionIndex.value + 1,
+    remainingTime: formattedTotalTime.value,
+    isSubmitted: isSubmitted.value,
+    currentIndex: currentQuestionIndex.value,
+    totalQuestions: totalQuestions.value
+  }));
+  
+  console.log('[ExamQuestionView] 진행상황 저장:', data);
 };
 
 // 시험 종료
@@ -451,6 +519,7 @@ const completeExam = async (bypassConfirmation = false) => {
     await examApi.completeExam(examId.value);
     
     localStorage.removeItem(`exam_${examId.value}`);
+    localStorage.removeItem('incompleteExam'); // 시험 완료 시 이어하기 데이터 삭제
     
     isNavigatingAwayIntentionally.value = true; // 플래그 설정
     alert('시험이 종료되었습니다. AI 분석이 시작됩니다.');
@@ -547,7 +616,7 @@ onUnmounted(() => {
           나가기
         </button>
         <div class="header-right">
-          <div class="noise-toggle-container">
+          <!-- <div class="noise-toggle-container">
             <span class="toggle-label">실시간 소음 모드</span>
             <button 
               @click="isNoiseDetectionEnabled = !isNoiseDetectionEnabled" 
@@ -557,7 +626,7 @@ onUnmounted(() => {
             >
               <span class="toggle-slider"></span>
             </button>
-          </div>
+          </div> -->
           <div class="time-display">
             <span class="material-icons">timer</span>
             {{ formattedTotalTime }}
@@ -631,8 +700,8 @@ onUnmounted(() => {
       <!-- 다음 버튼 -->
       <div class="navigation-controls">
         <button @click="goNext" class="next-btn">
-          Next Question
-          <span class="material-icons">arrow_forward</span>
+          {{ isLastQuestion ? 'Finish' : 'Next Question' }}
+          <span class="material-icons">{{ isLastQuestion ? 'check_circle' : 'arrow_forward' }}</span>
         </button>
       </div>
     </div>
@@ -645,7 +714,7 @@ onUnmounted(() => {
           <p class="subtitle">다음 문제들의 난이도를 선택해주세요</p>
         </div>
         <div class="difficulty-options">
-          <button @click="setRelevel('easy')" class="difficulty-btn">
+          <button v-if="currentDifficultyLevel > 1" @click="setRelevel('easy')" class="difficulty-btn">
             <span class="material-icons">trending_down</span>
             <span class="label">쉽게</span>
           </button>
@@ -653,7 +722,7 @@ onUnmounted(() => {
             <span class="material-icons">trending_flat</span>
             <span class="label">동일</span>
           </button>
-          <button @click="setRelevel('hard')" class="difficulty-btn">
+          <button v-if="currentDifficultyLevel < 6" @click="setRelevel('hard')" class="difficulty-btn">
             <span class="material-icons">trending_up</span>
             <span class="label">어렵게</span>
           </button>

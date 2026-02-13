@@ -1,0 +1,41 @@
+services:
+  backend:
+    image: backend:${TAG}
+    container_name: backend-${TAG}
+    restart: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_USERNAME=${DATABASE_USERNAME}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_DATABASE=${REDIS_DATABASE}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - BACKEND_URL=${BACKEND_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+    networks:
+      - server-tools_default
+  
+  frontend:
+    image: frontend:${TAG}
+    container_name: frontend-${TAG}
+    restart: always
+    networks:
+      - server-tools_default
+
+  ai-service:
+    image: ai:${TAG}
+    container_name: okkul-ai-${TAG}
+    restart: always
+    networks:
+      - server-tools_default
+
+networks:
+  server-tools_default:
+    external: true

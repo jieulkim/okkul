@@ -1,0 +1,413 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;400;500;600;700&family=Outfit:wght@300;400;500;700;900&display=swap");
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css");
+
+/* ==========================================================================
+   OKKUL DESIGN SYSTEM - "Comfortable Beige with Yellow Point"
+   ========================================================================== */
+
+:root {
+  /* Gentle Yellow Tones */
+  --honey-50: #fffde7;
+  --honey-100: #fff9c4;
+  --honey-200: #fff59d;
+  --honey-300: #fff176;
+  --honey-400: #ffee58;
+  --honey-500: #fdd835;
+  --honey-600: #fbc02d;
+
+  /* --- Text Colors --- */
+  --text-primary: #3d352e;
+  --text-secondary: #6b5f52;
+  --text-tertiary: #9c8f80;
+
+  /* Theming Variables */
+  --bg-color: #fdfbf5; /* Soft beige background */
+  --bg-subtle: #fffde7; /* Lighter yellow for subtle backgrounds */
+
+  --text-main: var(--text-primary);
+  --text-sub: var(--text-secondary);
+  --text-muted: var(--text-tertiary);
+
+  /* Point color is Yellow */
+  --primary-color: var(--honey-500);
+  --primary-hover: var(--honey-600);
+  --primary-light: var(--honey-50);
+
+  --primary-gradient: linear-gradient(
+    135deg,
+    var(--honey-300),
+    var(--honey-500)
+  );
+
+  --card-bg: #ffffff;
+  --card-border: 1px solid #f5ead8;
+  --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+  /* Font Families - Pretendard Updated */
+  --font-heading: "Pretendard Variable", "Pretendard", "Outfit", -apple-system,
+    BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI",
+    "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+  --font-body: "Pretendard Variable", "Pretendard", "DM Sans", -apple-system,
+    BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI",
+    "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+
+  /* Layout */
+  --max-width: 1400px;
+  --header-height: 70px;
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --ease-spring: cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark Mode */
+.dark-mode {
+  --bg-color: #1c1a19;
+  --bg-subtle: #2c2825;
+  --text-main: #fdfbf5;
+  --text-sub: #efe0c4;
+  --text-muted: #9c8f80;
+
+  --card-bg: #2c2825;
+  --card-border: 1px solid #3d352e;
+  --card-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+/* ==========================================================================
+   Global Resets & Base Styles
+   ========================================================================== */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+input,
+textarea {
+  user-select: text;
+  -webkit-user-drag: auto;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg-color);
+  color: var(--text-main);
+  line-height: 1.6;
+  font-size: 16px;
+  font-weight: 400;
+  overflow-x: hidden;
+  transition: background-color 0.3s var(--ease-smooth),
+    color 0.3s var(--ease-smooth);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: var(--text-main);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+  transition: color 0.2s var(--ease-smooth);
+}
+
+::selection {
+  background: var(--honey-200);
+  color: var(--text-primary);
+}
+
+/* ==========================================================================
+   Component: Buttons (Soft & Rounded)
+   ========================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: var(--radius-full);
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
+  transition: all 0.2s var(--ease-spring);
+  cursor: pointer;
+  border: none;
+  position: relative;
+  overflow: hidden;
+  text-transform: capitalize;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+/* Primary Button: Pastel Glass Gradient */
+.btn-primary {
+  background: rgba(253, 216, 53, 0.7); /* --honey-500 with transparency */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #3e2723;
+  box-shadow: 0 4px 15px rgba(251, 191, 36, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  background: rgba(251, 192, 45, 0.8); /* --honey-600 with transparency */
+  box-shadow: 0 8px 20px rgba(251, 191, 36, 0.3);
+}
+
+/* Secondary Button: Glass Surface */
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--text-main);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.dark-mode .btn-secondary {
+  background: rgba(61, 53, 46, 0.6);
+  border-color: rgba(107, 95, 82, 0.4);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(239, 224, 196, 0.6);
+}
+
+/* Ghost Button */
+.btn-ghost {
+  background: transparent;
+  color: var(--text-sub);
+}
+
+.btn-ghost:hover {
+  color: var(--text-main);
+  background: rgba(0, 0, 0, 0.03);
+}
+
+/* ==========================================================================
+   Component: Cards (Clean & Soft)
+   ========================================================================== */
+
+.card {
+  background: var(--card-bg);
+  border: var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+  padding: 40px;
+  transition: transform 0.3s var(--ease-smooth),
+    box-shadow 0.3s var(--ease-smooth), border-color 0.3s;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
+  border-color: var(--honey-300);
+}
+
+/* ==========================================================================
+   Component: Inputs & Forms
+   ========================================================================== */
+
+.label {
+  display: block;
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  margin-left: 6px;
+}
+
+.input,
+.textarea,
+.select {
+  width: 100%;
+  padding: 16px 24px;
+  background: #fdfbf5;
+  border: 1px solid #f5ead8;
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--text-main);
+  transition: all 0.2s var(--ease-smooth);
+}
+
+.dark-mode .input,
+.dark-mode .textarea,
+.dark-mode .select {
+  background: #3d352e;
+  border-color: #6b5f52;
+}
+
+.input::placeholder {
+  color: #9ca3af;
+}
+
+.input:focus,
+.textarea:focus,
+.select:focus {
+  outline: none;
+  background: #ffffff;
+  border-color: var(--honey-500);
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
+}
+
+.dark-mode .input:focus,
+.dark-mode .textarea:focus,
+.dark-mode .select:focus {
+  background: #6b5f52;
+}
+
+/* ==========================================================================
+   Layout & Typography
+   ========================================================================== */
+
+.page-container {
+  min-height: calc(100vh - var(--header-height));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.page-content {
+  width: 100%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+}
+
+.page-title {
+  font-family: var(--font-heading);
+  font-size: 3.5rem;
+  font-weight: 800;
+  text-align: center;
+  margin-bottom: 2rem;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+}
+
+.page-title span.highlight {
+  position: relative;
+  z-index: 1;
+}
+
+.page-title span.highlight::after {
+  content: "";
+  position: absolute;
+  bottom: 0.1em;
+  left: 0;
+  width: 100%;
+  height: 0.35em;
+  background: var(--honey-200);
+  z-index: -1;
+  border-radius: 4px;
+}
+
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.gap-sm {
+  gap: 12px;
+}
+
+.gap-md {
+  gap: 24px;
+}
+
+.gap-lg {
+  gap: 40px;
+}
+
+/* Badge */
+.badge {
+  display: inline-flex;
+  padding: 6px 16px;
+  border-radius: var(--radius-full);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-primary {
+  background: var(--honey-100);
+  color: var(--honey-600);
+  border: 1px solid var(--honey-200);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #efe0c4;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #dbc99a;
+}
+
+.dark-mode ::-webkit-scrollbar-thumb {
+  background: #6b5f52;
+}
+
+.dark-mode ::-webkit-scrollbar-thumb:hover {
+  background: #9c8f80;
+}

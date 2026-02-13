@@ -1,0 +1,29 @@
+services:
+  kurento:
+    image: kurento/kurento-media-server:latest
+    container_name: kurento-media-server
+    restart: always
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./kurento/WebRtcEndpoint.conf.ini:/etc/kurento/modules/kurento/WebRtcEndpoint.conf.ini:ro
+    networks:
+      - server-tools_default
+
+  coturn:
+    image: coturn/coturn:latest
+    container_name: coturn
+    restart: unless-stopped
+    ports:
+      - "8100:8100/udp"
+      - "8100:8100/tcp"
+      - "49160-49500:49160-49500/udp"
+    volumes:
+      - ./coturn/turnserver.conf:/etc/turnserver.conf:ro
+    command: ["-c", "/etc/turnserver.conf"]
+    networks:
+      - server-tools_default
+
+networks:
+  server-tools_default:
+    external: true

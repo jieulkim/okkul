@@ -1,0 +1,18 @@
+services:
+  kurento-hello-world:
+    image: kurento/kurento-hello-world:latest
+    container_name: kurento-hello-world
+    restart: always
+    # ports:
+    #   - "8080:8080"
+    environment:
+      # [KMS_IP] 자리에 실제 Kurento 서버의 IP를 넣으세요.
+      # 만약 KMS도 같은 server-tools_default 네트워크 안에 있다면 
+      # IP 대신 KMS의 컨테이너 이름을 사용할 수 있습니다.
+      - KMS_URL=ws://54.180.137.79:8888/kurento
+    networks:
+      - server-tools_default
+
+networks:
+  server-tools_default:
+    external: true

@@ -1,0 +1,36 @@
+global:
+  scrape_interval: 15s # 데이터 수집 주기
+
+scrape_configs:
+  # Spring Boot 앱들 (Actuator)
+  - job_name: 'spring-apps'
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['backend-cicd:8081']
+        labels:
+          env: 'test'
+      - targets: ['backend-develop:8081'] # 대시(-)를 추가해서 별도 그룹으로 분리
+        labels:
+          env: 'develop'
+      - targets: ['backend-master:8081'] # 대시(-)를 추가해서 별도 그룹으로 분리
+        labels:
+          env: 'production'
+
+  # PostgreSQL 모니터링
+  - job_name: 'postgres'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  # Redis 모니터링
+  - job_name: 'redis'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  # Node Exporter 모니터링
+  - job_name: 'node-exporter'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['node-exporter:9100']

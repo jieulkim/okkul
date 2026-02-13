@@ -1,0 +1,9 @@
+spring:
+  jpa:
+    show-sql: false
+
+springdoc:
+  api-docs:
+    enabled: false # JSON 형태의 API 명세서(/v3/api-docs) 비활성화
+  swagger-ui:
+    enabled: false # UI 화면(/swagger-ui.html) 비활성화

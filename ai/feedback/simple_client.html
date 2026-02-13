@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Whisper STT Test</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+        }
+
+        #log {
+            background: #f0f0f0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            height: 300px;
+            overflow-y: scroll;
+            white-space: pre-wrap;
+            margin-top: 10px;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #status {
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .result {
+            color: blue;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Whisper STT WebSocket Test</h1>
+
+    <div class="controls">
+        <button id="startBtn">Start Recording</button>
+        <button id="stopBtn" disabled>Stop Recording</button>
+        <span id="status">Disconnected</span>
+    </div>
+
+    <div>
+        <h3>Transcript:</h3>
+        <div id="transcript" style="font-size: 1.2em; min-height: 50px; border: 1px solid #ccc; padding: 10px;"></div>
+    </div>
+
+    <h3>Logs:</h3>
+    <div id="log"></div>
+
+    <script>
+        let socket;
+        let audioContext;
+        let processor;
+        let globalStream;
+
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusSpan = document.getElementById('status');
+        const logDiv = document.getElementById('log');
+        const transcriptDiv = document.getElementById('transcript');
+
+        function log(msg) {
+            const time = new Date().toLocaleTimeString();
+            logDiv.textContent += `[${time}] ${msg}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        startBtn.onclick = async () => {
+            try {
+                statusSpan.textContent = "Connecting...";
+                socket = new WebSocket("ws://localhost:8000/ws/transcribe");
+
+                socket.onopen = () => {
+                    log("WebSocket connected.");
+                    statusSpan.textContent = "Connected & Recording";
+                    startAudio();
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                };
+
+                socket.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    log(`Received: ${JSON.stringify(data)}`);
+                    if (data.type === "full") {
+                        transcriptDiv.innerHTML += `<span class="result">${data.text}</span> `;
+                    }
+                };
+
+                socket.onclose = () => {
+                    log("WebSocket disconnected.");
+                    statusSpan.textContent = "Disconnected";
+                    stopRecording();
+                };
+
+                socket.onerror = (error) => {
+                    log(`WebSocket error: ${error}`);
+                };
+
+            } catch (e) {
+                log(`Error: ${e}`);
+            }
+        };
+
+        stopBtn.onclick = () => {
+            if (socket) {
+                socket.close();
+            }
+            stopRecording();
+        };
+
+        async function startAudio() {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                globalStream = stream;
+
+                const source = audioContext.createMediaStreamSource(stream);
+                // Buffer size 4096, 1 input channel, 1 output channel
+                processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+                source.connect(processor);
+                processor.connect(audioContext.destination);
+
+                processor.onaudioprocess = (e) => {
+                    if (socket && socket.readyState === WebSocket.OPEN) {
+                        const inputData = e.inputBuffer.getChannelData(0);
+                        // Convert Float32Array to raw bytes directly if server expects float32 bytes
+                        // Server code: audio_float32 = np.frombuffer(audio_bytes, dtype=np.float32)
+                        // This matches what we send here.
+                        socket.send(inputData.buffer);
+                    }
+                };
+
+                log("Audio capture started (16kHz).");
+
+            } catch (e) {
+                log(`Audio Error: ${e}`);
+                alert("Microphone access failed or not supported.");
+            }
+        }
+
+        function stopRecording() {
+            if (processor) {
+                processor.disconnect();
+                processor = null;
+            }
+            if (globalStream) {
+                globalStream.getTracks().forEach(track => track.stop());
+                globalStream = null;
+            }
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            statusSpan.textContent = "Disconnected";
+            log("Audio capture stopped.");
+        }
+    </script>
+</body>
+
+</html>

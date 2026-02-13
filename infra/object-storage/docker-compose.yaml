@@ -1,0 +1,35 @@
+services:
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z-cpuv1
+    container_name: minio
+    restart: unless-stopped
+    # 호스트의 디스크 용량을 사용합니다 (100GB 걱정 없음)
+    volumes:
+      - ./minio_data:/data
+    # ports:
+    #   - "9000:9000" # API 포트
+    #   - "9001:9001" # 콘솔(GUI) 포트
+    environment:
+      # 1. 관리자 계정 설정 (꼭 변경하세요!)
+      MINIO_ROOT_USER: "cmsong111@naver.com"
+      MINIO_ROOT_PASSWORD: "S14P11A108123!"
+
+      # 2. 버킷 도메인 설정 (핵심)
+      # 이 설정이 있어야 '버킷명.minio.okkul.site' 주소를 인식합니다.
+      MINIO_DOMAIN: "minio.okkul.site"
+
+      # 3. 서버의 공인 API 주소 (Presigned URL 생성 시 이 주소가 찍힘)
+      # HTTPS를 쓰신다면 https:// 로, 아니면 http:// 로 설정하세요.
+      MINIO_SERVER_URL: "https://minio.okkul.site"
+
+      # 4. 브라우저 콘솔(GUI) 접속 주소
+      # 로그인 후 리다이렉트될 때 사용됩니다. API 도메인과 겹치지 않게 분리하는 게 좋습니다.
+      MINIO_BROWSER_REDIRECT_URL: "https://minio-gui.okkul.site"
+
+    command: server /data --console-address ":9001"
+    networks:
+      - server-tools_default
+
+networks:
+  server-tools_default:
+    external: true
